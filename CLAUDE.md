@@ -57,15 +57,16 @@ vars for anything real. Password rules are relaxed (6+ chars) for learning conve
 
 ```
 backend/LinguaSwap.Api/
-  Controllers/   API endpoints
+  Controllers/   API endpoints (Auth, Account, Libraries, Entries, Practice, Stats, Health)
   Models/        EF Core entities
-  Data/          AppDbContext + Migrations
+  Data/          AppDbContext + Migrations + DbSeeder
   Dtos/          request/response shapes
-  Services/      LeitnerService, AnswerChecker, HintService
+  Services/      LeitnerService, AnswerChecker, HintService, TokenService
+backend/LinguaSwap.Tests/   xUnit tests for LeitnerService, AnswerChecker, HintService
 frontend/src/
   api/           typed fetch wrappers
   pages/         Login, Register, Account, Libraries, LibraryEditor, Practice, Stats
-  components/  hooks/
+  components/    Layout, ProtectedRoute, EntryForm, HintGuide
 ```
 
 ## Conventions
