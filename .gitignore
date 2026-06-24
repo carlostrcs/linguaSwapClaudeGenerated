@@ -1,0 +1,29 @@
+# ---------- .NET ----------
+[Bb]in/
+[Oo]bj/
+*.user
+.vs/
+
+# SQLite database files (local dev data)
+*.db
+*.db-shm
+*.db-wal
+
+# ---------- Node / frontend ----------
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# ---------- Editor / OS ----------
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+
+# ---------- Secrets / env ----------
+.env
+.env.*
+!.env.example
+appsettings.*.local.json
