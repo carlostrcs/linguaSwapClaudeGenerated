@@ -6,6 +6,7 @@ import RegisterPage from './pages/RegisterPage';
 import LibrariesPage from './pages/LibrariesPage';
 import LibraryEditorPage from './pages/LibraryEditorPage';
 import PracticePage from './pages/PracticePage';
+import StatsPage from './pages/StatsPage';
 import AccountPage from './pages/AccountPage';
 
 export default function App() {
@@ -18,6 +19,7 @@ export default function App() {
           <Route path="/libraries" element={<LibrariesPage />} />
           <Route path="/libraries/:id" element={<LibraryEditorPage />} />
           <Route path="/practice/:id" element={<PracticePage />} />
+          <Route path="/stats" element={<StatsPage />} />
           <Route path="/account" element={<AccountPage />} />
         </Route>
       </Route>

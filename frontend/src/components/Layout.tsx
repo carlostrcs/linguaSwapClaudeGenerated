@@ -16,6 +16,7 @@ export default function Layout() {
         <div className="brand">LinguaSwap</div>
         <nav className="nav">
           <NavLink to="/libraries">Libraries</NavLink>
+          <NavLink to="/stats">Stats</NavLink>
           <NavLink to="/account">Account</NavLink>
         </nav>
         <div className="user-area">

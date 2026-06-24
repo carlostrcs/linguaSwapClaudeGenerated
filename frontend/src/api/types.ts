@@ -57,3 +57,32 @@ export interface AnswerResponse {
   mastered: boolean;
   nextReviewAt?: string | null;
 }
+
+export interface BoxCount {
+  box: number;
+  count: number;
+}
+
+export interface LibraryStats {
+  libraryId: number;
+  name: string;
+  words: number;
+  totalAttempts: number;
+  correctAttempts: number;
+  accuracy: number;
+  mastered: number;
+  dueNow: number;
+  boxDistribution: BoxCount[];
+}
+
+export interface OverviewStats {
+  libraries: number;
+  words: number;
+  totalAttempts: number;
+  correctAttempts: number;
+  accuracy: number;
+  mastered: number;
+  dueNow: number;
+  studyStreakDays: number;
+  perLibrary: LibraryStats[];
+}
