@@ -67,6 +67,8 @@ frontend/src/
   api/           typed fetch wrappers
   pages/         Login, Register, Account, Libraries, LibraryEditor, Practice, Stats
   components/    Layout, ProtectedRoute, EntryForm, HintGuide
+  theme/         ThemeProvider + themes registry (CSS-variable theming)
+  i18n/          I18nProvider + translation dictionaries
 ```
 
 ## Conventions
@@ -77,3 +79,16 @@ frontend/src/
   `LearningState`. Practice difficulty (Easy/Medium/Hard) controls how much of the answer is
   revealed as a hint; Easy also returns the full answer for live green/red typing feedback.
 - The full build plan lives at `C:\Users\carlo\.claude\plans\i-am-a-first-sorted-origami.md`.
+
+### Theming & i18n (frontend)
+
+- **Theme:** UI colours come from CSS variables on `:root`. A theme = a `[data-theme="id"]`
+  block in `index.css` that overrides those variables + an entry in `theme/themes.ts`.
+  `ThemeProvider` sets `<html data-theme>` and persists to `localStorage`. To add a palette:
+  add one CSS block + one list entry.
+- **Language:** UI strings live in `i18n/translations.ts` (one dictionary per language).
+  Components call `const { t } = useI18n()` and `t('some.key', { vars })`; missing keys fall
+  back to English. To add a language: add it to `LANGUAGES` + a dictionary. Keep new UI strings
+  out of JSX literals — add a key instead.
+- Both preferences are per-browser (localStorage); the controls are on the Account page. If
+  cross-device sync is ever needed, persist them on the user account instead.

@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { getOverview } from '../api/stats';
 import type { LibraryStats } from '../api/types';
+import { useI18n } from '../i18n/I18nProvider';
 
 // box 1..5 colours (struggling -> mastered)
 const BOX_COLORS = ['#fca5a5', '#fcd34d', '#bef264', '#6ee7b7', '#34d399'];
@@ -16,9 +17,9 @@ function StatCard({ label, value, hint }: { label: string; value: string | numbe
   );
 }
 
-function BoxBar({ stats }: { stats: LibraryStats }) {
+function BoxBar({ stats, emptyLabel }: { stats: LibraryStats; emptyLabel: string }) {
   const total = stats.boxDistribution.reduce((sum, b) => sum + b.count, 0);
-  if (total === 0) return <p className="muted small">Not practised yet.</p>;
+  if (total === 0) return <p className="muted small">{emptyLabel}</p>;
   return (
     <div className="box-bar" title="Leitner box distribution (box 1 → 5)">
       {stats.boxDistribution.map((b, i) =>
@@ -33,27 +34,32 @@ function BoxBar({ stats }: { stats: LibraryStats }) {
 }
 
 export default function StatsPage() {
+  const { t } = useI18n();
   const { data, isLoading, isError } = useQuery({ queryKey: ['stats-overview'], queryFn: getOverview });
 
   return (
     <div className="page">
-      <h1>Statistics</h1>
-      {isLoading && <p className="muted">Loading…</p>}
-      {isError && <p className="alert alert-error">Could not load statistics.</p>}
+      <h1>{t('stats.title')}</h1>
+      {isLoading && <p className="muted">{t('common.loading')}</p>}
+      {isError && <p className="alert alert-error">{t('stats.loadFailed')}</p>}
 
       {data && (
         <>
           <div className="stat-grid">
-            <StatCard label="Words" value={data.words} />
-            <StatCard label="Accuracy" value={`${data.accuracy}%`} hint={`${data.correctAttempts}/${data.totalAttempts} answers`} />
-            <StatCard label="Mastered" value={data.mastered} hint="reached box 5" />
-            <StatCard label="Due now" value={data.dueNow} />
-            <StatCard label="Day streak" value={data.studyStreakDays} />
-            <StatCard label="Libraries" value={data.libraries} />
+            <StatCard label={t('stats.words')} value={data.words} />
+            <StatCard
+              label={t('stats.accuracy')}
+              value={`${data.accuracy}%`}
+              hint={t('stats.answers', { correct: data.correctAttempts, total: data.totalAttempts })}
+            />
+            <StatCard label={t('stats.mastered')} value={data.mastered} hint={t('stats.reachedBox5')} />
+            <StatCard label={t('stats.dueNow')} value={data.dueNow} />
+            <StatCard label={t('stats.dayStreak')} value={data.studyStreakDays} />
+            <StatCard label={t('stats.libraries')} value={data.libraries} />
           </div>
 
-          <h2>By library</h2>
-          {data.perLibrary.length === 0 && <p className="muted">No libraries yet.</p>}
+          <h2>{t('stats.byLibrary')}</h2>
+          {data.perLibrary.length === 0 && <p className="muted">{t('stats.noLibraries')}</p>}
           <div className="lib-stats-list">
             {data.perLibrary.map((l) => (
               <div className="card lib-stat" key={l.libraryId}>
@@ -62,16 +68,14 @@ export default function StatsPage() {
                     {l.name}
                   </Link>
                   <span className="muted small">
-                    {l.words} words · {l.accuracy}% accuracy · {l.mastered} mastered · {l.dueNow} due
+                    {t('stats.libSummary', { words: l.words, acc: l.accuracy, mastered: l.mastered, due: l.dueNow })}
                   </span>
                 </div>
-                <BoxBar stats={l} />
+                <BoxBar stats={l} emptyLabel={t('stats.notPractised')} />
               </div>
             ))}
           </div>
-          <p className="muted small">
-            Words climb through the boxes (red → green) as you answer correctly; a wrong answer sends a word back to box 1.
-          </p>
+          <p className="muted small">{t('stats.boxesExplain')}</p>
         </>
       )}
     </div>

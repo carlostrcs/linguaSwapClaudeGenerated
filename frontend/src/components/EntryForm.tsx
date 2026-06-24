@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import type { EntryDto, TranslationDto } from '../api/types';
+import { useI18n } from '../i18n/I18nProvider';
 
 interface Props {
   initial?: EntryDto | null;
@@ -17,9 +18,10 @@ const defaultRows: TranslationDto[] = [
 ];
 
 export default function EntryForm({ initial, submitLabel, busy, error, onSubmit, onCancel }: Props) {
+  const { t } = useI18n();
   const [rows, setRows] = useState<TranslationDto[]>(() =>
     initial && initial.translations.length > 0
-      ? initial.translations.map((t) => ({ ...t }))
+      ? initial.translations.map((tr) => ({ ...tr }))
       : defaultRows.map((r) => ({ ...r })),
   );
   const [notes, setNotes] = useState(initial?.notes ?? '');
@@ -38,12 +40,12 @@ export default function EntryForm({ initial, submitLabel, busy, error, onSubmit,
       .filter((r) => r.languageCode && r.text);
 
     if (cleaned.length === 0) {
-      setLocalError('Add at least one language with its translation.');
+      setLocalError(t('entryForm.atLeastOne'));
       return;
     }
     const langs = cleaned.map((r) => r.languageCode);
     if (new Set(langs).size !== langs.length) {
-      setLocalError('Each language can only appear once.');
+      setLocalError(t('entryForm.duplicateLang'));
       return;
     }
     onSubmit(cleaned, notes.trim() || null);
@@ -57,13 +59,13 @@ export default function EntryForm({ initial, submitLabel, busy, error, onSubmit,
           <div className="translation-row" key={i}>
             <input
               className="lang-input"
-              placeholder="lang"
+              placeholder={t('entryForm.langPlaceholder')}
               value={row.languageCode}
               onChange={(e) => updateRow(i, 'languageCode', e.target.value)}
             />
             <input
               className="text-input"
-              placeholder="word or phrase"
+              placeholder={t('entryForm.textPlaceholder')}
               value={row.text}
               onChange={(e) => updateRow(i, 'text', e.target.value)}
             />
@@ -72,7 +74,7 @@ export default function EntryForm({ initial, submitLabel, busy, error, onSubmit,
               className="btn btn-ghost"
               onClick={() => removeRow(i)}
               disabled={rows.length === 1}
-              title="Remove language"
+              title={t('entryForm.removeLanguage')}
             >
               ✕
             </button>
@@ -80,19 +82,19 @@ export default function EntryForm({ initial, submitLabel, busy, error, onSubmit,
         ))}
       </div>
       <button type="button" className="btn btn-link" onClick={addRow}>
-        + Add language
+        {t('entryForm.addLanguage')}
       </button>
       <label>
-        Notes (optional)
+        {t('entryForm.notes')}
         <input value={notes} onChange={(e) => setNotes(e.target.value)} />
       </label>
       <div className="form-actions">
         <button type="submit" className="btn btn-primary" disabled={busy}>
-          {busy ? 'Saving…' : submitLabel}
+          {busy ? t('common.saving') : submitLabel}
         </button>
         {onCancel && (
           <button type="button" className="btn btn-ghost" onClick={onCancel}>
-            Cancel
+            {t('common.cancel')}
           </button>
         )}
       </div>

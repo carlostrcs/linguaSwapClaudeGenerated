@@ -4,9 +4,11 @@ import { Link, useNavigate } from 'react-router-dom';
 import { register } from '../api/auth';
 import { ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
+import { useI18n } from '../i18n/I18nProvider';
 
 export default function RegisterPage() {
   const { signIn } = useAuth();
+  const { t } = useI18n();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -22,7 +24,7 @@ export default function RegisterPage() {
       signIn(await register(email, password, displayName || undefined));
       navigate('/libraries');
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Registration failed.');
+      setError(err instanceof ApiError ? err.message : t('auth.registerFailed'));
     } finally {
       setBusy(false);
     }
@@ -32,25 +34,25 @@ export default function RegisterPage() {
     <div className="auth-screen">
       <form className="card auth-card" onSubmit={onSubmit}>
         <h1 className="brand brand-lg">LinguaSwap</h1>
-        <h2>Create your account</h2>
+        <h2>{t('auth.createAccount')}</h2>
         {error && <p className="alert alert-error">{error}</p>}
         <label>
-          Display name (optional)
+          {t('auth.displayNameOptional')}
           <input value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
         </label>
         <label>
-          Email
+          {t('common.email')}
           <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
         </label>
         <label>
-          Password (6+ characters)
+          {t('auth.passwordHint')}
           <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
         </label>
         <button type="submit" className="btn btn-primary" disabled={busy}>
-          {busy ? 'Creating…' : 'Create account'}
+          {busy ? t('auth.creating') : t('auth.createAccountBtn')}
         </button>
         <p className="muted">
-          Already have an account? <Link to="/login">Sign in</Link>
+          {t('auth.haveAccount')} <Link to="/login">{t('auth.signIn')}</Link>
         </p>
       </form>
     </div>

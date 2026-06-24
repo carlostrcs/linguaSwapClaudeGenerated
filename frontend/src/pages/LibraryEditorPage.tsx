@@ -6,11 +6,13 @@ import { getLibrary } from '../api/libraries';
 import { ApiError } from '../api/client';
 import type { EntryDto, TranslationDto } from '../api/types';
 import EntryForm from '../components/EntryForm';
+import { useI18n } from '../i18n/I18nProvider';
 
 export default function LibraryEditorPage() {
   const { id } = useParams();
   const libraryId = Number(id);
   const qc = useQueryClient();
+  const { t } = useI18n();
 
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<EntryDto | null>(null);
@@ -27,13 +29,13 @@ export default function LibraryEditorPage() {
   const add = useMutation({
     mutationFn: (v: { translations: TranslationDto[]; notes: string | null }) => createEntry(libraryId, v.translations, v.notes),
     onSuccess: () => { setAdding(false); setFormError(null); invalidate(); },
-    onError: (e) => setFormError(e instanceof ApiError ? e.message : 'Could not add the word.'),
+    onError: (e) => setFormError(e instanceof ApiError ? e.message : t('editor.addFailed')),
   });
 
   const edit = useMutation({
     mutationFn: (v: { entryId: number; translations: TranslationDto[]; notes: string | null }) => updateEntry(v.entryId, v.translations, v.notes),
     onSuccess: () => { setEditing(null); setFormError(null); invalidate(); },
-    onError: (e) => setFormError(e instanceof ApiError ? e.message : 'Could not update the word.'),
+    onError: (e) => setFormError(e instanceof ApiError ? e.message : t('editor.updateFailed')),
   });
 
   const remove = useMutation({
@@ -41,31 +43,31 @@ export default function LibraryEditorPage() {
     onSuccess: invalidate,
   });
 
-  if (!Number.isFinite(libraryId)) return <p className="alert alert-error">Invalid library.</p>;
+  if (!Number.isFinite(libraryId)) return <p className="alert alert-error">{t('editor.invalidLibrary')}</p>;
 
   return (
     <div className="page">
       <p>
         <Link to="/libraries" className="btn btn-link">
-          ← Back to libraries
+          {t('editor.back')}
         </Link>
       </p>
-      <h1>{library.data?.name ?? 'Library'}</h1>
+      <h1>{library.data?.name ?? t('editor.library')}</h1>
       {library.data?.description && <p className="muted">{library.data.description}</p>}
 
       <div className="card">
         <div className="section-head">
-          <h2>Words</h2>
+          <h2>{t('editor.words')}</h2>
           {!adding && !editing && (
             <button type="button" className="btn btn-primary" onClick={() => { setAdding(true); setFormError(null); }}>
-              + Add word
+              {t('editor.addWord')}
             </button>
           )}
         </div>
 
         {adding && (
           <EntryForm
-            submitLabel="Add word"
+            submitLabel={t('editor.addWordSubmit')}
             busy={add.isPending}
             error={formError}
             onSubmit={(translations, notes) => add.mutate({ translations, notes })}
@@ -73,8 +75,8 @@ export default function LibraryEditorPage() {
           />
         )}
 
-        {entries.isLoading && <p className="muted">Loading words…</p>}
-        {entries.data && entries.data.length === 0 && !adding && <p className="muted">No words yet. Add your first one.</p>}
+        {entries.isLoading && <p className="muted">{t('editor.loadingWords')}</p>}
+        {entries.data && entries.data.length === 0 && !adding && <p className="muted">{t('editor.empty')}</p>}
 
         <ul className="entry-list">
           {entries.data?.map((entry) => (
@@ -82,7 +84,7 @@ export default function LibraryEditorPage() {
               {editing?.id === entry.id ? (
                 <EntryForm
                   initial={entry}
-                  submitLabel="Save changes"
+                  submitLabel={t('editor.saveChanges')}
                   busy={edit.isPending}
                   error={formError}
                   onSubmit={(translations, notes) => edit.mutate({ entryId: entry.id, translations, notes })}
@@ -91,23 +93,23 @@ export default function LibraryEditorPage() {
               ) : (
                 <>
                   <div className="entry-translations">
-                    {entry.translations.map((t) => (
-                      <span className="chip" key={t.languageCode}>
-                        <span className="chip-lang">{t.languageCode}</span> {t.text}
+                    {entry.translations.map((tr) => (
+                      <span className="chip" key={tr.languageCode}>
+                        <span className="chip-lang">{tr.languageCode}</span> {tr.text}
                       </span>
                     ))}
                   </div>
                   {entry.notes && <span className="entry-notes muted">{entry.notes}</span>}
                   <div className="entry-actions">
                     <button type="button" className="btn btn-ghost" onClick={() => { setEditing(entry); setFormError(null); }}>
-                      Edit
+                      {t('common.edit')}
                     </button>
                     <button
                       type="button"
                       className="btn btn-danger"
-                      onClick={() => { if (window.confirm('Delete this word?')) remove.mutate(entry.id); }}
+                      onClick={() => { if (window.confirm(t('editor.deleteWordConfirm'))) remove.mutate(entry.id); }}
                     >
-                      Delete
+                      {t('common.delete')}
                     </button>
                   </div>
                 </>
