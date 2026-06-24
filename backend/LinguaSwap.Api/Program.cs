@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json.Serialization;
 using LinguaSwap.Api.Data;
 using LinguaSwap.Api.Models;
 using LinguaSwap.Api.Services;
@@ -51,6 +52,11 @@ builder.Services.AddAuthorization();
 
 builder.Services.AddScoped<TokenService>();
 
+// Practice domain services (stateless, unit-testable).
+builder.Services.AddSingleton<LeitnerService>();
+builder.Services.AddSingleton<AnswerChecker>();
+builder.Services.AddSingleton<HintService>();
+
 // CORS: allow the Vite dev server (frontend) to call this API during development.
 const string FrontendCors = "frontend";
 builder.Services.AddCors(options =>
@@ -61,7 +67,9 @@ builder.Services.AddCors(options =>
               .AllowAnyMethod());
 });
 
-builder.Services.AddControllers();
+builder.Services
+    .AddControllers()
+    .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
 // Swagger / OpenAPI: interactive UI at /swagger, with a JWT "Authorize" button.
 builder.Services.AddEndpointsApiExplorer();
