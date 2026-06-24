@@ -5,6 +5,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import LibrariesPage from './pages/LibrariesPage';
 import LibraryEditorPage from './pages/LibraryEditorPage';
+import PracticePage from './pages/PracticePage';
 import AccountPage from './pages/AccountPage';
 
 export default function App() {
@@ -16,6 +17,7 @@ export default function App() {
         <Route element={<Layout />}>
           <Route path="/libraries" element={<LibrariesPage />} />
           <Route path="/libraries/:id" element={<LibraryEditorPage />} />
+          <Route path="/practice/:id" element={<PracticePage />} />
           <Route path="/account" element={<AccountPage />} />
         </Route>
       </Route>

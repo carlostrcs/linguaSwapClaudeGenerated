@@ -148,3 +148,62 @@ input:focus { outline: 2px solid var(--primary); outline-offset: 0; border-color
 /* ---------- Danger zone ---------- */
 .danger-zone { border-color: #fecaca; }
 .danger-zone h2 { color: var(--danger); }
+
+/* ---------- Practice ---------- */
+.direction-row { display: flex; align-items: flex-end; gap: 0.75rem; }
+.direction-row label { flex: 1; margin-bottom: 0; }
+.direction-row .arrow { font-size: 1.3rem; color: var(--muted); padding-bottom: 0.5rem; }
+select {
+  display: block;
+  width: 100%;
+  margin-top: 0.25rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 1rem;
+  font-family: inherit;
+  background: #fff;
+  text-transform: uppercase;
+}
+.difficulty-row { border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem 0.9rem; margin: 1rem 0 0.25rem; }
+.difficulty-row legend { padding: 0 0.3rem; color: var(--muted); font-size: 0.85rem; }
+.radio { display: inline-flex; align-items: center; gap: 0.35rem; margin: 0 1rem 0 0; color: var(--text); }
+.radio input { width: auto; margin: 0; }
+
+.practice-progress { text-align: center; color: var(--muted); margin-bottom: 0.75rem; font-size: 0.9rem; }
+.practice-card { text-align: center; }
+.prompt-label { text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; color: var(--muted); }
+.prompt-word { font-size: 2rem; font-weight: 700; margin: 0.5rem 0 1.25rem; }
+
+.hint-guide { display: flex; justify-content: center; flex-wrap: wrap; gap: 0.3rem; margin-bottom: 1.25rem; }
+.hint-box {
+  width: 1.7rem;
+  height: 2.1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+.hint-filled { background: #eef2ff; color: var(--primary-dark); }
+.hint-blank { background: #f3f4f6; border-bottom: 3px solid #cbd1dc; }
+.hint-space { width: 0.9rem; }
+
+.answer-input {
+  text-align: center;
+  font-size: 1.2rem;
+  border-width: 2px;
+}
+.answer-input.input-good { border-color: var(--success); outline-color: var(--success); }
+.answer-input.input-bad { border-color: var(--danger); outline-color: var(--danger); }
+
+.feedback { margin: 0.9rem 0; font-weight: 600; display: flex; gap: 0.6rem; justify-content: center; align-items: center; flex-wrap: wrap; }
+.feedback-good { color: var(--success); }
+.feedback-bad { color: var(--danger); }
+.mastered-badge { background: #fef9c3; color: #a16207; border-radius: 999px; padding: 0.1rem 0.6rem; font-size: 0.8rem; }
+
+.form-actions.center { justify-content: center; }
+.done-card { text-align: center; }
+.score-big { font-size: 3rem; font-weight: 800; color: var(--primary); margin: 0.5rem 0 0; }

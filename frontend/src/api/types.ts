@@ -31,3 +31,29 @@ export interface EntryDto {
   createdAt: string;
   translations: TranslationDto[];
 }
+
+export type Difficulty = 'Easy' | 'Medium' | 'Hard';
+
+export interface PracticeWord {
+  entryId: number;
+  prompt: string;
+  hint: string;
+  answerLength: number;
+  expectedAnswer?: string | null;
+}
+
+export interface StartSessionResponse {
+  sessionId: number;
+  difficulty: Difficulty;
+  sourceLanguage: string;
+  targetLanguage: string;
+  words: PracticeWord[];
+}
+
+export interface AnswerResponse {
+  isCorrect: boolean;
+  expectedAnswer: string;
+  boxLevel: number;
+  mastered: boolean;
+  nextReviewAt?: string | null;
+}
