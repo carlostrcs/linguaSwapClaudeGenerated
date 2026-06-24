@@ -31,6 +31,19 @@ npm --prefix frontend run dev
 > Dev runs over **HTTP** (no HTTPS redirect) to avoid dev-cert friction. CORS allows
 > `http://localhost:5173` (see `Program.cs`).
 
+### Demo login (seeded on first run)
+
+An empty database is seeded with a demo user and a sample "Spanish Basics" library:
+
+- **Email:** `demo@linguaswap.app` · **Password:** `Demo123!`
+
+### Auth
+
+JWT bearer auth. Get a token from `POST /api/auth/register` or `POST /api/auth/login`, then
+send `Authorization: Bearer <token>`. In Swagger UI use the **Authorize** button. The JWT signing
+key lives under `Jwt` in `appsettings.json` — it's a **dev-only** value; use user-secrets or env
+vars for anything real. Password rules are relaxed (6+ chars) for learning convenience.
+
 ## Common commands
 
 - Build backend: `dotnet build backend/LinguaSwap.slnx`
