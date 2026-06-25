@@ -13,8 +13,6 @@ namespace LinguaSwap.Api.Controllers;
 [Authorize]
 public class EntriesController(AppDbContext db) : ControllerBase
 {
-    private const int MaxImport = 500;
-
     [HttpGet("libraries/{libraryId:int}/entries")]
     public async Task<IActionResult> ListForLibrary(int libraryId)
     {
@@ -52,7 +50,7 @@ public class EntriesController(AppDbContext db) : ControllerBase
         if (!await db.Libraries.AnyAsync(l => l.Id == libraryId && l.UserId == userId))
             return NotFound();
 
-        var translations = Normalize(req.Translations);
+        var translations = EntryImport.NormalizeTranslations(req.Translations);
         if (translations is null) return BadRequest(new { message = "Each language can appear at most once." });
 
         var entry = new Entry
@@ -76,7 +74,7 @@ public class EntriesController(AppDbContext db) : ControllerBase
             .FirstOrDefaultAsync(e => e.Id == id && e.Library!.UserId == userId);
         if (entry is null) return NotFound();
 
-        var translations = Normalize(req.Translations);
+        var translations = EntryImport.NormalizeTranslations(req.Translations);
         if (translations is null) return BadRequest(new { message = "Each language can appear at most once." });
 
         entry.Notes = req.Notes?.Trim();
@@ -106,36 +104,16 @@ public class EntriesController(AppDbContext db) : ControllerBase
         var items = req.Entries ?? [];
         if (items.Count == 0)
             return BadRequest(new { message = "The file contained no entries." });
-        if (items.Count > MaxImport)
-            return BadRequest(new { message = $"Too many entries (maximum {MaxImport})." });
 
-        var errors = new List<ImportError>();
-        var toCreate = new List<Entry>();
-        for (var i = 0; i < items.Count; i++)
-        {
-            var translations = (items[i].Translations ?? [])
-                .Select(kv => new TranslationDto(kv.Key, kv.Value));
-            var normalized = Normalize(translations);
-            if (normalized is null || normalized.Count == 0)
-            {
-                errors.Add(new ImportError(i, "Each entry needs at least one language with text, and no repeated language."));
-                continue;
-            }
-            toCreate.Add(new Entry
-            {
-                LibraryId = libraryId,
-                Notes = items[i].Notes?.Trim(),
-                Translations = normalized.Select(t => new Translation { LanguageCode = t.Key, Text = t.Value }).ToList()
-            });
-        }
-
+        var (entries, errors) = EntryImport.BuildEntries(items);
         // Atomic: if anything is invalid, import nothing and report the offending rows.
         if (errors.Count > 0)
             return BadRequest(new { message = "Some entries are invalid; nothing was imported.", errors });
 
-        db.Entries.AddRange(toCreate);
+        foreach (var entry in entries) entry.LibraryId = libraryId;
+        db.Entries.AddRange(entries);
         await db.SaveChangesAsync();
-        return Ok(new ImportResult(toCreate.Count));
+        return Ok(new ImportResult(entries.Count));
     }
 
     [HttpDelete("entries/{id:int}")]
@@ -148,20 +126,6 @@ public class EntriesController(AppDbContext db) : ControllerBase
         db.Entries.Remove(entry);
         await db.SaveChangesAsync();
         return NoContent();
-    }
-
-    /// <summary>
-    /// Trim + lowercase language codes into a (lang -> text) map.
-    /// Returns null if a language code repeats.
-    /// </summary>
-    private static Dictionary<string, string>? Normalize(IEnumerable<TranslationDto> translations)
-    {
-        var cleaned = translations
-            .Select(t => (Lang: t.LanguageCode.Trim().ToLowerInvariant(), Text: t.Text.Trim()))
-            .Where(t => t.Lang.Length > 0 && t.Text.Length > 0)
-            .ToList();
-        if (cleaned.Select(t => t.Lang).Distinct().Count() != cleaned.Count) return null;
-        return cleaned.ToDictionary(t => t.Lang, t => t.Text);
     }
 
     private static EntryDto ToDto(Entry e) => new(

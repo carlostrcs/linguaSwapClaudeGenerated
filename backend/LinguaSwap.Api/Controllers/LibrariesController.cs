@@ -52,6 +52,33 @@ public class LibrariesController(AppDbContext db) : ControllerBase
         return CreatedAtAction(nameof(Get), new { id = lib.Id }, dto);
     }
 
+    /// <summary>Create a new library and import the file's entries into it in one transaction.</summary>
+    [HttpPost("import")]
+    public async Task<IActionResult> Import(CreateLibraryImportRequest req)
+    {
+        var items = req.Entries ?? [];
+        if (items.Count == 0)
+            return BadRequest(new { message = "The file contained no entries." });
+
+        var (entries, errors) = EntryImport.BuildEntries(items);
+        // Atomic: invalid file => nothing is created (no orphan empty library).
+        if (errors.Count > 0)
+            return BadRequest(new { message = "Some entries are invalid; nothing was imported.", errors });
+
+        var lib = new Library
+        {
+            UserId = User.GetUserId(),
+            Name = req.Name.Trim(),
+            Description = req.Description?.Trim(),
+            Entries = entries,
+        };
+        db.Libraries.Add(lib);
+        await db.SaveChangesAsync();
+
+        var summary = new LibrarySummary(lib.Id, lib.Name, lib.Description, lib.CreatedAt, entries.Count);
+        return Ok(new LibraryImportResult(summary, entries.Count));
+    }
+
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Update(int id, UpdateLibraryRequest req)
     {

@@ -6,16 +6,9 @@ import { createLibrary, deleteLibrary, listLibraries, updateLibrary } from '../a
 import { importEntries } from '../api/entries';
 import { ApiError } from '../api/client';
 import type { ImportEntry } from '../api/types';
+import { parseImportFile } from '../lib/importFile';
+import ImportPanel from '../components/ImportPanel';
 import { useI18n } from '../i18n/I18nProvider';
-
-const EXAMPLE_FILE = JSON.stringify(
-  [
-    { translations: { en: 'dog', es: 'perro' }, notes: 'animal' },
-    { translations: { en: 'thank you', es: 'gracias' } },
-  ],
-  null,
-  2,
-);
 
 export default function LibrariesPage() {
   const qc = useQueryClient();
@@ -26,6 +19,7 @@ export default function LibrariesPage() {
   const [description, setDescription] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
 
+  // Per-card quick import (the central ImportPanel handles new-library + target selection).
   const [importMsg, setImportMsg] = useState<string | null>(null);
   const [importErr, setImportErr] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -98,31 +92,13 @@ export default function LibrariesPage() {
     e.target.value = ''; // allow re-picking the same file later
     const target = importTarget.current;
     if (!file || !target) return;
-
-    let parsed: unknown;
     try {
-      parsed = JSON.parse(await file.text());
+      const entries = await parseImportFile(file);
+      importMut.mutate({ libraryId: target.id, entries });
     } catch {
       setImportMsg(null);
       setImportErr(t('libraries.importInvalid'));
-      return;
     }
-    const entries = Array.isArray(parsed) ? parsed : (parsed as { entries?: unknown }).entries;
-    if (!Array.isArray(entries)) {
-      setImportMsg(null);
-      setImportErr(t('libraries.importInvalid'));
-      return;
-    }
-    importMut.mutate({ libraryId: target.id, entries: entries as ImportEntry[] });
-  };
-
-  const downloadExample = () => {
-    const url = URL.createObjectURL(new Blob([EXAMPLE_FILE], { type: 'application/json' }));
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'linguaswap-import-example.json';
-    a.click();
-    URL.revokeObjectURL(url);
   };
 
   return (
@@ -141,15 +117,9 @@ export default function LibrariesPage() {
             {t('libraries.add')}
           </button>
         </div>
-        <details className="import-help">
-          <summary>{t('libraries.importFormat')}</summary>
-          <p className="muted small">{t('libraries.importHelp')}</p>
-          <pre>{EXAMPLE_FILE}</pre>
-          <button type="button" className="btn btn-link" onClick={downloadExample}>
-            {t('libraries.downloadExample')}
-          </button>
-        </details>
       </form>
+
+      <ImportPanel libraries={libraries ?? []} />
 
       {importMsg && <p className="alert alert-success">{importMsg}</p>}
       {importErr && <p className="alert alert-error">{importErr}</p>}

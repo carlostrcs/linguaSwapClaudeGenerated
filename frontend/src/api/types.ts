@@ -41,6 +41,11 @@ export interface ImportResult {
   imported: number;
 }
 
+export interface LibraryImportResult {
+  library: LibrarySummary;
+  imported: number;
+}
+
 export type Difficulty = 'Easy' | 'Medium' | 'Hard';
 
 export interface PracticeWord {

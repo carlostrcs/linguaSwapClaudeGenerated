@@ -65,6 +65,14 @@ const en: Dictionary = {
   'libraries.importHelp': 'Upload a .json file: an array of entries, each with a "translations" object (language code → word) and optional "notes".',
   'libraries.downloadExample': 'Download example',
 
+  'import.title': 'Import from a file',
+  'import.target': 'Import into',
+  'import.newLibrary': 'New library from file',
+  'import.name': 'New library name',
+  'import.dropzone': 'Drag a .json file here, or click to choose',
+  'import.chosen': '{file} — {count} entries',
+  'import.run': 'Import',
+
   'editor.back': '← Back to libraries',
   'editor.library': 'Library',
   'editor.words': 'Words',
@@ -208,6 +216,14 @@ const es: Dictionary = {
   'libraries.importFormat': 'Formato de archivo esperado',
   'libraries.importHelp': 'Sube un archivo .json: una lista de entradas, cada una con un objeto "translations" (código de idioma → palabra) y "notes" opcional.',
   'libraries.downloadExample': 'Descargar ejemplo',
+
+  'import.title': 'Importar desde un archivo',
+  'import.target': 'Importar en',
+  'import.newLibrary': 'Nueva biblioteca desde archivo',
+  'import.name': 'Nombre de la nueva biblioteca',
+  'import.dropzone': 'Arrastra un archivo .json aquí o haz clic para elegir',
+  'import.chosen': '{file} — {count} entradas',
+  'import.run': 'Importar',
 
   'editor.back': '← Volver a las bibliotecas',
   'editor.library': 'Biblioteca',

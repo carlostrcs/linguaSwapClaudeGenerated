@@ -284,6 +284,21 @@ select { text-transform: uppercase; }
 .pref-row { display: flex; gap: 1rem; flex-wrap: wrap; }
 .pref-row label { flex: 1 1 180px; margin-bottom: 0; }
 
+/* ---------- Import panel ---------- */
+.dropzone {
+  border: 2px dashed var(--border);
+  border-radius: 8px;
+  padding: 1.4rem 1rem;
+  text-align: center;
+  color: var(--muted);
+  cursor: pointer;
+  background: var(--surface-2);
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+.dropzone:hover { border-color: var(--primary); }
+.dropzone-over { border-color: var(--primary); background: var(--accent-soft); color: var(--text); }
+.import-targets { margin-top: 0.85rem; }
+
 /* ---------- Import helper ---------- */
 .import-help { margin-top: 0.85rem; }
 .import-help summary { cursor: pointer; color: var(--primary); font-size: 0.85rem; font-weight: 600; }

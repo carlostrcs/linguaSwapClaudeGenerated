@@ -1,5 +1,5 @@
 import { api } from './client';
-import type { LibrarySummary } from './types';
+import type { ImportEntry, LibraryImportResult, LibrarySummary } from './types';
 
 export const listLibraries = () => api<LibrarySummary[]>('/libraries');
 
@@ -12,3 +12,9 @@ export const updateLibrary = (id: number, name: string, description?: string | n
   api<LibrarySummary>(`/libraries/${id}`, { method: 'PUT', body: JSON.stringify({ name, description }) });
 
 export const deleteLibrary = (id: number) => api<void>(`/libraries/${id}`, { method: 'DELETE' });
+
+export const importNewLibrary = (name: string, description: string | null, entries: ImportEntry[]) =>
+  api<LibraryImportResult>('/libraries/import', {
+    method: 'POST',
+    body: JSON.stringify({ name, description, entries }),
+  });
