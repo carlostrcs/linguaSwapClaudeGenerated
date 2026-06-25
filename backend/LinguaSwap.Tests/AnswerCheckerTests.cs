@@ -1,3 +1,4 @@
+using System.Text;
 using LinguaSwap.Api.Services;
 using Xunit;
 
@@ -18,12 +19,31 @@ public class AnswerCheckerTests
     }
 
     [Theory]
+    [InlineData("camión", "camion")]
     [InlineData("café", "cafe")]
     [InlineData("piñata", "pinata")]
-    [InlineData("gracián", "gracian")]
-    public void Matches_IgnoringAccents(string expected, string actual)
+    public void DoesNotMatch_WhenAccentsMissing(string expected, string actual)
+    {
+        Assert.False(_checker.IsCorrect(expected, actual));
+    }
+
+    [Theory]
+    [InlineData("camión", "camión")]
+    [InlineData("camión", "  CAMIÓN ")]
+    [InlineData("café", "Café")]
+    public void Matches_WhenAccentsPresent(string expected, string actual)
     {
         Assert.True(_checker.IsCorrect(expected, actual));
+    }
+
+    [Fact]
+    public void Matches_PrecomposedAndDecomposedAccents()
+    {
+        const string precomposed = "camión";
+        // Same word typed as base letter + combining accent (a different code-unit sequence).
+        var decomposed = precomposed.Normalize(NormalizationForm.FormD);
+        Assert.NotEqual(precomposed, decomposed);
+        Assert.True(_checker.IsCorrect(precomposed, decomposed));
     }
 
     [Fact]

@@ -14,13 +14,9 @@ const DIFFICULTIES: Difficulty[] = ['Easy', 'Medium', 'Hard'];
 const DIFFICULTY_KEY: Record<Difficulty, string> = { Easy: 'practice.easy', Medium: 'practice.medium', Hard: 'practice.hard' };
 const DIFFICULTY_HINT_KEY: Record<Difficulty, string> = { Easy: 'practice.hintEasy', Medium: 'practice.hintMedium', Hard: 'practice.hintHard' };
 
-// Mirror of the backend AnswerChecker normalization (case- and accent-insensitive).
+// Mirror of the backend AnswerChecker normalization: case-insensitive but accent-sensitive.
 function normalize(value: string): string {
-  return value
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase()
-    .trim();
+  return value.normalize('NFC').toLowerCase().trim();
 }
 
 type Phase = 'setup' | 'playing' | 'done';
