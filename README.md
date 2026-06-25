@@ -38,9 +38,14 @@ npm --prefix frontend run dev
 
 - Multiple user accounts (register / login / manage your profile / delete account)
 - Word libraries with full create/read/update/delete
-- Words with translations across several languages
+- Words with translations across several languages (plus an optional note, shown during practice)
 - Practice a library in a chosen direction with Easy / Medium / Hard difficulty
+  (answer checking is case-insensitive but **accent-sensitive**)
 - Leitner spaced-repetition scheduling
 - Learning statistics
+- **Import** words from a JSON file — into an existing library or as a new one; large files are
+  fine and duplicates are skipped (see `sample-imports/` for examples)
+- **Themes** (Light / Dark / Ocean / Forest) and **UI language** (English / Español), chosen on
+  the Account page
 
 See `CLAUDE.md` for development details and conventions.

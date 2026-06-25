@@ -61,14 +61,16 @@ backend/LinguaSwap.Api/
   Models/        EF Core entities
   Data/          AppDbContext + Migrations + DbSeeder
   Dtos/          request/response shapes
-  Services/      LeitnerService, AnswerChecker, HintService, TokenService
-backend/LinguaSwap.Tests/   xUnit tests for LeitnerService, AnswerChecker, HintService
+  Services/      LeitnerService, AnswerChecker, HintService, TokenService, EntryImport
+backend/LinguaSwap.Tests/   xUnit tests (LeitnerService, AnswerChecker, HintService, EntryImport)
 frontend/src/
   api/           typed fetch wrappers
+  lib/           small helpers (e.g. importFile.ts — parse an import file)
   pages/         Login, Register, Account, Libraries, LibraryEditor, Practice, Stats
-  components/    Layout, ProtectedRoute, EntryForm, HintGuide
+  components/    Layout, ProtectedRoute, EntryForm, HintGuide, ImportPanel
   theme/         ThemeProvider + themes registry (CSS-variable theming)
   i18n/          I18nProvider + translation dictionaries
+sample-imports/  example .json files for testing import (not used by the app at runtime)
 ```
 
 ## Conventions
@@ -78,7 +80,36 @@ frontend/src/
 - Learning is tracked **per direction**: each (Entry, SourceLang, TargetLang) has its own
   `LearningState`. Practice difficulty (Easy/Medium/Hard) controls how much of the answer is
   revealed as a hint; Easy also returns the full answer for live green/red typing feedback.
-- The full build plan lives at `C:\Users\carlo\.claude\plans\i-am-a-first-sorted-origami.md`.
+  A word's `Notes` (if any) are shown on the practice card at every difficulty.
+- **Answer checking** (`AnswerChecker`): trim + case-insensitive but **accent-sensitive**
+  (`camion` ≠ `camión`); normalised to Unicode FormC. Expected text may hold comma-separated
+  acceptable answers. The frontend's Easy-mode live border uses the same rules (`PracticePage`).
+- The full build plan / change history lives at
+  `C:\Users\carlo\.claude\plans\i-am-a-first-sorted-origami.md`.
+
+### Import words (JSON)
+
+- Endpoints: `POST /api/libraries/{id}/import` (into an existing library) and
+  `POST /api/libraries/import` (`{ name, description?, entries }` → create a new library
+  atomically). Both return `{ imported, skipped }`.
+- File format: a bare array **or** `{ "entries": [...] }`; each entry is
+  `{ "translations": { "<lang>": "<text>", ... }, "notes"?: "..." }`.
+- `Services/EntryImport` is the single source of truth: `NormalizeTranslations` (used by manual
+  create/update too), `BuildEntries`, `Signature` + `Deduplicate`. Import **skips duplicates**
+  (same full set of translations, case/space-insensitive) — existing words and within-file repeats.
+  No word-count cap. Validation is **atomic** (any bad entry → 400, nothing imported).
+- UI: the collapsible **Import** panel on the Libraries page (`ImportPanel`, target = existing or
+  new library) plus a per-card **Import** button. Both share `lib/importFile.ts`.
+
+## Dev gotchas (Windows / this environment)
+
+- **Stop the running API before `dotnet build`/`dotnet test`** — a running `LinguaSwap.Api`
+  locks `bin/...exe` and the build fails with MSB3027/MSB3021. Free port 5299 first
+  (e.g. `npx kill-port 5299`) or stop the process.
+- **git commit messages:** PowerShell mangles inner double-quotes when passing to native git;
+  for multi-line or quoted messages write the message to a file and use `git commit -F <file>`.
+- The frontend dev server falls back to **5174** if 5173 is busy, but CORS only allows **5173** —
+  run a single frontend instance.
 
 ### Theming & i18n (frontend)
 

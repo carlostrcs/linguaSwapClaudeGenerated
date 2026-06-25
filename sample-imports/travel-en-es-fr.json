@@ -1,0 +1,22 @@
+[
+  { "translations": { "en": "airport", "es": "aeropuerto", "fr": "aéroport" } },
+  { "translations": { "en": "train", "es": "tren", "fr": "train" } },
+  { "translations": { "en": "ticket", "es": "billete", "fr": "billet" } },
+  { "translations": { "en": "hotel", "es": "hotel", "fr": "hôtel" } },
+  { "translations": { "en": "station", "es": "estación", "fr": "gare" } },
+  { "translations": { "en": "luggage", "es": "equipaje", "fr": "bagage" } },
+  { "translations": { "en": "passport", "es": "pasaporte", "fr": "passeport" }, "notes": "travel document" },
+  { "translations": { "en": "map", "es": "mapa", "fr": "carte" } },
+  { "translations": { "en": "street", "es": "calle", "fr": "rue" } },
+  { "translations": { "en": "beach", "es": "playa", "fr": "plage" } },
+  { "translations": { "en": "restaurant", "es": "restaurante", "fr": "restaurant" } },
+  { "translations": { "en": "menu", "es": "menú", "fr": "menu" } },
+  { "translations": { "en": "bill", "es": "cuenta", "fr": "addition" }, "notes": "at a restaurant" },
+  { "translations": { "en": "left", "es": "izquierda", "fr": "gauche" } },
+  { "translations": { "en": "right", "es": "derecha", "fr": "droite" } },
+  { "translations": { "en": "near", "es": "cerca", "fr": "près" } },
+  { "translations": { "en": "far", "es": "lejos", "fr": "loin" } },
+  { "translations": { "en": "today", "es": "hoy", "fr": "aujourd'hui" } },
+  { "translations": { "en": "tomorrow", "es": "mañana", "fr": "demain" } },
+  { "translations": { "en": "help", "es": "ayuda", "fr": "aide" } }
+]

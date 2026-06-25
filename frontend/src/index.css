@@ -300,7 +300,7 @@ select { text-transform: uppercase; }
   font-family: inherit;
 }
 .import-header h2 { margin: 0; }
-.import-header .chevron { color: var(--muted); font-size: 0.9rem; }
+.import-header .chevron { color: var(--muted); font-size: 1.6rem; line-height: 1; }
 .import-body { margin-top: 1rem; }
 
 .dropzone {

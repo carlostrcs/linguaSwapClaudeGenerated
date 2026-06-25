@@ -1,0 +1,5 @@
+[
+  { "translations": { "en": "valid", "es": "válido" } },
+  { "translations": {} },
+  { "translations": { "EN": "duplicate", "en": "language" } }
+]

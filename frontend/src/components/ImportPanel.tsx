@@ -101,14 +101,14 @@ export default function ImportPanel({ libraries }: Props) {
   const canImport = entries !== null && (target !== 'new' || newName.trim().length > 0) && !mutation.isPending;
 
   return (
-    <div className="card">
-      <button type="button" className="import-header" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+    <div className="card" onClick={() => setOpen((o) => !o)}>
+      <button type="button" className="import-header" aria-expanded={open}>
         <h2>{t('import.title')}</h2>
         <span className="chevron" aria-hidden="true">{open ? '▾' : '▸'}</span>
       </button>
 
       {open && (
-      <div className="import-body">
+      <div className="import-body" onClick={(e) => e.stopPropagation()}>
       {msg && <p className="alert alert-success">{msg}</p>}
       {err && <p className="alert alert-error">{err}</p>}
 

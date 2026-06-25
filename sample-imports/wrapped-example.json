@@ -1,0 +1,10 @@
+{
+  "entries": [
+    { "translations": { "en": "red", "es": "rojo" } },
+    { "translations": { "en": "blue", "es": "azul" } },
+    { "translations": { "en": "green", "es": "verde" } },
+    { "translations": { "en": "yellow", "es": "amarillo" } },
+    { "translations": { "en": "black", "es": "negro" } },
+    { "translations": { "en": "white", "es": "blanco" } }
+  ]
+}
