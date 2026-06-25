@@ -33,6 +33,7 @@ export default function ImportPanel({ libraries }: Props) {
   const [dragOver, setDragOver] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
 
   const reset = () => {
     setEntries(null);
@@ -101,7 +102,13 @@ export default function ImportPanel({ libraries }: Props) {
 
   return (
     <div className="card">
-      <h2>{t('import.title')}</h2>
+      <button type="button" className="import-header" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+        <h2>{t('import.title')}</h2>
+        <span className="chevron" aria-hidden="true">{open ? '▾' : '▸'}</span>
+      </button>
+
+      {open && (
+      <div className="import-body">
       {msg && <p className="alert alert-success">{msg}</p>}
       {err && <p className="alert alert-error">{err}</p>}
 
@@ -165,6 +172,8 @@ export default function ImportPanel({ libraries }: Props) {
           {t('libraries.downloadExample')}
         </button>
       </details>
+      </div>
+      )}
     </div>
   );
 }
