@@ -39,11 +39,13 @@ export interface ImportEntry {
 
 export interface ImportResult {
   imported: number;
+  skipped: number;
 }
 
 export interface LibraryImportResult {
   library: LibrarySummary;
   imported: number;
+  skipped: number;
 }
 
 export type Difficulty = 'Easy' | 'Medium' | 'Hard';

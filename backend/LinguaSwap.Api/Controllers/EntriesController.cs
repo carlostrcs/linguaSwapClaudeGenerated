@@ -110,10 +110,19 @@ public class EntriesController(AppDbContext db) : ControllerBase
         if (errors.Count > 0)
             return BadRequest(new { message = "Some entries are invalid; nothing was imported.", errors });
 
-        foreach (var entry in entries) entry.LibraryId = libraryId;
-        db.Entries.AddRange(entries);
+        // Skip words already in this library (and repeats within the file).
+        var existingSignatures = (await db.Entries
+                .Where(e => e.LibraryId == libraryId)
+                .Select(e => e.Translations.Select(t => new TranslationDto(t.LanguageCode, t.Text)).ToList())
+                .ToListAsync())
+            .Select(list => EntryImport.Signature(list.Select(d => (d.LanguageCode, d.Text))))
+            .ToHashSet();
+
+        var (kept, skipped) = EntryImport.Deduplicate(entries, existingSignatures);
+        foreach (var entry in kept) entry.LibraryId = libraryId;
+        db.Entries.AddRange(kept);
         await db.SaveChangesAsync();
-        return Ok(new ImportResult(entries.Count));
+        return Ok(new ImportResult(kept.Count, skipped));
     }
 
     [HttpDelete("entries/{id:int}")]

@@ -49,4 +49,31 @@ public static class EntryImport
         }
         return (entries, errors);
     }
+
+    /// <summary>
+    /// A canonical key for an entry's translations: order-, case- and whitespace-insensitive.
+    /// Two entries with the same set of (language, text) pairs share a signature. Notes are ignored.
+    /// </summary>
+    public static string Signature(IEnumerable<(string Lang, string Text)> translations) =>
+        string.Join("|", translations
+            .Select(t => t.Lang.Trim().ToLowerInvariant() + "=" + t.Text.Trim().ToLowerInvariant())
+            .OrderBy(s => s, StringComparer.Ordinal));
+
+    /// <summary>
+    /// Drops entries that duplicate an existing one (via <paramref name="existingSignatures"/>) or
+    /// an earlier entry in the same batch. Returns the entries to keep and how many were skipped.
+    /// </summary>
+    public static (List<Entry> Kept, int Skipped) Deduplicate(IReadOnlyList<Entry> built, ISet<string> existingSignatures)
+    {
+        var seen = new HashSet<string>(existingSignatures);
+        var kept = new List<Entry>();
+        var skipped = 0;
+        foreach (var entry in built)
+        {
+            var signature = Signature(entry.Translations.Select(t => (t.LanguageCode, t.Text)));
+            if (seen.Add(signature)) kept.Add(entry);
+            else skipped++;
+        }
+        return (kept, skipped);
+    }
 }

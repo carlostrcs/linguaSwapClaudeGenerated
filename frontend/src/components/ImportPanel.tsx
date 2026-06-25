@@ -67,7 +67,11 @@ export default function ImportPanel({ libraries }: Props) {
     onSuccess: (res) => {
       const name = target === 'new' ? newName.trim() : libraries.find((l) => l.id === Number(target))?.name ?? '';
       setErr(null);
-      setMsg(t('libraries.importSuccess', { count: res.imported, name }));
+      setMsg(
+        res.skipped > 0
+          ? t('libraries.importSuccessSkipped', { count: res.imported, skipped: res.skipped, name })
+          : t('libraries.importSuccess', { count: res.imported, name }),
+      );
       qc.invalidateQueries({ queryKey: ['libraries'] });
       if (target !== 'new') qc.invalidateQueries({ queryKey: ['entries', Number(target)] });
       reset();

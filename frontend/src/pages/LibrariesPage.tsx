@@ -52,7 +52,12 @@ export default function LibrariesPage() {
     mutationFn: (vars: { libraryId: number; entries: ImportEntry[] }) => importEntries(vars.libraryId, vars.entries),
     onSuccess: (res, vars) => {
       setImportErr(null);
-      setImportMsg(t('libraries.importSuccess', { count: res.imported, name: importTarget.current?.name ?? '' }));
+      const name = importTarget.current?.name ?? '';
+      setImportMsg(
+        res.skipped > 0
+          ? t('libraries.importSuccessSkipped', { count: res.imported, skipped: res.skipped, name })
+          : t('libraries.importSuccess', { count: res.imported, name }),
+      );
       qc.invalidateQueries({ queryKey: ['libraries'] });
       qc.invalidateQueries({ queryKey: ['entries', vars.libraryId] });
     },

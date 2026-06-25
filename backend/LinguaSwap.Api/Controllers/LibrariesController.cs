@@ -65,18 +65,21 @@ public class LibrariesController(AppDbContext db) : ControllerBase
         if (errors.Count > 0)
             return BadRequest(new { message = "Some entries are invalid; nothing was imported.", errors });
 
+        // New library starts empty, so dedup only collapses repeats within the file.
+        var (kept, skipped) = EntryImport.Deduplicate(entries, new HashSet<string>());
+
         var lib = new Library
         {
             UserId = User.GetUserId(),
             Name = req.Name.Trim(),
             Description = req.Description?.Trim(),
-            Entries = entries,
+            Entries = kept,
         };
         db.Libraries.Add(lib);
         await db.SaveChangesAsync();
 
-        var summary = new LibrarySummary(lib.Id, lib.Name, lib.Description, lib.CreatedAt, entries.Count);
-        return Ok(new LibraryImportResult(summary, entries.Count));
+        var summary = new LibrarySummary(lib.Id, lib.Name, lib.Description, lib.CreatedAt, kept.Count);
+        return Ok(new LibraryImportResult(summary, kept.Count, skipped));
     }
 
     [HttpPut("{id:int}")]

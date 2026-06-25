@@ -9,7 +9,7 @@ public record ImportRequest(List<ImportEntryDto> Entries);
 
 public record ImportError(int Index, string Message);
 
-public record ImportResult(int Imported);
+public record ImportResult(int Imported, int Skipped);
 
 /// <summary>Create a brand-new library and import the file's entries into it atomically.</summary>
 public record CreateLibraryImportRequest(
@@ -17,4 +17,4 @@ public record CreateLibraryImportRequest(
     [MaxLength(2000)] string? Description,
     List<ImportEntryDto> Entries);
 
-public record LibraryImportResult(LibrarySummary Library, int Imported);
+public record LibraryImportResult(LibrarySummary Library, int Imported, int Skipped);
