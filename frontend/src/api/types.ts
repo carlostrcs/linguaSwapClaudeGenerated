@@ -32,6 +32,15 @@ export interface EntryDto {
   translations: TranslationDto[];
 }
 
+export interface ImportEntry {
+  translations: Record<string, string>;
+  notes?: string | null;
+}
+
+export interface ImportResult {
+  imported: number;
+}
+
 export type Difficulty = 'Easy' | 'Medium' | 'Hard';
 
 export interface PracticeWord {

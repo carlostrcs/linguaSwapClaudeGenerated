@@ -13,6 +13,8 @@ namespace LinguaSwap.Api.Controllers;
 [Authorize]
 public class EntriesController(AppDbContext db) : ControllerBase
 {
+    private const int MaxImport = 500;
+
     [HttpGet("libraries/{libraryId:int}/entries")]
     public async Task<IActionResult> ListForLibrary(int libraryId)
     {
@@ -92,6 +94,48 @@ public class EntriesController(AppDbContext db) : ControllerBase
 
         await db.SaveChangesAsync();
         return Ok(ToDto(entry));
+    }
+
+    [HttpPost("libraries/{libraryId:int}/import")]
+    public async Task<IActionResult> Import(int libraryId, ImportRequest req)
+    {
+        var userId = User.GetUserId();
+        if (!await db.Libraries.AnyAsync(l => l.Id == libraryId && l.UserId == userId))
+            return NotFound();
+
+        var items = req.Entries ?? [];
+        if (items.Count == 0)
+            return BadRequest(new { message = "The file contained no entries." });
+        if (items.Count > MaxImport)
+            return BadRequest(new { message = $"Too many entries (maximum {MaxImport})." });
+
+        var errors = new List<ImportError>();
+        var toCreate = new List<Entry>();
+        for (var i = 0; i < items.Count; i++)
+        {
+            var translations = (items[i].Translations ?? [])
+                .Select(kv => new TranslationDto(kv.Key, kv.Value));
+            var normalized = Normalize(translations);
+            if (normalized is null || normalized.Count == 0)
+            {
+                errors.Add(new ImportError(i, "Each entry needs at least one language with text, and no repeated language."));
+                continue;
+            }
+            toCreate.Add(new Entry
+            {
+                LibraryId = libraryId,
+                Notes = items[i].Notes?.Trim(),
+                Translations = normalized.Select(t => new Translation { LanguageCode = t.Key, Text = t.Value }).ToList()
+            });
+        }
+
+        // Atomic: if anything is invalid, import nothing and report the offending rows.
+        if (errors.Count > 0)
+            return BadRequest(new { message = "Some entries are invalid; nothing was imported.", errors });
+
+        db.Entries.AddRange(toCreate);
+        await db.SaveChangesAsync();
+        return Ok(new ImportResult(toCreate.Count));
     }
 
     [HttpDelete("entries/{id:int}")]
