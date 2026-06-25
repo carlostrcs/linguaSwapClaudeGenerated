@@ -127,7 +127,6 @@ a:hover { text-decoration: underline; }
 
 label { display: block; margin-bottom: 0.75rem; font-size: 0.9rem; color: var(--muted); }
 input, select {
-  display: block;
   width: 100%;
   margin-top: 0.25rem;
   padding: 0.55rem 0.7rem;
@@ -225,6 +224,8 @@ select { text-transform: uppercase; }
 .practice-card { text-align: center; }
 .prompt-label { text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; color: var(--muted); }
 .prompt-word { font-size: 2rem; font-weight: 700; margin: 0.5rem 0 1.25rem; }
+/* tuck the note just under the prompt word (keeps the no-note layout unchanged) */
+.prompt-note { color: var(--muted); font-size: 0.9rem; font-style: italic; margin: -0.9rem 0 1.25rem; }
 
 .hint-guide { display: flex; justify-content: center; flex-wrap: wrap; gap: 0.3rem; margin-bottom: 1.25rem; }
 .hint-box {

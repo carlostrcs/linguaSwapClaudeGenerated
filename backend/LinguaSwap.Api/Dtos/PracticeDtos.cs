@@ -16,7 +16,8 @@ public record PracticeWordDto(
     string Prompt,
     string Hint,
     int AnswerLength,
-    string? ExpectedAnswer);
+    string? ExpectedAnswer,
+    string? Notes);
 
 public record StartSessionResponse(
     int SessionId,

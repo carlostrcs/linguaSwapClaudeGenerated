@@ -77,7 +77,7 @@ public class PracticeController(
             var hint = hintService.BuildHint(primary, req.Difficulty);
             var length = req.Difficulty == Difficulty.Hard ? 0 : primary.Length;
             var expectedForClient = req.Difficulty == Difficulty.Easy ? primary : null;
-            return new PracticeWordDto(c.Entry.Id, c.Prompt, hint, length, expectedForClient);
+            return new PracticeWordDto(c.Entry.Id, c.Prompt, hint, length, expectedForClient, c.Entry.Notes);
         }).ToList();
 
         return Ok(new StartSessionResponse(session.Id, req.Difficulty, src, tgt, words));

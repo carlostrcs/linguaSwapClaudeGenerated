@@ -56,6 +56,7 @@ export interface PracticeWord {
   hint: string;
   answerLength: number;
   expectedAnswer?: string | null;
+  notes?: string | null;
 }
 
 export interface StartSessionResponse {

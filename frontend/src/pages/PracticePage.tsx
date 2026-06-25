@@ -233,6 +233,7 @@ export default function PracticePage() {
           {session.sourceLanguage} → {session.targetLanguage}
         </div>
         <div className="prompt-word">{current.prompt}</div>
+        {current.notes && <div className="prompt-note">{current.notes}</div>}
 
         {difficulty !== 'Hard' && current.hint && <HintGuide hint={current.hint} />}
 
