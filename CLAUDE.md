@@ -134,6 +134,39 @@ sample-imports/  example .json files for testing import (not used by the app at 
 - The seeded **demo user is premium** (and `DbSeeder` upgrades an existing demo account on
   startup) so every feature is testable without paying.
 
+#### Going live (Stripe test → production)
+
+> **Current state (as of 2026-06-27):** billing is fully implemented and running in **Stripe
+> test mode**. Going live is **config + infra + dashboard**, *not a code change* — every Stripe
+> value is read from config. The only code edit is the hardcoded CORS origin. Do these when the
+> user asks to "go to production":
+
+1. **Activate the Stripe account** for live payments (business details + bank account); create
+   everything below with **Test mode OFF**.
+2. **Live secret key** → set `Stripe:SecretKey` to `sk_live_…` (replaces `sk_test_…`).
+3. **Live Price** → recreate the Product + recurring Price in live mode; set `Stripe:PriceId`
+   to the new live `price_…` (test price IDs are invalid under live keys).
+4. **Live webhook** → Dashboard (live) → add endpoint `https://<domain>/api/billing/webhook`
+   for events `checkout.session.completed`, `customer.subscription.deleted`,
+   `customer.subscription.updated`; copy its `whsec_…` into `Stripe:WebhookSecret` (the Stripe
+   CLI `whsec_` is dev-only).
+5. **FrontendBaseUrl** → set to the real public site (e.g. `https://app.example.com`); it drives
+   the Checkout `SuccessUrl`/`CancelUrl` (currently `http://localhost:5173`).
+6. **HTTPS everywhere** → live Stripe + real cards require it and the webhook must be public
+   HTTPS. Serve API + frontend over HTTPS at the host/reverse-proxy (dev is HTTP, no redirect).
+7. **CORS** → add the production origin in `Program.cs` (currently hardcoded to
+   `http://localhost:5173`). *This is the one code edit; optionally refactor it to read from config.*
+8. **Prod secret storage** → NOT `dotnet user-secrets` (dev only). Use the host's env vars /
+   secrets manager; ASP.NET maps `Stripe__SecretKey`, `Stripe__WebhookSecret`, `Stripe__PriceId`,
+   `FrontendBaseUrl`. **Never commit live keys.**
+9. **Customer Portal** → configure it in **live** mode (Settings → Billing → Customer portal) or
+   `POST /api/billing/portal` errors.
+10. **Data note** → test customers/subscriptions don't migrate; existing
+    `StripeCustomerId`/`StripeSubscriptionId` rows are test-mode and meaningless under live keys.
+
+Both grant paths work unchanged under live keys: the `/billing/success` → `/billing/confirm`
+return path and the signature-verified `/billing/webhook`.
+
 ## Dev gotchas (Windows / this environment)
 
 - **Stop the running API before `dotnet build`/`dotnet test`** — a running `LinguaSwap.Api`
