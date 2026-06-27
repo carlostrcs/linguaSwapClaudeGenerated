@@ -57,11 +57,12 @@ vars for anything real. Password rules are relaxed (6+ chars) for learning conve
 
 ```
 backend/LinguaSwap.Api/
-  Controllers/   API endpoints (Auth, Account, Libraries, Entries, Practice, Stats, Health)
+  Controllers/   API endpoints (Auth, Account, Libraries, Entries, Practice, Stats, Billing, Health)
   Models/        EF Core entities
   Data/          AppDbContext + Migrations + DbSeeder
   Dtos/          request/response shapes
-  Services/      LeitnerService, AnswerChecker, HintService, TokenService, EntryImport
+  Services/      LeitnerService, AnswerChecker, HintService, TokenService, EntryImport,
+                 PremiumService (gating rules), StripeService (subscription billing)
 backend/LinguaSwap.Tests/   xUnit tests (LeitnerService, AnswerChecker, HintService, EntryImport)
 frontend/src/
   api/           typed fetch wrappers
@@ -100,6 +101,38 @@ sample-imports/  example .json files for testing import (not used by the app at 
   No word-count cap. Validation is **atomic** (any bad entry → 400, nothing imported).
 - UI: the collapsible **Import** panel on the Libraries page (`ImportPanel`, target = existing or
   new library) plus a per-card **Import** button. Both share `lib/importFile.ts`.
+- **Import is a premium feature** — both endpoints return `403` for free users and the UI is
+  replaced with an upgrade prompt. See _Premium & billing_ below.
+
+### Premium & billing (Stripe)
+
+- Two tiers via `ApplicationUser.IsPremium` (+ `StripeCustomerId`, `StripeSubscriptionId`).
+  **The DB is authoritative for every gate** — we never put premium in the JWT (a claim would go
+  stale on upgrade/cancel). The frontend mirrors `isPremium` into `AuthUser`/`Account` only to
+  show/hide UI; the API still enforces with `403`.
+- **Gates** (all enforced server-side via `Services/PremiumService`, surfaced as `403 { message }`):
+  - Word import (both endpoints) — premium only.
+  - Library count — free users max `FreeLibraryLimit` (**5**) libraries.
+  - Words per library — free users max `FreeWordsPerLibrary` (**500**); checked on manual add.
+  - Advanced stats — `GET /api/stats/libraries/{id}` is premium; `GET /api/stats/overview`
+    returns an empty `perLibrary` for free users (top-line summary stays free).
+  - Extra themes — `ocean`/`forest` are `premium: true` in `theme/themes.ts`; gate is cosmetic
+    and client-side (the Account theme picker locks them; downgrades reset to the default theme).
+- **Subscription flow** (Stripe Checkout `mode=subscription`): `BillingController` →
+  `POST /api/billing/checkout` returns a hosted URL; the browser redirects there. On return,
+  `/billing/success` calls `POST /api/billing/confirm` (dev-friendly: re-reads the session and
+  grants premium without webhook infra). The production-correct path is the signature-verified
+  `POST /api/billing/webhook` (`checkout.session.completed` → grant;
+  `customer.subscription.deleted`/lapsed `updated` → revoke). `POST /api/billing/portal` opens the
+  Stripe Customer Portal to manage/cancel.
+- **Config:** `Stripe:SecretKey`, `Stripe:WebhookSecret`, `Stripe:PriceId`, and `FrontendBaseUrl`
+  in `appsettings.json` (empty placeholders — supply real **test** values via `dotnet user-secrets`
+  or a gitignored `appsettings.Development.json`; **never commit real keys**). `StripeConfiguration.ApiKey`
+  is set once in `Program.cs`.
+- **Local webhook testing:** `stripe listen --forward-to localhost:5299/api/billing/webhook`
+  prints the `whsec_…` to use as `Stripe:WebhookSecret`. Test card: `4242 4242 4242 4242`.
+- The seeded **demo user is premium** (and `DbSeeder` upgrades an existing demo account on
+  startup) so every feature is testable without paying.
 
 ## Dev gotchas (Windows / this environment)
 

@@ -4,12 +4,14 @@ export interface AuthResponse {
   userId: string;
   email: string;
   displayName?: string | null;
+  isPremium: boolean;
 }
 
 export interface Account {
   userId: string;
   email: string;
   displayName?: string | null;
+  isPremium: boolean;
 }
 
 export interface LibrarySummary {

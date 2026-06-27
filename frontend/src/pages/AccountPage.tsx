@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { changePassword, deleteAccount, getAccount, updateAccount } from '../api/account';
+import { createCheckoutSession, openPortal } from '../api/billing';
 import { ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import { useTheme } from '../theme/ThemeProvider';
-import { THEMES } from '../theme/themes';
+import { DEFAULT_THEME, isPremiumTheme, THEMES } from '../theme/themes';
 import { useI18n } from '../i18n/I18nProvider';
 import { LANGUAGES } from '../i18n/translations';
 import type { LanguageId } from '../i18n/translations';
@@ -28,6 +29,25 @@ export default function AccountPage() {
   const [pwMsg, setPwMsg] = useState<string | null>(null);
   const [pwErr, setPwErr] = useState<string | null>(null);
 
+  const [billingErr, setBillingErr] = useState<string | null>(null);
+  const isPremium = account.data?.isPremium ?? false;
+
+  // Both Stripe actions redirect the browser to a Stripe-hosted page.
+  const upgrade = useMutation({
+    mutationFn: createCheckoutSession,
+    onSuccess: ({ url }) => {
+      window.location.href = url;
+    },
+    onError: (e) => setBillingErr(e instanceof ApiError ? e.message : t('premium.upgradeFailed')),
+  });
+  const portal = useMutation({
+    mutationFn: openPortal,
+    onSuccess: ({ url }) => {
+      window.location.href = url;
+    },
+    onError: (e) => setBillingErr(e instanceof ApiError ? e.message : t('premium.portalFailed')),
+  });
+
   useEffect(() => {
     if (account.data) {
       setEmail(account.data.email);
@@ -35,13 +55,25 @@ export default function AccountPage() {
     }
   }, [account.data]);
 
+  // Free users can't keep a premium theme selected (e.g. after a downgrade).
+  useEffect(() => {
+    if (account.data && !account.data.isPremium && isPremiumTheme(theme)) {
+      setTheme(DEFAULT_THEME);
+    }
+  }, [account.data, theme, setTheme]);
+
   const onSaveProfile = async (e: FormEvent) => {
     e.preventDefault();
     setProfileMsg(null);
     setProfileErr(null);
     try {
       const updated = await updateAccount(email.trim(), displayName.trim() || null);
-      updateUser({ userId: updated.userId, email: updated.email, displayName: updated.displayName });
+      updateUser({
+        userId: updated.userId,
+        email: updated.email,
+        displayName: updated.displayName,
+        isPremium: updated.isPremium,
+      });
       setProfileMsg(t('account.profileUpdated'));
     } catch (err) {
       setProfileErr(err instanceof ApiError ? err.message : t('account.profileFailed'));
@@ -78,16 +110,66 @@ export default function AccountPage() {
       <h1>{t('account.title')}</h1>
 
       <div className="card">
+        <h2>{t('premium.title')}</h2>
+        {billingErr && <p className="alert alert-error">{billingErr}</p>}
+        {isPremium ? (
+          <>
+            <p>
+              <span className="premium-badge">{t('premium.badge')}</span> {t('premium.activeDesc')}
+            </p>
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={() => {
+                setBillingErr(null);
+                portal.mutate();
+              }}
+              disabled={portal.isPending}
+            >
+              {t('premium.manage')}
+            </button>
+          </>
+        ) : (
+          <>
+            <p className="muted">{t('premium.freeDesc')}</p>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => {
+                setBillingErr(null);
+                upgrade.mutate();
+              }}
+              disabled={upgrade.isPending}
+            >
+              {upgrade.isPending ? t('premium.redirecting') : t('premium.upgrade')}
+            </button>
+          </>
+        )}
+      </div>
+
+      <div className="card">
         <h2>{t('account.preferences')}</h2>
         <div className="pref-row">
           <label>
             {t('account.theme')}
-            <select className="pref-select" value={theme} onChange={(e) => setTheme(e.target.value)}>
-              {THEMES.map((opt) => (
-                <option key={opt.id} value={opt.id}>
-                  {t(opt.labelKey)}
-                </option>
-              ))}
+            <select
+              className="pref-select"
+              value={theme}
+              onChange={(e) => {
+                const next = e.target.value;
+                if (isPremiumTheme(next) && !isPremium) return;
+                setTheme(next);
+              }}
+            >
+              {THEMES.map((opt) => {
+                const locked = (opt.premium ?? false) && !isPremium;
+                return (
+                  <option key={opt.id} value={opt.id} disabled={locked}>
+                    {t(opt.labelKey)}
+                    {opt.premium ? ` (${t('premium.badge')})` : ''}
+                  </option>
+                );
+              })}
             </select>
           </label>
           <label>

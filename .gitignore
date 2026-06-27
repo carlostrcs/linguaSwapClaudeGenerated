@@ -27,3 +27,7 @@ Thumbs.db
 .env.*
 !.env.example
 appsettings.*.local.json
+# Environment-specific config can hold real secrets (Stripe keys, etc.) — keep it local.
+# Real secrets belong in `dotnet user-secrets`, never in the repo.
+appsettings.Development.json
+appsettings.Production.json

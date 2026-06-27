@@ -6,6 +6,8 @@ import { getLibrary } from '../api/libraries';
 import { ApiError } from '../api/client';
 import type { EntryDto, TranslationDto } from '../api/types';
 import EntryForm from '../components/EntryForm';
+import { useAuth } from '../auth/AuthContext';
+import { FREE_WORDS_PER_LIBRARY } from '../lib/premium';
 import { useI18n } from '../i18n/I18nProvider';
 
 export default function LibraryEditorPage() {
@@ -13,6 +15,8 @@ export default function LibraryEditorPage() {
   const libraryId = Number(id);
   const qc = useQueryClient();
   const { t } = useI18n();
+  const { user } = useAuth();
+  const isPremium = user?.isPremium ?? false;
 
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<EntryDto | null>(null);
@@ -20,6 +24,9 @@ export default function LibraryEditorPage() {
 
   const library = useQuery({ queryKey: ['library', libraryId], queryFn: () => getLibrary(libraryId), enabled: Number.isFinite(libraryId) });
   const entries = useQuery({ queryKey: ['entries', libraryId], queryFn: () => listEntries(libraryId), enabled: Number.isFinite(libraryId) });
+
+  const wordCount = entries.data?.length ?? 0;
+  const atWordLimit = !isPremium && wordCount >= FREE_WORDS_PER_LIBRARY;
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ['entries', libraryId] });
@@ -57,13 +64,33 @@ export default function LibraryEditorPage() {
 
       <div className="card">
         <div className="section-head">
-          <h2>{t('editor.words')}</h2>
+          <h2>
+            {t('editor.words')}
+            {!isPremium && (
+              <span className="muted small">
+                {' '}
+                {t('premium.wordCount', { count: wordCount, max: FREE_WORDS_PER_LIBRARY })}
+              </span>
+            )}
+          </h2>
           {!adding && !editing && (
-            <button type="button" className="btn btn-primary" onClick={() => { setAdding(true); setFormError(null); }}>
+            <button
+              type="button"
+              className="btn btn-primary"
+              disabled={atWordLimit}
+              onClick={() => { setAdding(true); setFormError(null); }}
+            >
               {t('editor.addWord')}
             </button>
           )}
         </div>
+
+        {atWordLimit && !adding && (
+          <p className="alert alert-error">
+            {t('premium.wordLimitReached', { max: FREE_WORDS_PER_LIBRARY })}{' '}
+            <Link to="/account">{t('premium.upgradeLink')}</Link>
+          </p>
+        )}
 
         {adding && (
           <EntryForm

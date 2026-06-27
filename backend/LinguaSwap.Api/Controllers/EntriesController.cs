@@ -11,7 +11,7 @@ namespace LinguaSwap.Api.Controllers;
 [ApiController]
 [Route("api")]
 [Authorize]
-public class EntriesController(AppDbContext db) : ControllerBase
+public class EntriesController(AppDbContext db, PremiumService premium) : ControllerBase
 {
     [HttpGet("libraries/{libraryId:int}/entries")]
     public async Task<IActionResult> ListForLibrary(int libraryId)
@@ -49,6 +49,16 @@ public class EntriesController(AppDbContext db) : ControllerBase
         var userId = User.GetUserId();
         if (!await db.Libraries.AnyAsync(l => l.Id == libraryId && l.UserId == userId))
             return NotFound();
+
+        if (!await premium.IsPremiumAsync(userId)
+            && await db.Entries.CountAsync(e => e.LibraryId == libraryId) >= PremiumService.FreeWordsPerLibrary)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new
+            {
+                message = $"Free accounts are limited to {PremiumService.FreeWordsPerLibrary} words per library. " +
+                          "Upgrade to premium for unlimited words."
+            });
+        }
 
         var translations = EntryImport.NormalizeTranslations(req.Translations);
         if (translations is null) return BadRequest(new { message = "Each language can appear at most once." });
@@ -98,6 +108,10 @@ public class EntriesController(AppDbContext db) : ControllerBase
     public async Task<IActionResult> Import(int libraryId, ImportRequest req)
     {
         var userId = User.GetUserId();
+        if (!await premium.IsPremiumAsync(userId))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new { message = "Importing words is a premium feature." });
+
         if (!await db.Libraries.AnyAsync(l => l.Id == libraryId && l.UserId == userId))
             return NotFound();
 

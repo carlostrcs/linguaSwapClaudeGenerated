@@ -17,7 +17,7 @@ public class AccountController(UserManager<ApplicationUser> users) : ControllerB
     {
         var user = await users.FindByIdAsync(User.GetUserId());
         if (user is null) return NotFound();
-        return Ok(new AccountResponse(user.Id, user.Email!, user.DisplayName));
+        return Ok(new AccountResponse(user.Id, user.Email!, user.DisplayName, user.IsPremium));
     }
 
     [HttpPut]
@@ -42,7 +42,7 @@ public class AccountController(UserManager<ApplicationUser> users) : ControllerB
         if (!update.Succeeded)
             return BadRequest(new { errors = update.Errors.Select(e => e.Description) });
 
-        return Ok(new AccountResponse(user.Id, user.Email!, user.DisplayName));
+        return Ok(new AccountResponse(user.Id, user.Email!, user.DisplayName, user.IsPremium));
     }
 
     [HttpPut("password")]

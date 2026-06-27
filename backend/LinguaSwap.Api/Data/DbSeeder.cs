@@ -19,15 +19,28 @@ public static class DbSeeder
         var db = services.GetRequiredService<AppDbContext>();
         var users = services.GetRequiredService<UserManager<ApplicationUser>>();
 
-        // Only seed when there are no users yet.
-        if (await db.Users.AnyAsync()) return;
+        // Only do the full seed when there are no users yet. On an existing database
+        // (e.g. created before premium existed) just make sure the demo account is premium
+        // so every feature stays testable without paying.
+        if (await db.Users.AnyAsync())
+        {
+            var existingDemo = await users.FindByEmailAsync(DemoEmail);
+            if (existingDemo is not null && !existingDemo.IsPremium)
+            {
+                existingDemo.IsPremium = true;
+                await users.UpdateAsync(existingDemo);
+            }
+            return;
+        }
 
         var demo = new ApplicationUser
         {
             UserName = DemoEmail,
             Email = DemoEmail,
             DisplayName = "Demo User",
-            EmailConfirmed = true
+            EmailConfirmed = true,
+            // The demo account is premium so it can exercise every feature without paying.
+            IsPremium = true
         };
         var created = await users.CreateAsync(demo, DemoPassword);
         if (!created.Succeeded) return;

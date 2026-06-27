@@ -8,12 +8,19 @@ import { ApiError } from '../api/client';
 import type { ImportEntry } from '../api/types';
 import { parseImportFile } from '../lib/importFile';
 import ImportPanel from '../components/ImportPanel';
+import { useAuth } from '../auth/AuthContext';
+import { FREE_LIBRARY_LIMIT } from '../lib/premium';
 import { useI18n } from '../i18n/I18nProvider';
 
 export default function LibrariesPage() {
   const qc = useQueryClient();
   const { t } = useI18n();
   const { data: libraries, isLoading, isError } = useQuery({ queryKey: ['libraries'], queryFn: listLibraries });
+
+  const { user } = useAuth();
+  const isPremium = user?.isPremium ?? false;
+  const libraryCount = libraries?.length ?? 0;
+  const atLibraryLimit = !isPremium && libraryCount >= FREE_LIBRARY_LIMIT;
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -73,6 +80,10 @@ export default function LibrariesPage() {
       setFormError(t('libraries.nameRequired'));
       return;
     }
+    if (atLibraryLimit) {
+      setFormError(t('premium.libraryLimitReached', { max: FREE_LIBRARY_LIMIT }));
+      return;
+    }
     create.mutate();
   };
 
@@ -114,17 +125,38 @@ export default function LibrariesPage() {
 
       <form className="card create-form" onSubmit={onCreate}>
         <h2>{t('libraries.new')}</h2>
+        {!isPremium && (
+          <p className="muted small">{t('premium.libraryCount', { count: libraryCount, max: FREE_LIBRARY_LIMIT })}</p>
+        )}
         {formError && <p className="alert alert-error">{formError}</p>}
+        {atLibraryLimit && (
+          <p className="alert alert-error">
+            {t('premium.libraryLimitReached', { max: FREE_LIBRARY_LIMIT })}{' '}
+            <Link to="/account">{t('premium.upgradeLink')}</Link>
+          </p>
+        )}
         <div className="inline-fields">
-          <input placeholder={t('libraries.namePlaceholder')} value={name} onChange={(e) => setName(e.target.value)} />
-          <input placeholder={t('libraries.descriptionPlaceholder')} value={description} onChange={(e) => setDescription(e.target.value)} />
-          <button type="submit" className="btn btn-primary" disabled={create.isPending}>
+          <input placeholder={t('libraries.namePlaceholder')} value={name} onChange={(e) => setName(e.target.value)} disabled={atLibraryLimit} />
+          <input placeholder={t('libraries.descriptionPlaceholder')} value={description} onChange={(e) => setDescription(e.target.value)} disabled={atLibraryLimit} />
+          <button type="submit" className="btn btn-primary" disabled={create.isPending || atLibraryLimit}>
             {t('libraries.add')}
           </button>
         </div>
       </form>
 
-      <ImportPanel libraries={libraries ?? []} />
+      {isPremium ? (
+        <ImportPanel libraries={libraries ?? []} />
+      ) : (
+        <div className="card">
+          <h2>
+            {t('import.title')} <span className="premium-badge">{t('premium.badge')}</span>
+          </h2>
+          <p className="muted">{t('premium.importLocked')}</p>
+          <Link className="btn btn-primary" to="/account">
+            {t('premium.upgrade')}
+          </Link>
+        </div>
+      )}
 
       {importMsg && <p className="alert alert-success">{importMsg}</p>}
       {importErr && <p className="alert alert-error">{importErr}</p>}
@@ -152,9 +184,11 @@ export default function LibrariesPage() {
               <Link className="btn btn-primary" to={`/practice/${lib.id}`}>
                 {t('libraries.practise')}
               </Link>
-              <button type="button" className="btn btn-ghost" onClick={() => onImportClick(lib.id, lib.name)} disabled={importMut.isPending}>
-                {t('libraries.import')}
-              </button>
+              {isPremium && (
+                <button type="button" className="btn btn-ghost" onClick={() => onImportClick(lib.id, lib.name)} disabled={importMut.isPending}>
+                  {t('libraries.import')}
+                </button>
+              )}
               <button type="button" className="btn btn-ghost" onClick={() => onRename(lib.id, lib.name)}>
                 {t('libraries.rename')}
               </button>

@@ -43,6 +43,6 @@ public class AuthController(UserManager<ApplicationUser> users, TokenService tok
     private AuthResponse BuildAuthResponse(ApplicationUser user)
     {
         var (token, expiresAt) = tokens.CreateToken(user);
-        return new AuthResponse(token, expiresAt, user.Id, user.Email!, user.DisplayName);
+        return new AuthResponse(token, expiresAt, user.Id, user.Email!, user.DisplayName, user.IsPremium);
     }
 }

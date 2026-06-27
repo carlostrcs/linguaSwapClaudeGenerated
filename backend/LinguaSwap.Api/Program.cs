@@ -51,6 +51,12 @@ builder.Services
 builder.Services.AddAuthorization();
 
 builder.Services.AddScoped<TokenService>();
+builder.Services.AddScoped<PremiumService>();
+
+// Stripe (premium subscriptions). The secret key is global SDK config; real values come
+// from user-secrets / env vars (appsettings ships empty placeholders).
+Stripe.StripeConfiguration.ApiKey = builder.Configuration["Stripe:SecretKey"];
+builder.Services.AddScoped<StripeService>();
 
 // Practice domain services (stateless, unit-testable).
 builder.Services.AddSingleton<LeitnerService>();

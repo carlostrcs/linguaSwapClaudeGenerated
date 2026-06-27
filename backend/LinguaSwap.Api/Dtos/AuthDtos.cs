@@ -16,4 +16,5 @@ public record AuthResponse(
     DateTime ExpiresAt,
     string UserId,
     string Email,
-    string? DisplayName);
+    string? DisplayName,
+    bool IsPremium);

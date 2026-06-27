@@ -1,11 +1,23 @@
+import { useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { getAccount } from '../api/account';
 import { useAuth } from '../auth/AuthContext';
 import { useI18n } from '../i18n/I18nProvider';
 
 export default function Layout() {
-  const { user, signOut } = useAuth();
+  const { user, updateUser, signOut } = useAuth();
   const { t } = useI18n();
   const navigate = useNavigate();
+
+  // Keep the locally-stored premium flag in sync with the server (handles a stale snapshot,
+  // an upgrade, or a subscription cancelled elsewhere). The API stays authoritative regardless.
+  const account = useQuery({ queryKey: ['account'], queryFn: getAccount });
+  useEffect(() => {
+    if (account.data && user && account.data.isPremium !== user.isPremium) {
+      updateUser({ ...user, isPremium: account.data.isPremium });
+    }
+  }, [account.data, user, updateUser]);
 
   const handleSignOut = () => {
     signOut();

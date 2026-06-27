@@ -10,7 +10,7 @@ namespace LinguaSwap.Api.Controllers;
 [ApiController]
 [Route("api/stats")]
 [Authorize]
-public class StatsController(AppDbContext db) : ControllerBase
+public class StatsController(AppDbContext db, PremiumService premium) : ControllerBase
 {
     private record StateRow(int LibraryId, int BoxLevel, DateTime? NextReviewAt);
     private record AttemptRow(int? LibraryId, bool IsCorrect, DateTime AnsweredAt);
@@ -37,9 +37,11 @@ public class StatsController(AppDbContext db) : ControllerBase
             .Select(a => new AttemptRow(a.Session!.LibraryId, a.IsCorrect, a.AnsweredAt))
             .ToListAsync();
 
-        var perLibrary = libs
-            .Select(l => BuildLibraryStats(l.Id, l.Name, l.Words, states, attempts, now))
-            .ToList();
+        // The per-library breakdown (incl. Leitner box distribution) is a premium feature.
+        // Free users still get the top-line summary below.
+        var perLibrary = await premium.IsPremiumAsync(userId)
+            ? libs.Select(l => BuildLibraryStats(l.Id, l.Name, l.Words, states, attempts, now)).ToList()
+            : new List<LibraryStats>();
 
         var totalAttempts = attempts.Count;
         var correct = attempts.Count(a => a.IsCorrect);
@@ -64,6 +66,10 @@ public class StatsController(AppDbContext db) : ControllerBase
     public async Task<IActionResult> Library(int id)
     {
         var userId = User.GetUserId();
+        if (!await premium.IsPremiumAsync(userId))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new { message = "Detailed per-library statistics are a premium feature." });
+
         var now = DateTime.UtcNow;
 
         var lib = await db.Libraries

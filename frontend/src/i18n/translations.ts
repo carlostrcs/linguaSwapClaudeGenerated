@@ -164,6 +164,33 @@ const en: Dictionary = {
   'theme.dark': 'Dark',
   'theme.ocean': 'Ocean',
   'theme.forest': 'Forest',
+
+  'premium.title': 'Premium',
+  'premium.badge': 'Premium',
+  'premium.activeDesc': 'You have premium — all features are unlocked.',
+  'premium.freeDesc':
+    'You are on the free plan. Upgrade for unlimited libraries and words, word import, extra themes and detailed stats.',
+  'premium.upgrade': 'Upgrade to Premium',
+  'premium.upgradeLink': 'Upgrade to Premium',
+  'premium.redirecting': 'Redirecting…',
+  'premium.manage': 'Manage subscription',
+  'premium.upgradeFailed': 'Could not start checkout.',
+  'premium.portalFailed': 'Could not open the billing portal.',
+  'premium.importLocked': 'Importing words is a premium feature. Upgrade to import from a file.',
+  'premium.statsLocked': 'The per-library breakdown is a premium feature.',
+  'premium.libraryCount': '{count} / {max} libraries used',
+  'premium.libraryLimitReached': 'Free accounts are limited to {max} libraries.',
+  'premium.wordCount': '{count} / {max} words used',
+  'premium.wordLimitReached': 'Free accounts are limited to {max} words per library.',
+  'premium.success.confirming': 'Confirming your payment…',
+  'premium.success.title': 'Welcome to Premium! 🎉',
+  'premium.success.body': 'Your subscription is active and all premium features are unlocked.',
+  'premium.success.cta': 'Go to my libraries',
+  'premium.success.errorTitle': 'Payment not confirmed',
+  'premium.success.failed':
+    'We could not confirm your payment. If you were charged it may take a moment — try refreshing.',
+  'premium.success.missingSession': 'Missing checkout session.',
+  'premium.success.backToAccount': 'Back to account',
 };
 
 const es: Dictionary = {
@@ -317,6 +344,33 @@ const es: Dictionary = {
   'theme.dark': 'Oscuro',
   'theme.ocean': 'Océano',
   'theme.forest': 'Bosque',
+
+  'premium.title': 'Premium',
+  'premium.badge': 'Premium',
+  'premium.activeDesc': 'Tienes premium: todas las funciones están desbloqueadas.',
+  'premium.freeDesc':
+    'Estás en el plan gratuito. Mejora para tener bibliotecas y palabras ilimitadas, importación de palabras, temas extra y estadísticas detalladas.',
+  'premium.upgrade': 'Mejorar a Premium',
+  'premium.upgradeLink': 'Mejorar a Premium',
+  'premium.redirecting': 'Redirigiendo…',
+  'premium.manage': 'Gestionar suscripción',
+  'premium.upgradeFailed': 'No se pudo iniciar el pago.',
+  'premium.portalFailed': 'No se pudo abrir el portal de facturación.',
+  'premium.importLocked': 'Importar palabras es una función premium. Mejora para importar desde un archivo.',
+  'premium.statsLocked': 'El desglose por biblioteca es una función premium.',
+  'premium.libraryCount': '{count} / {max} bibliotecas usadas',
+  'premium.libraryLimitReached': 'Las cuentas gratuitas están limitadas a {max} bibliotecas.',
+  'premium.wordCount': '{count} / {max} palabras usadas',
+  'premium.wordLimitReached': 'Las cuentas gratuitas están limitadas a {max} palabras por biblioteca.',
+  'premium.success.confirming': 'Confirmando tu pago…',
+  'premium.success.title': '¡Bienvenido a Premium! 🎉',
+  'premium.success.body': 'Tu suscripción está activa y todas las funciones premium están desbloqueadas.',
+  'premium.success.cta': 'Ir a mis bibliotecas',
+  'premium.success.errorTitle': 'Pago no confirmado',
+  'premium.success.failed':
+    'No pudimos confirmar tu pago. Si se te cobró puede tardar un momento; prueba a actualizar.',
+  'premium.success.missingSession': 'Falta la sesión de pago.',
+  'premium.success.backToAccount': 'Volver a la cuenta',
 };
 
 export const translations: Record<LanguageId, Dictionary> = { en, es };

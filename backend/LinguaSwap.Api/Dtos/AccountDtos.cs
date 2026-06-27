@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace LinguaSwap.Api.Dtos;
 
-public record AccountResponse(string UserId, string Email, string? DisplayName);
+public record AccountResponse(string UserId, string Email, string? DisplayName, bool IsPremium);
 
 public record UpdateProfileRequest(
     [Required, EmailAddress] string Email,

@@ -8,6 +8,7 @@ import LibraryEditorPage from './pages/LibraryEditorPage';
 import PracticePage from './pages/PracticePage';
 import StatsPage from './pages/StatsPage';
 import AccountPage from './pages/AccountPage';
+import BillingSuccessPage from './pages/BillingSuccessPage';
 
 export default function App() {
   return (
@@ -21,6 +22,7 @@ export default function App() {
           <Route path="/practice/:id" element={<PracticePage />} />
           <Route path="/stats" element={<StatsPage />} />
           <Route path="/account" element={<AccountPage />} />
+          <Route path="/billing/success" element={<BillingSuccessPage />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/libraries" replace />} />

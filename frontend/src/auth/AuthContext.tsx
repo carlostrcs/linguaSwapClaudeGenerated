@@ -7,6 +7,7 @@ interface AuthUser {
   userId: string;
   email: string;
   displayName?: string | null;
+  isPremium: boolean;
 }
 
 interface AuthContextValue {
@@ -30,7 +31,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = useCallback((auth: AuthResponse) => {
     setToken(auth.token);
-    const u: AuthUser = { userId: auth.userId, email: auth.email, displayName: auth.displayName };
+    const u: AuthUser = {
+      userId: auth.userId,
+      email: auth.email,
+      displayName: auth.displayName,
+      isPremium: auth.isPremium,
+    };
     localStorage.setItem(USER_KEY, JSON.stringify(u));
     setUserState(u);
   }, []);

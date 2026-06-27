@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { getOverview } from '../api/stats';
 import type { LibraryStats } from '../api/types';
+import { useAuth } from '../auth/AuthContext';
 import { useI18n } from '../i18n/I18nProvider';
 
 // box 1..5 colours (struggling -> mastered)
@@ -35,6 +36,8 @@ function BoxBar({ stats, emptyLabel }: { stats: LibraryStats; emptyLabel: string
 
 export default function StatsPage() {
   const { t } = useI18n();
+  const { user } = useAuth();
+  const isPremium = user?.isPremium ?? false;
   const { data, isLoading, isError } = useQuery({ queryKey: ['stats-overview'], queryFn: getOverview });
 
   return (
@@ -58,24 +61,38 @@ export default function StatsPage() {
             <StatCard label={t('stats.libraries')} value={data.libraries} />
           </div>
 
-          <h2>{t('stats.byLibrary')}</h2>
-          {data.perLibrary.length === 0 && <p className="muted">{t('stats.noLibraries')}</p>}
-          <div className="lib-stats-list">
-            {data.perLibrary.map((l) => (
-              <div className="card lib-stat" key={l.libraryId}>
-                <div className="lib-stat-head">
-                  <Link to={`/practice/${l.libraryId}`} className="lib-stat-name">
-                    {l.name}
-                  </Link>
-                  <span className="muted small">
-                    {t('stats.libSummary', { words: l.words, acc: l.accuracy, mastered: l.mastered, due: l.dueNow })}
-                  </span>
-                </div>
-                <BoxBar stats={l} emptyLabel={t('stats.notPractised')} />
+          {isPremium ? (
+            <>
+              <h2>{t('stats.byLibrary')}</h2>
+              {data.perLibrary.length === 0 && <p className="muted">{t('stats.noLibraries')}</p>}
+              <div className="lib-stats-list">
+                {data.perLibrary.map((l) => (
+                  <div className="card lib-stat" key={l.libraryId}>
+                    <div className="lib-stat-head">
+                      <Link to={`/practice/${l.libraryId}`} className="lib-stat-name">
+                        {l.name}
+                      </Link>
+                      <span className="muted small">
+                        {t('stats.libSummary', { words: l.words, acc: l.accuracy, mastered: l.mastered, due: l.dueNow })}
+                      </span>
+                    </div>
+                    <BoxBar stats={l} emptyLabel={t('stats.notPractised')} />
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-          <p className="muted small">{t('stats.boxesExplain')}</p>
+              <p className="muted small">{t('stats.boxesExplain')}</p>
+            </>
+          ) : (
+            <div className="card">
+              <h2>
+                {t('stats.byLibrary')} <span className="premium-badge">{t('premium.badge')}</span>
+              </h2>
+              <p className="muted">{t('premium.statsLocked')}</p>
+              <Link className="btn btn-primary" to="/account">
+                {t('premium.upgrade')}
+              </Link>
+            </div>
+          )}
         </>
       )}
     </div>

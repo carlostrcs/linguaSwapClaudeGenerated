@@ -11,7 +11,7 @@ namespace LinguaSwap.Api.Controllers;
 [ApiController]
 [Route("api/libraries")]
 [Authorize]
-public class LibrariesController(AppDbContext db) : ControllerBase
+public class LibrariesController(AppDbContext db, PremiumService premium) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> List()
@@ -39,9 +39,20 @@ public class LibrariesController(AppDbContext db) : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create(CreateLibraryRequest req)
     {
+        var userId = User.GetUserId();
+        if (!await premium.IsPremiumAsync(userId)
+            && await db.Libraries.CountAsync(l => l.UserId == userId) >= PremiumService.FreeLibraryLimit)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new
+            {
+                message = $"Free accounts are limited to {PremiumService.FreeLibraryLimit} libraries. " +
+                          "Upgrade to premium for unlimited libraries."
+            });
+        }
+
         var lib = new Library
         {
-            UserId = User.GetUserId(),
+            UserId = userId,
             Name = req.Name.Trim(),
             Description = req.Description?.Trim()
         };
@@ -56,6 +67,10 @@ public class LibrariesController(AppDbContext db) : ControllerBase
     [HttpPost("import")]
     public async Task<IActionResult> Import(CreateLibraryImportRequest req)
     {
+        if (!await premium.IsPremiumAsync(User.GetUserId()))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new { message = "Importing words is a premium feature." });
+
         var items = req.Entries ?? [];
         if (items.Count == 0)
             return BadRequest(new { message = "The file contained no entries." });
