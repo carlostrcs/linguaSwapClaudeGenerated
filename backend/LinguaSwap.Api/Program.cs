@@ -5,6 +5,7 @@ using LinguaSwap.Api.Models;
 using LinguaSwap.Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
@@ -20,12 +21,13 @@ builder.Services
     .AddIdentityCore<ApplicationUser>(options =>
     {
         options.User.RequireUniqueEmail = true;
-        // Relaxed password rules for a learning app (still require 6+ chars).
-        options.Password.RequiredLength = 6;
+        // Reject too-simple passwords: 8+ chars with a mix of upper, lower, and a digit.
+        // Symbols stay optional to avoid over-frustrating a learning app.
+        options.Password.RequiredLength = 8;
         options.Password.RequireNonAlphanumeric = false;
-        options.Password.RequireUppercase = false;
-        options.Password.RequireLowercase = false;
-        options.Password.RequireDigit = false;
+        options.Password.RequireUppercase = true;
+        options.Password.RequireLowercase = true;
+        options.Password.RequireDigit = true;
     })
     .AddEntityFrameworkStores<AppDbContext>()
     .AddDefaultTokenProviders();
@@ -51,6 +53,7 @@ builder.Services
 builder.Services.AddAuthorization();
 
 builder.Services.AddScoped<TokenService>();
+builder.Services.AddScoped<RefreshTokenService>();
 builder.Services.AddScoped<PremiumService>();
 
 // Stripe (premium subscriptions). The secret key is global SDK config; real values come
@@ -62,6 +65,14 @@ builder.Services.AddScoped<StripeService>();
 builder.Services.AddSingleton<LeitnerService>();
 builder.Services.AddSingleton<AnswerChecker>();
 builder.Services.AddSingleton<HintService>();
+
+// Practice systems: one selector per PracticeMode, resolved by PracticeSelectorResolver.
+builder.Services.AddSingleton<IPracticeSelector, SmartReviewSelector>();
+builder.Services.AddSingleton<IPracticeSelector, LearnNewSelector>();
+builder.Services.AddSingleton<IPracticeSelector, CramSelector>();
+builder.Services.AddSingleton<IPracticeSelector, WeakSelector>();
+builder.Services.AddSingleton<IPracticeSelector, JourneySelector>();
+builder.Services.AddSingleton<PracticeSelectorResolver>();
 
 // CORS: allow the Vite dev server (frontend) to call this API during development.
 const string FrontendCors = "frontend";
@@ -76,6 +87,23 @@ builder.Services.AddCors(options =>
 builder.Services
     .AddControllers()
     .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+
+// Return DataAnnotation validation failures (e.g. a malformed email) in the same
+// { message, errors } shape the frontend's ApiError reads, instead of the default
+// ValidationProblemDetails the client can't surface.
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+    options.InvalidModelStateResponseFactory = context =>
+    {
+        var errors = context.ModelState.Values
+            .SelectMany(v => v.Errors)
+            .Select(e => e.ErrorMessage)
+            .Where(m => !string.IsNullOrWhiteSpace(m))
+            .ToArray();
+        var message = errors.Length > 0 ? string.Join(" ", errors) : "Invalid request.";
+        return new BadRequestObjectResult(new { message, errors });
+    };
+});
 
 // Swagger / OpenAPI: interactive UI at /swagger, with a JWT "Authorize" button.
 builder.Services.AddEndpointsApiExplorer();

@@ -15,6 +15,9 @@ public class PracticeSession
     public string TargetLanguage { get; set; } = string.Empty;
     public Difficulty Difficulty { get; set; } = Difficulty.Medium;
 
+    /// <summary>Which practice system this session ran (controls selection + whether it reschedules).</summary>
+    public PracticeMode Mode { get; set; } = PracticeMode.SmartReview;
+
     public DateTime StartedAt { get; set; } = DateTime.UtcNow;
     public DateTime? EndedAt { get; set; }
 

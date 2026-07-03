@@ -2,7 +2,17 @@ using System.ComponentModel.DataAnnotations;
 
 namespace LinguaSwap.Api.Dtos;
 
-public record AccountResponse(string UserId, string Email, string? DisplayName, bool IsPremium);
+// IsPremium is the *effective* flag (paid OR active trial); SubscriptionActive is the raw paid flag;
+// TrialEndsAt drives the trial countdown; HiddenLibraries is how many of the user's libraries are
+// currently hidden by the free-tier cap (0 for premium users).
+public record AccountResponse(
+    string UserId,
+    string Email,
+    string? DisplayName,
+    bool IsPremium,
+    bool SubscriptionActive,
+    DateTime? TrialEndsAt,
+    int HiddenLibraries);
 
 public record UpdateProfileRequest(
     [Required, EmailAddress] string Email,

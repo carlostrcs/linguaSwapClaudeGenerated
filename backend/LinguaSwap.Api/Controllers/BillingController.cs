@@ -13,6 +13,7 @@ namespace LinguaSwap.Api.Controllers;
 public class BillingController(
     UserManager<ApplicationUser> users,
     StripeService stripe,
+    PremiumService premium,
     ILogger<BillingController> logger) : ControllerBase
 {
     /// <summary>Start a subscription checkout; returns the Stripe-hosted URL to redirect to.</summary>
@@ -52,7 +53,7 @@ public class BillingController(
         {
             var granted = await stripe.GrantFromSessionAsync(req.SessionId, user.Id);
             if (!granted) return BadRequest(new { message = "Payment could not be confirmed." });
-            return Ok(new AccountResponse(user.Id, user.Email!, user.DisplayName, user.IsPremium));
+            return Ok(await BuildAccountResponseAsync(user));
         }
         catch (StripeException ex)
         {
@@ -60,6 +61,34 @@ public class BillingController(
             return StatusCode(StatusCodes.Status502BadGateway,
                 new { message = "Could not confirm payment. Please try again later." });
         }
+    }
+
+    /// <summary>Start the user's one-time free trial (no payment). Returns the refreshed account, or
+    /// 400 if the trial has already been used.</summary>
+    [Authorize]
+    [HttpPost("trial")]
+    public async Task<IActionResult> StartTrial()
+    {
+        var user = await users.FindByIdAsync(User.GetUserId());
+        if (user is null) return NotFound();
+
+        // StartTrialAsync mutates the same tracked user entity (shared request-scoped DbContext),
+        // so `user` already reflects the new trial window after this returns.
+        var started = await premium.StartTrialAsync(user.Id, DateTime.UtcNow);
+        if (!started)
+            return BadRequest(new { message = "You have already used your free trial." });
+
+        return Ok(await BuildAccountResponseAsync(user));
+    }
+
+    /// <summary>Build the account DTO with effective-premium + trial + hidden-library fields.</summary>
+    private async Task<AccountResponse> BuildAccountResponseAsync(ApplicationUser user)
+    {
+        var isPremium = user.HasPremiumAccess(DateTime.UtcNow);
+        var hiddenLibraries = await premium.HiddenLibraryCountAsync(user.Id, isPremium);
+        return new AccountResponse(
+            user.Id, user.Email!, user.DisplayName,
+            isPremium, user.IsPremium, user.TrialEndsAt, hiddenLibraries);
     }
 
     /// <summary>Open the Stripe Customer Portal so the user can manage/cancel their subscription.</summary>

@@ -14,3 +14,11 @@ export function login(email: string, password: string) {
     body: JSON.stringify({ email, password }),
   });
 }
+
+// Best-effort server-side revocation of the refresh token on sign-out.
+export function logout(refreshToken: string) {
+  return api<void>('/auth/logout', {
+    method: 'POST',
+    body: JSON.stringify({ refreshToken }),
+  });
+}

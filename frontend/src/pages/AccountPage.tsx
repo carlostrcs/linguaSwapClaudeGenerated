@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { changePassword, deleteAccount, getAccount, updateAccount } from '../api/account';
-import { createCheckoutSession, openPortal } from '../api/billing';
+import { createCheckoutSession, openPortal, startTrial } from '../api/billing';
+import { TRIAL_DAYS, trialDaysLeft } from '../lib/premium';
 import { ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import { useTheme } from '../theme/ThemeProvider';
@@ -15,6 +16,7 @@ import type { LanguageId } from '../i18n/translations';
 export default function AccountPage() {
   const { updateUser, signOut } = useAuth();
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const { theme, setTheme } = useTheme();
   const { lang, setLang, t } = useI18n();
   const account = useQuery({ queryKey: ['account'], queryFn: getAccount });
@@ -31,6 +33,10 @@ export default function AccountPage() {
 
   const [billingErr, setBillingErr] = useState<string | null>(null);
   const isPremium = account.data?.isPremium ?? false;
+  const subscriptionActive = account.data?.subscriptionActive ?? false;
+  const trialEndsAt = account.data?.trialEndsAt ?? null;
+  const hiddenLibraries = account.data?.hiddenLibraries ?? 0;
+  const trialUsed = trialEndsAt !== null; // a non-null end date means the trial was already started
 
   // Both Stripe actions redirect the browser to a Stripe-hosted page.
   const upgrade = useMutation({
@@ -46,6 +52,24 @@ export default function AccountPage() {
       window.location.href = url;
     },
     onError: (e) => setBillingErr(e instanceof ApiError ? e.message : t('premium.portalFailed')),
+  });
+  // Starting the trial unlocks premium in place (no redirect); refresh account + libraries so
+  // gates and any previously-hidden content update immediately.
+  const trial = useMutation({
+    mutationFn: startTrial,
+    onSuccess: (acc) => {
+      updateUser({
+        userId: acc.userId,
+        email: acc.email,
+        displayName: acc.displayName,
+        isPremium: acc.isPremium,
+        subscriptionActive: acc.subscriptionActive,
+        trialEndsAt: acc.trialEndsAt,
+      });
+      qc.invalidateQueries({ queryKey: ['account'] });
+      qc.invalidateQueries({ queryKey: ['libraries'] });
+    },
+    onError: (e) => setBillingErr(e instanceof ApiError ? e.message : t('premium.trialFailed')),
   });
 
   useEffect(() => {
@@ -73,6 +97,8 @@ export default function AccountPage() {
         email: updated.email,
         displayName: updated.displayName,
         isPremium: updated.isPremium,
+        subscriptionActive: updated.subscriptionActive,
+        trialEndsAt: updated.trialEndsAt,
       });
       setProfileMsg(t('account.profileUpdated'));
     } catch (err) {
@@ -112,7 +138,8 @@ export default function AccountPage() {
       <div className="card">
         <h2>{t('premium.title')}</h2>
         {billingErr && <p className="alert alert-error">{billingErr}</p>}
-        {isPremium ? (
+        {subscriptionActive ? (
+          // Paid subscription.
           <>
             <p>
               <span className="premium-badge">{t('premium.badge')}</span> {t('premium.activeDesc')}
@@ -129,9 +156,13 @@ export default function AccountPage() {
               {t('premium.manage')}
             </button>
           </>
-        ) : (
+        ) : isPremium ? (
+          // Active free trial (effective premium, but not yet a paying subscriber).
           <>
-            <p className="muted">{t('premium.freeDesc')}</p>
+            <p>
+              <span className="premium-badge">{t('premium.badge')}</span>{' '}
+              {t('premium.trialActive', { days: trialDaysLeft(trialEndsAt) })}
+            </p>
             <button
               type="button"
               className="btn btn-primary"
@@ -141,8 +172,42 @@ export default function AccountPage() {
               }}
               disabled={upgrade.isPending}
             >
-              {upgrade.isPending ? t('premium.redirecting') : t('premium.upgrade')}
+              {upgrade.isPending ? t('premium.redirecting') : t('premium.subscribeToKeep')}
             </button>
+          </>
+        ) : (
+          // Free: never trialed (offer the trial) or trial ended (offer upgrade only).
+          <>
+            <p className="muted">{trialUsed ? t('premium.trialEnded') : t('premium.freeDesc')}</p>
+            {hiddenLibraries > 0 && (
+              <p className="alert alert-info">{t('premium.hiddenSubscribeNote', { count: hiddenLibraries })}</p>
+            )}
+            <div className="card-actions">
+              {!trialUsed && (
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => {
+                    setBillingErr(null);
+                    trial.mutate();
+                  }}
+                  disabled={trial.isPending}
+                >
+                  {trial.isPending ? t('common.loading') : t('premium.startTrial', { days: TRIAL_DAYS })}
+                </button>
+              )}
+              <button
+                type="button"
+                className={trialUsed ? 'btn btn-primary' : 'btn btn-ghost'}
+                onClick={() => {
+                  setBillingErr(null);
+                  upgrade.mutate();
+                }}
+                disabled={upgrade.isPending}
+              >
+                {upgrade.isPending ? t('premium.redirecting') : t('premium.upgrade')}
+              </button>
+            </div>
           </>
         )}
       </div>

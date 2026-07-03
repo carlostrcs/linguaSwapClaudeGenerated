@@ -20,27 +20,34 @@ public class StatsController(AppDbContext db, PremiumService premium) : Controll
     {
         var userId = User.GetUserId();
         var now = DateTime.UtcNow;
+        var isPremium = await premium.IsPremiumAsync(userId);
 
-        var libs = await db.Libraries
-            .Where(l => l.UserId == userId)
+        // Hidden libraries are excluded from every stat; visible library word counts are capped.
+        var libs = await premium.VisibleLibraries(userId, isPremium)
             .OrderByDescending(l => l.CreatedAt)
-            .Select(l => new { l.Id, l.Name, Words = l.Entries.Count })
+            .Select(l => new { l.Id, l.Name, Total = l.Entries.Count })
             .ToListAsync();
+        var visibleLibIds = libs.Select(l => l.Id).ToList();
 
         var states = await db.LearningStates
-            .Where(s => s.Entry!.Library!.UserId == userId)
+            .Where(s => s.Entry!.Library!.UserId == userId && visibleLibIds.Contains(s.Entry!.LibraryId))
             .Select(s => new StateRow(s.Entry!.LibraryId, s.BoxLevel, s.NextReviewAt))
             .ToListAsync();
 
+        // Keep attempts whose library was deleted (null LibraryId); drop those in hidden libraries.
         var attempts = await db.Attempts
-            .Where(a => a.Session!.UserId == userId)
+            .Where(a => a.Session!.UserId == userId
+                && (a.Session!.LibraryId == null || visibleLibIds.Contains(a.Session!.LibraryId.Value)))
             .Select(a => new AttemptRow(a.Session!.LibraryId, a.IsCorrect, a.AnsweredAt))
             .ToListAsync();
 
+        int VisibleWords(int total) =>
+            isPremium ? total : Math.Min(total, PremiumService.FreeWordsPerLibrary);
+
         // The per-library breakdown (incl. Leitner box distribution) is a premium feature.
         // Free users still get the top-line summary below.
-        var perLibrary = await premium.IsPremiumAsync(userId)
-            ? libs.Select(l => BuildLibraryStats(l.Id, l.Name, l.Words, states, attempts, now)).ToList()
+        var perLibrary = isPremium
+            ? libs.Select(l => BuildLibraryStats(l.Id, l.Name, VisibleWords(l.Total), states, attempts, now)).ToList()
             : new List<LibraryStats>();
 
         var totalAttempts = attempts.Count;
@@ -50,7 +57,7 @@ public class StatsController(AppDbContext db, PremiumService premium) : Controll
 
         var overview = new OverviewStats(
             libs.Count,
-            libs.Sum(l => l.Words),
+            libs.Sum(l => VisibleWords(l.Total)),
             totalAttempts,
             correct,
             Pct(correct, totalAttempts),

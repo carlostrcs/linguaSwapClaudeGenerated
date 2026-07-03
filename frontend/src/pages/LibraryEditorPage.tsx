@@ -8,6 +8,7 @@ import type { EntryDto, TranslationDto } from '../api/types';
 import EntryForm from '../components/EntryForm';
 import { useAuth } from '../auth/AuthContext';
 import { FREE_WORDS_PER_LIBRARY } from '../lib/premium';
+import { flagFor } from '../lib/languages';
 import { useI18n } from '../i18n/I18nProvider';
 
 export default function LibraryEditorPage() {
@@ -92,6 +93,13 @@ export default function LibraryEditorPage() {
           </p>
         )}
 
+        {(library.data?.hiddenEntryCount ?? 0) > 0 && (
+          <p className="alert alert-info">
+            {t('premium.hiddenWords', { count: library.data!.hiddenEntryCount })}{' '}
+            <Link to="/account">{t('premium.restoreCta')}</Link>
+          </p>
+        )}
+
         {adding && (
           <EntryForm
             submitLabel={t('editor.addWordSubmit')}
@@ -122,6 +130,7 @@ export default function LibraryEditorPage() {
                   <div className="entry-translations">
                     {entry.translations.map((tr) => (
                       <span className="chip" key={tr.languageCode}>
+                        {flagFor(tr.languageCode) && `${flagFor(tr.languageCode)} `}
                         <span className="chip-lang">{tr.languageCode}</span> {tr.text}
                       </span>
                     ))}

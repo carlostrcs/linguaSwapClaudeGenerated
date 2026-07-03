@@ -1,3 +1,4 @@
+using System.Text.Json;
 using LinguaSwap.Api.Data;
 using LinguaSwap.Api.Dtos;
 using LinguaSwap.Api.Models;
@@ -15,10 +16,10 @@ public class PracticeController(
     AppDbContext db,
     LeitnerService leitner,
     AnswerChecker answerChecker,
-    HintService hintService) : ControllerBase
+    HintService hintService,
+    PremiumService premium,
+    PracticeSelectorResolver selectors) : ControllerBase
 {
-    private const int SessionSize = 20;
-
     [HttpPost("sessions")]
     public async Task<IActionResult> Start(StartSessionRequest req)
     {
@@ -28,36 +29,43 @@ public class PracticeController(
 
         if (src == tgt)
             return BadRequest(new { message = "Choose two different languages." });
-        if (!await db.Libraries.AnyAsync(l => l.Id == req.LibraryId && l.UserId == userId))
+        var isPremium = await premium.IsPremiumAsync(userId);
+        // Smart Review is free; the other practice systems are premium (DB is authoritative).
+        if (req.Mode != PracticeMode.SmartReview && !isPremium)
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new { message = "This practice mode is a premium feature." });
+        // Hidden libraries can't be practised while free.
+        if (!await premium.VisibleLibraries(userId, isPremium).AnyAsync(l => l.Id == req.LibraryId))
             return NotFound();
 
-        var entries = await db.Entries
-            .Where(e => e.LibraryId == req.LibraryId)
+        // Only visible words are practised (hidden over-limit words are excluded while free).
+        var entries = await premium.VisibleEntries(req.LibraryId, isPremium)
             .Include(e => e.Translations)
             .Include(e => e.LearningStates.Where(s => s.SourceLanguage == src && s.TargetLanguage == tgt))
             .ToListAsync();
 
         var now = DateTime.UtcNow;
-        var candidates = new List<(Entry Entry, string Prompt, string Answer, LearningState? State)>();
+        var candidates = new List<Candidate>();
         foreach (var e in entries)
         {
             var prompt = e.Translations.FirstOrDefault(t => t.LanguageCode == src)?.Text;
             var answer = e.Translations.FirstOrDefault(t => t.LanguageCode == tgt)?.Text;
             if (prompt is null || answer is null) continue;
-            candidates.Add((e, prompt, answer, e.LearningStates.FirstOrDefault()));
+            candidates.Add(new Candidate(e, prompt, answer, e.LearningStates.FirstOrDefault()));
         }
 
         if (candidates.Count == 0)
             return BadRequest(new { message = $"This library has no words with both '{src}' and '{tgt}'." });
 
-        // Priority: due words first (lowest box first), then never-seen words, then not-yet-due.
-        var selected = candidates
-            .OrderBy(c => c.State == null ? 1 : (c.State.NextReviewAt is null || c.State.NextReviewAt <= now ? 0 : 2))
-            .ThenBy(c => c.State?.BoxLevel ?? 0)
-            .ThenBy(c => c.State?.NextReviewAt ?? DateTime.MaxValue)
-            .Take(SessionSize)
-            .OrderBy(_ => Random.Shared.Next()) // shuffle the chosen words for variety
-            .ToList();
+        // Each practice mode picks and orders its own words (see Services/PracticeSelectors).
+        var selected = selectors.For(req.Mode).Select(candidates, now);
+        if (selected.Count == 0)
+            return BadRequest(new { message = req.Mode switch
+            {
+                PracticeMode.LearnNew => "No new words left to learn in this direction — try Smart Review.",
+                PracticeMode.Weak => "No practised words to review yet — learn some first.",
+                _ => "There are no words to practise here.",
+            } });
 
         var session = new PracticeSession
         {
@@ -66,6 +74,7 @@ public class PracticeController(
             SourceLanguage = src,
             TargetLanguage = tgt,
             Difficulty = req.Difficulty,
+            Mode = req.Mode,
             StartedAt = now,
         };
         db.PracticeSessions.Add(session);
@@ -80,7 +89,57 @@ public class PracticeController(
             return new PracticeWordDto(c.Entry.Id, c.Prompt, hint, length, expectedForClient, c.Entry.Notes);
         }).ToList();
 
-        return Ok(new StartSessionResponse(session.Id, req.Difficulty, src, tgt, words));
+        // Journey mode resumes where the user left off: hand back the saved state (if any).
+        JourneyStateDto? journey = null;
+        if (req.Mode == PracticeMode.Journey)
+        {
+            var saved = await db.JourneyStates
+                .FirstOrDefaultAsync(j => j.UserId == userId && j.LibraryId == req.LibraryId
+                    && j.SourceLanguage == src && j.TargetLanguage == tgt);
+            if (saved is not null)
+                journey = JsonSerializer.Deserialize<JourneyStateDto>(saved.StateJson);
+        }
+
+        return Ok(new StartSessionResponse(session.Id, req.Difficulty, req.Mode, src, tgt, words, journey));
+    }
+
+    /// <summary>Save the user's Journey progress for a library+direction (upsert). Premium-only.</summary>
+    [HttpPut("journey")]
+    public async Task<IActionResult> SaveJourney(SaveJourneyRequest req)
+    {
+        var userId = User.GetUserId();
+        var src = req.SourceLanguage.Trim().ToLowerInvariant();
+        var tgt = req.TargetLanguage.Trim().ToLowerInvariant();
+
+        if (!await premium.IsPremiumAsync(userId))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new { message = "This practice mode is a premium feature." });
+        if (!await db.Libraries.AnyAsync(l => l.Id == req.LibraryId && l.UserId == userId))
+            return NotFound();
+
+        var json = JsonSerializer.Serialize(req.State);
+        var existing = await db.JourneyStates
+            .FirstOrDefaultAsync(j => j.UserId == userId && j.LibraryId == req.LibraryId
+                && j.SourceLanguage == src && j.TargetLanguage == tgt);
+        if (existing is null)
+        {
+            db.JourneyStates.Add(new JourneyState
+            {
+                UserId = userId,
+                LibraryId = req.LibraryId,
+                SourceLanguage = src,
+                TargetLanguage = tgt,
+                StateJson = json,
+                UpdatedAt = DateTime.UtcNow,
+            });
+        }
+        else
+        {
+            existing.StateJson = json;
+            existing.UpdatedAt = DateTime.UtcNow;
+        }
+        await db.SaveChangesAsync();
+        return NoContent();
     }
 
     [HttpPost("sessions/{id:int}/answer")]
@@ -105,15 +164,22 @@ public class PracticeController(
         if (prompt is null || expected is null)
             return BadRequest(new { message = "This word no longer has both languages." });
 
-        var correct = answerChecker.IsCorrect(expected, req.Answer ?? string.Empty);
+        var correct = answerChecker.IsCorrect(expected, req.Answer ?? string.Empty,
+            LanguageRules.IsCaseSensitive(tgt));
 
         var state = entry.LearningStates.FirstOrDefault();
-        if (state is null)
+
+        // Practice-only modes (Cram) record the attempt for stats but never move Leitner boxes,
+        // so cramming can't disrupt the spaced-repetition schedule.
+        if (selectors.For(session.Mode).Reschedules)
         {
-            state = new LearningState { EntryId = entry.Id, SourceLanguage = src, TargetLanguage = tgt, BoxLevel = 1 };
-            db.LearningStates.Add(state);
+            if (state is null)
+            {
+                state = new LearningState { EntryId = entry.Id, SourceLanguage = src, TargetLanguage = tgt, BoxLevel = 1 };
+                db.LearningStates.Add(state);
+            }
+            leitner.ApplyAnswer(state, correct, DateTime.UtcNow);
         }
-        leitner.ApplyAnswer(state, correct, DateTime.UtcNow);
 
         db.Attempts.Add(new Attempt
         {
@@ -130,9 +196,9 @@ public class PracticeController(
         return Ok(new AnswerResponse(
             correct,
             AnswerChecker.PrimaryAnswer(expected),
-            state.BoxLevel,
-            leitner.IsMastered(state),
-            state.NextReviewAt));
+            state?.BoxLevel ?? 0,
+            state is not null && leitner.IsMastered(state),
+            state?.NextReviewAt));
     }
 
     [HttpPost("sessions/{id:int}/end")]

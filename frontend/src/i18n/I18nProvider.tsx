@@ -14,9 +14,22 @@ interface I18nContextValue {
 
 const I18nContext = createContext<I18nContextValue | null>(null);
 
+/** First supported language among the browser's preferences (matched on the primary subtag, e.g. `es-ES` → `es`). */
+function browserLang(): LanguageId | null {
+  const prefs = navigator.languages ?? [navigator.language];
+  for (const pref of prefs) {
+    if (!pref) continue;
+    const primary = pref.toLowerCase().split('-')[0];
+    if (primary in translations) return primary as LanguageId;
+  }
+  return null;
+}
+
 function initialLang(): LanguageId {
+  // An explicit stored choice (Account settings) wins; otherwise follow the browser; otherwise English.
   const stored = localStorage.getItem(LANGUAGE_STORAGE_KEY);
-  return stored && stored in translations ? (stored as LanguageId) : DEFAULT_LANGUAGE;
+  if (stored && stored in translations) return stored as LanguageId;
+  return browserLang() ?? DEFAULT_LANGUAGE;
 }
 
 function interpolate(template: string, vars?: Vars): string {

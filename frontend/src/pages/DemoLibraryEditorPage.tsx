@@ -1,0 +1,111 @@
+import { useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
+import type { EntryDto } from '../api/types';
+import EntryForm from '../components/EntryForm';
+import { addDemoEntry, deleteDemoEntry, getDemoLibrary, listDemoEntries, updateDemoEntry } from '../lib/demo/demoStore';
+import { useI18n } from '../i18n/I18nProvider';
+
+/**
+ * The demo's word editor — mirrors LibraryEditorPage (add / edit / delete words, reusing
+ * EntryForm) backed by the client-side demo store, without import or premium word limits.
+ */
+export default function DemoLibraryEditorPage() {
+  const { id } = useParams();
+  const libraryId = Number(id);
+  const { t } = useI18n();
+
+  const [library] = useState(() => getDemoLibrary(libraryId));
+  const [entries, setEntries] = useState<EntryDto[]>(() => listDemoEntries(libraryId));
+  const [adding, setAdding] = useState(false);
+  const [editing, setEditing] = useState<EntryDto | null>(null);
+
+  const reload = () => setEntries(listDemoEntries(libraryId));
+
+  if (!Number.isFinite(libraryId) || !library) {
+    return <p className="alert alert-error">{t('editor.invalidLibrary')}</p>;
+  }
+
+  return (
+    <div className="page">
+      <p>
+        <Link to="/demo" className="btn btn-link">
+          {t('editor.back')}
+        </Link>
+      </p>
+      <h1>{library.name}</h1>
+      {library.description && <p className="muted">{library.description}</p>}
+
+      <div className="card">
+        <div className="section-head">
+          <h2>{t('editor.words')}</h2>
+          {!adding && !editing && (
+            <button type="button" className="btn btn-primary" onClick={() => setAdding(true)}>
+              {t('editor.addWord')}
+            </button>
+          )}
+        </div>
+
+        {adding && (
+          <EntryForm
+            submitLabel={t('editor.addWordSubmit')}
+            onSubmit={(translations, notes) => {
+              addDemoEntry(libraryId, translations, notes);
+              setAdding(false);
+              reload();
+            }}
+            onCancel={() => setAdding(false)}
+          />
+        )}
+
+        {entries.length === 0 && !adding && <p className="muted">{t('editor.empty')}</p>}
+
+        <ul className="entry-list">
+          {entries.map((entry) => (
+            <li className="entry-item" key={entry.id}>
+              {editing?.id === entry.id ? (
+                <EntryForm
+                  initial={entry}
+                  submitLabel={t('editor.saveChanges')}
+                  onSubmit={(translations, notes) => {
+                    updateDemoEntry(libraryId, entry.id, translations, notes);
+                    setEditing(null);
+                    reload();
+                  }}
+                  onCancel={() => setEditing(null)}
+                />
+              ) : (
+                <>
+                  <div className="entry-translations">
+                    {entry.translations.map((tr) => (
+                      <span className="chip" key={tr.languageCode}>
+                        <span className="chip-lang">{tr.languageCode}</span> {tr.text}
+                      </span>
+                    ))}
+                  </div>
+                  {entry.notes && <span className="entry-notes muted">{entry.notes}</span>}
+                  <div className="entry-actions">
+                    <button type="button" className="btn btn-ghost" onClick={() => setEditing(entry)}>
+                      {t('common.edit')}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-danger"
+                      onClick={() => {
+                        if (window.confirm(t('editor.deleteWordConfirm'))) {
+                          deleteDemoEntry(libraryId, entry.id);
+                          reload();
+                        }
+                      }}
+                    >
+                      {t('common.delete')}
+                    </button>
+                  </div>
+                </>
+              )}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}

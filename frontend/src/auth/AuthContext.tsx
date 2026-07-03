@@ -1,13 +1,19 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import { getToken, setToken, setUnauthorizedHandler } from '../api/client';
+import { getRefreshToken, getToken, setRefreshToken, setToken, setUnauthorizedHandler } from '../api/client';
+import { logout } from '../api/auth';
 import type { AuthResponse } from '../api/types';
 
 interface AuthUser {
   userId: string;
   email: string;
   displayName?: string | null;
+  /** Effective premium (paid OR active trial). */
   isPremium: boolean;
+  /** Raw paid-subscription flag (distinguishes trial from paid). */
+  subscriptionActive?: boolean;
+  /** When the free trial ends (ISO), or null/undefined if never started. */
+  trialEndsAt?: string | null;
 }
 
 interface AuthContextValue {
@@ -31,18 +37,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = useCallback((auth: AuthResponse) => {
     setToken(auth.token);
+    setRefreshToken(auth.refreshToken);
     const u: AuthUser = {
       userId: auth.userId,
       email: auth.email,
       displayName: auth.displayName,
       isPremium: auth.isPremium,
+      subscriptionActive: auth.subscriptionActive,
+      trialEndsAt: auth.trialEndsAt,
     };
     localStorage.setItem(USER_KEY, JSON.stringify(u));
     setUserState(u);
   }, []);
 
   const signOut = useCallback(() => {
+    // Revoke the refresh token server-side (fire-and-forget) before clearing local state.
+    const refreshToken = getRefreshToken();
+    if (refreshToken) logout(refreshToken).catch(() => {});
     setToken(null);
+    setRefreshToken(null);
     localStorage.removeItem(USER_KEY);
     setUserState(null);
   }, []);

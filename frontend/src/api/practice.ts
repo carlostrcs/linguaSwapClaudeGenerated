@@ -1,15 +1,16 @@
 import { api } from './client';
-import type { AnswerResponse, Difficulty, StartSessionResponse } from './types';
+import type { AnswerResponse, Difficulty, JourneyState, PracticeMode, StartSessionResponse } from './types';
 
 export const startSession = (
   libraryId: number,
   sourceLanguage: string,
   targetLanguage: string,
   difficulty: Difficulty,
+  mode: PracticeMode,
 ) =>
   api<StartSessionResponse>('/practice/sessions', {
     method: 'POST',
-    body: JSON.stringify({ libraryId, sourceLanguage, targetLanguage, difficulty }),
+    body: JSON.stringify({ libraryId, sourceLanguage, targetLanguage, difficulty, mode }),
   });
 
 export const submitAnswer = (sessionId: number, entryId: number, answer: string) =>
@@ -20,3 +21,14 @@ export const submitAnswer = (sessionId: number, entryId: number, answer: string)
 
 export const endSession = (sessionId: number) =>
   api<void>(`/practice/sessions/${sessionId}/end`, { method: 'POST' });
+
+export const saveJourneyState = (
+  libraryId: number,
+  sourceLanguage: string,
+  targetLanguage: string,
+  state: JourneyState,
+) =>
+  api<void>('/practice/journey', {
+    method: 'PUT',
+    body: JSON.stringify({ libraryId, sourceLanguage, targetLanguage, state }),
+  });

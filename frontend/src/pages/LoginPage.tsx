@@ -10,8 +10,8 @@ export default function LoginPage() {
   const { signIn } = useAuth();
   const { t } = useI18n();
   const navigate = useNavigate();
-  const [email, setEmail] = useState('demo@linguaswap.app');
-  const [password, setPassword] = useState('Demo123!');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -30,18 +30,34 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="auth-screen">
+    <div className="auth-page">
+      <p>
+        <Link to="/" className="btn btn-link">
+          {t('auth.backHome')}
+        </Link>
+      </p>
       <form className="card auth-card" onSubmit={onSubmit}>
-        <h1 className="brand brand-lg">LinguaSwap</h1>
         <h2>{t('auth.signIn')}</h2>
         {error && <p className="alert alert-error">{error}</p>}
         <label>
           {t('common.email')}
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder={t('auth.emailPlaceholder')}
+            required
+          />
         </label>
         <label>
           {t('common.password')}
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder={t('auth.passwordPlaceholder')}
+            required
+          />
         </label>
         <button type="submit" className="btn btn-primary" disabled={busy}>
           {busy ? t('auth.signingIn') : t('auth.signIn')}

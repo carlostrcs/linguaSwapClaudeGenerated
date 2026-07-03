@@ -42,7 +42,35 @@ An empty database is seeded with a demo user and a sample "Spanish Basics" libra
 JWT bearer auth. Get a token from `POST /api/auth/register` or `POST /api/auth/login`, then
 send `Authorization: Bearer <token>`. In Swagger UI use the **Authorize** button. The JWT signing
 key lives under `Jwt` in `appsettings.json` — it's a **dev-only** value; use user-secrets or env
-vars for anything real. Password rules are relaxed (6+ chars) for learning convenience.
+vars for anything real.
+
+**Account-creation validation.** `register` rejects weak credentials. Email format is checked by
+`[EmailAddress]` on `RegisterRequest`; password complexity is enforced by ASP.NET Core Identity in
+`Program.cs` — **8+ chars with an uppercase, a lowercase, and a digit** (symbols optional). Both are
+authoritative server-side; the frontend mirrors them in `frontend/src/lib/validation.ts` for inline
+feedback only — keep that mirror in sync with the Identity options. Validation failures now come back
+as `{ message, errors }` (a global `InvalidModelStateResponseFactory` reshapes DataAnnotation errors,
+and `register` joins Identity errors into `message`) so the client surfaces the actual reason.
+
+#### Sessions (short access token + rotating refresh token)
+
+To keep regular users logged in across days **without** a dangerously long-lived JWT, auth pairs a
+short access token with a long-lived, DB-backed refresh token:
+
+- **Access token (JWT):** short-lived — `Jwt:ExpiryHours` (now **1**). Stateless, can't be revoked,
+  so we keep its blast radius small.
+- **Refresh token:** opaque random token, **30-day sliding** window (`Jwt:RefreshTokenDays`). Stored
+  **hashed** (SHA-256) in the `RefreshTokens` table (`Models/RefreshToken.cs`,
+  `AddRefreshTokens` migration); owned by `Services/RefreshTokenService` (issue / validate-and-rotate
+  / revoke). **Rotated on every use** — each refresh revokes the presented token and issues a new
+  one, so a daily user stays logged in indefinitely while leaked/old tokens stop working.
+- **Endpoints:** `POST /api/auth/refresh` (`{ refreshToken }` → new access token + rotated refresh
+  token, or `401` if invalid/expired) and `POST /api/auth/logout` (`{ refreshToken }` → revoke, `204`).
+  `register`/`login` now also return a `refreshToken` field in `AuthResponse`.
+- **Frontend:** both tokens live in `localStorage` (`linguaswap.token`, `linguaswap.refreshToken`).
+  The central `api/client.ts` wrapper transparently handles this: on a `401` it does a **single-flight**
+  silent refresh and replays the request once; if the refresh fails it signs out. No screen ever sees
+  the expiry — `signIn`/`signOut` in `auth/AuthContext.tsx` persist and revoke the refresh token.
 
 ## Common commands
 
@@ -62,8 +90,10 @@ backend/LinguaSwap.Api/
   Data/          AppDbContext + Migrations + DbSeeder
   Dtos/          request/response shapes
   Services/      LeitnerService, AnswerChecker, HintService, TokenService, EntryImport,
-                 PremiumService (gating rules), StripeService (subscription billing)
-backend/LinguaSwap.Tests/   xUnit tests (LeitnerService, AnswerChecker, HintService, EntryImport)
+                 PracticeSelectors (per-mode word selection), PremiumService (gating rules),
+                 StripeService (subscription billing)
+backend/LinguaSwap.Tests/   xUnit tests (LeitnerService, AnswerChecker, HintService, EntryImport,
+                            PracticeSelectors)
 frontend/src/
   api/           typed fetch wrappers
   lib/           small helpers (e.g. importFile.ts — parse an import file)
@@ -82,9 +112,50 @@ sample-imports/  example .json files for testing import (not used by the app at 
   `LearningState`. Practice difficulty (Easy/Medium/Hard) controls how much of the answer is
   revealed as a hint; Easy also returns the full answer for live green/red typing feedback.
   A word's `Notes` (if any) are shown on the practice card at every difficulty.
-- **Answer checking** (`AnswerChecker`): trim + case-insensitive but **accent-sensitive**
-  (`camion` ≠ `camión`); normalised to Unicode FormC. Expected text may hold comma-separated
-  acceptable answers. The frontend's Easy-mode live border uses the same rules (`PracticePage`).
+- **Practice systems (`PracticeMode`)**: a session picks a *mode* (separate from difficulty). Each
+  mode is a selection strategy in `Services/PracticeSelectors.cs` (`IPracticeSelector`, resolved by
+  `PracticeSelectorResolver`); `PracticeController.Start` calls the resolved selector instead of
+  hard-coding the query, and the chosen mode is stored on `PracticeSession.Mode`.
+  - `SmartReview` — the original Leitner due→new→not-due selection (unchanged). **Free, default.**
+  - `LearnNew` — only never-seen words. `Cram` — the whole library, shuffled, no cap. `Weak` —
+    seen words, lowest box / most-missed first. `Journey` — the whole library in order (see below).
+    **All four are premium** (`Start` returns `403` for free users via `PremiumService`); the picker
+    locks them for free users.
+  - **Rescheduling is per-mode** (`IPracticeSelector.Reschedules`): SmartReview/LearnNew/Weak move
+    Leitner boxes; **Cram and Journey are practice-only** — `Answer` still records the `Attempt` (so
+    stats count) but skips `LeitnerService.ApplyAnswer`, so they never disturb the schedule.
+  - **In-session reinforcement**: in `LearnNew`/`Cram`, `PracticeRunner` re-queues a missed word a
+    few cards ahead (capped) so it recurs before the session ends.
+  - **`Journey` is endless and client-driven**: the `JourneySelector` just returns the library in
+    order (by entry id); the whole loop lives in `frontend/src/components/JourneyRunner.tsx` +
+    `lib/journeyEngine.ts`. An active set of ~20 is drilled in reshuffled iterations (most-missed
+    first) that contain **only the not-yet-learned words**; a word that becomes _learned_ (≥3
+    attempts, ≥90% success, `streak >= 3` — i.e. last 3 correct) hibernates and is shown just **once
+    per set-grow** (a review pass), reappearing only when the set grows again or a failure un-learns
+    it. When the whole set is learned the set grows with the next library words (`nextRound` in
+    `journeyEngine`). No end screen. `PracticeCard` is the shared one-word view used by both runners.
+  - **Journey progress persists** per `(user, library, direction)` so re-entering resumes where you
+    left off. The server is a **dumb JSON store** — `Models/JourneyState.cs` (`StateJson`) +
+    `PUT /api/practice/journey`; `Start` hands the saved blob back in `StartSessionResponse.Journey`.
+    All learned/grow/order logic stays in `journeyEngine`. `JourneyRunner` seeds from it and re-saves
+    (fire-and-forget) after every answer. The demo mirrors this in `localStorage` (`demoStore`
+    `journeys` map).
+  - **Mirror discipline**: `frontend/src/lib/practiceModes.ts` (premium/reinforcing/reschedules/
+    journey flags) and `lib/demo/demoEngine.ts` (`buildDemoWords` per-mode) mirror the backend
+    selectors — keep them in sync, same as `AnswerChecker` ⇄ `demoEngine`. The no-account demo shows
+    all modes unlocked as a showcase (Journey runs fully client-side there too).
+- **Answer checking** (`AnswerChecker`): trim + **accent-sensitive** (`camion` ≠ `camión`);
+  normalised to Unicode FormC. Case-insensitive **except for capitalization-required languages**
+  (German): `Services/LanguageRules.IsCaseSensitive(targetLang)` is the authoritative gate, threaded
+  into `AnswerChecker.IsCorrect(expected, actual, caseSensitive)` from `PracticeController`, so
+  `haus` ≠ `Haus` for German but case stays ignored elsewhere. Expected text may hold comma-separated
+  acceptable answers. The frontend's Easy-mode live border + the no-account demo mirror these rules
+  (`PracticeRunner`, `lib/demo/demoEngine`).
+- **Special-character keypad** (`PracticeRunner`): the practice card shows a diacritic keypad for the
+  target language (clickable; each button bound to a number key **1–9** that inserts the char while
+  typing). The per-language character sets **and** the case-sensitivity mirror live in
+  `frontend/src/lib/languages.ts` — its `de` case-sensitivity flag must stay in sync with the backend
+  `LanguageRules` (same mirror discipline as `AnswerChecker` ⇄ `demoEngine`).
 - The full build plan / change history lives at
   `C:\Users\carlo\.claude\plans\i-am-a-first-sorted-origami.md`.
 
@@ -110,10 +181,19 @@ sample-imports/  example .json files for testing import (not used by the app at 
   **The DB is authoritative for every gate** — we never put premium in the JWT (a claim would go
   stale on upgrade/cancel). The frontend mirrors `isPremium` into `AuthUser`/`Account` only to
   show/hide UI; the API still enforces with `403`.
+- **Effective premium = paid _or_ active trial.** `ApplicationUser.HasPremiumAccess(now)` (=
+  `IsPremium || TrialEndsAt > now`) is the single definition; `PremiumService.IsPremiumAsync` uses it,
+  so **all** gates below inherit the trial automatically. The API sends the **effective** flag as
+  `isPremium` in `AuthResponse`/`AccountResponse`, plus `subscriptionActive` (the raw paid flag, to
+  tell trial from paid) and `trialEndsAt`. See _Free trial & hide-when-free_ below.
 - **Gates** (all enforced server-side via `Services/PremiumService`, surfaced as `403 { message }`):
   - Word import (both endpoints) — premium only.
-  - Library count — free users max `FreeLibraryLimit` (**5**) libraries.
+  - Practice modes — `LearnNew`/`Journey`/`Cram`/`Weak` are premium (`POST /api/practice/sessions`
+    returns `403` for a non-`SmartReview` mode); `SmartReview` stays free. See _Practice systems_.
+  - Library count — free users max `FreeLibraryLimit` (**5**) libraries. Over-limit libraries are
+    **hidden, not blocked** for users who exceeded the cap while premium (see hide-when-free below).
   - Words per library — free users max `FreeWordsPerLibrary` (**500**); checked on manual add.
+    Over-limit words are likewise **hidden** when the user reverts to free.
   - Advanced stats — `GET /api/stats/libraries/{id}` is premium; `GET /api/stats/overview`
     returns an empty `perLibrary` for free users (top-line summary stays free).
   - Extra themes — `ocean`/`forest` are `premium: true` in `theme/themes.ts`; gate is cosmetic
@@ -133,6 +213,34 @@ sample-imports/  example .json files for testing import (not used by the app at 
   prints the `whsec_…` to use as `Stripe:WebhookSecret`. Test card: `4242 4242 4242 4242`.
 - The seeded **demo user is premium** (and `DbSeeder` upgrades an existing demo account on
   startup) so every feature is testable without paying.
+
+##### Free trial & hide-when-free
+
+- **One-time free trial** (`PremiumService.TrialDays` = **14**, mirrored client-side as
+  `lib/premium.ts` `TRIAL_DAYS`). New accounts start it automatically in `AuthController.Register`;
+  existing free accounts start it once via `POST /api/billing/trial` (the Account page "Start free
+  trial" button). `ApplicationUser.TrialStartedAt` (non-null ⇒ already used, can never restart) +
+  `TrialEndsAt` back it; `PremiumService.StartTrialAsync` is the one-time guard. No card, no Stripe.
+  A trial user has raw `IsPremium == false`, so `POST /api/billing/checkout` still lets them
+  subscribe (that's the conversion). `AddPremiumTrial` migration.
+- **Hide-when-free, reappear-when-premium (dynamic capping — nothing is ever deleted).** When a user
+  is effectively free (trial expired and unpaid, or a paid subscription lapsed), content beyond the
+  free limits is **hidden**: their **newest** libraries past 5 and the **newest** words past 500 in
+  each library (i.e. only the _oldest_ 5 / _oldest_ 500 stay visible). Regaining premium un-hides
+  everything instantly with zero restore logic. Chosen over an `IsHidden` flag because trial expiry
+  is time-based (no event to trigger a sweep) — visibility is derived at query time.
+  - Implemented by `PremiumService.VisibleLibraries(userId, isPremium)` /
+    `VisibleEntries(libraryId, isPremium)` (return all for premium, oldest-N `Take` for free),
+    threaded through **every read path**: `LibrariesController` List/Get, `EntriesController`
+    ListForLibrary (+ Get/Update/Delete visibility guards), `PracticeController.Start`, and
+    `StatsController.Overview` (hidden libraries excluded from counts/aggregates; visible word counts
+    capped). **Create gates are unchanged** — they count _all_ owned rows, so an over-limit reverted
+    user stays blocked from adding more.
+  - `LibrarySummary.EntryCount` is the **visible** (capped) count; `HiddenEntryCount` +
+    `AccountResponse.HiddenLibraries` drive the gentle "N hidden — upgrade to restore" notes on the
+    Libraries page / library editor / Account page. An active trial shows a top banner + countdown.
+  - **No backfill needed:** existing free users were already capped at creation, so none can be
+    over-limit; only premium/trial users can exceed limits.
 
 #### Going live (Stripe test → production)
 

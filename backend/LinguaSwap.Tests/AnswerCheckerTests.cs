@@ -67,4 +67,43 @@ public class AnswerCheckerTests
         Assert.Equal("thank you", AnswerChecker.PrimaryAnswer("thank you, thanks"));
         Assert.Equal("dog", AnswerChecker.PrimaryAnswer("  dog  "));
     }
+
+    // ---- Case-sensitive grading (German et al. — capitalization is grammatical) ----
+
+    [Theory]
+    [InlineData("Haus", "haus")]       // noun must stay Capitalized
+    [InlineData("Haus", "HAUS")]
+    [InlineData("schnell", "Schnell")] // non-noun must stay lowercase
+    [InlineData("Tür", "tür")]
+    public void CaseSensitive_DoesNotMatch_WhenCaseDiffers(string expected, string actual)
+    {
+        Assert.False(_checker.IsCorrect(expected, actual, caseSensitive: true));
+    }
+
+    [Theory]
+    [InlineData("Haus", "Haus")]
+    [InlineData("Haus", "  Haus ")]    // trimming still applies
+    [InlineData("schnell", "schnell")]
+    public void CaseSensitive_Matches_WhenCaseAndAccentsAgree(string expected, string actual)
+    {
+        Assert.True(_checker.IsCorrect(expected, actual, caseSensitive: true));
+    }
+
+    [Fact]
+    public void CaseSensitive_StillRequiresAccents()
+    {
+        Assert.False(_checker.IsCorrect("Tür", "Tur", caseSensitive: true));
+    }
+
+    [Theory]
+    [InlineData("de", true)]
+    [InlineData("DE", true)]   // lookup is case-insensitive on the code itself
+    [InlineData(" de ", true)] // and trims
+    [InlineData("es", false)]
+    [InlineData("en", false)]
+    [InlineData(null, false)]
+    public void LanguageRules_FlagsOnlyCapitalizationLanguages(string? code, bool expected)
+    {
+        Assert.Equal(expected, LanguageRules.IsCaseSensitive(code));
+    }
 }

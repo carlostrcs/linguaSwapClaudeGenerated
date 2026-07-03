@@ -10,14 +10,14 @@ namespace LinguaSwap.Api.Controllers;
 [ApiController]
 [Route("api/account")]
 [Authorize]
-public class AccountController(UserManager<ApplicationUser> users) : ControllerBase
+public class AccountController(UserManager<ApplicationUser> users, PremiumService premium) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> Get()
     {
         var user = await users.FindByIdAsync(User.GetUserId());
         if (user is null) return NotFound();
-        return Ok(new AccountResponse(user.Id, user.Email!, user.DisplayName, user.IsPremium));
+        return Ok(await BuildAccountResponseAsync(user));
     }
 
     [HttpPut]
@@ -42,7 +42,17 @@ public class AccountController(UserManager<ApplicationUser> users) : ControllerB
         if (!update.Succeeded)
             return BadRequest(new { errors = update.Errors.Select(e => e.Description) });
 
-        return Ok(new AccountResponse(user.Id, user.Email!, user.DisplayName, user.IsPremium));
+        return Ok(await BuildAccountResponseAsync(user));
+    }
+
+    /// <summary>Build the account DTO with effective-premium + trial + hidden-library fields.</summary>
+    private async Task<AccountResponse> BuildAccountResponseAsync(ApplicationUser user)
+    {
+        var isPremium = user.HasPremiumAccess(DateTime.UtcNow);
+        var hiddenLibraries = await premium.HiddenLibraryCountAsync(user.Id, isPremium);
+        return new AccountResponse(
+            user.Id, user.Email!, user.DisplayName,
+            isPremium, user.IsPremium, user.TrialEndsAt, hiddenLibraries);
     }
 
     [HttpPut("password")]

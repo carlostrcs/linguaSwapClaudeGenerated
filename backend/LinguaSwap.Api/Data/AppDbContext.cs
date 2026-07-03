@@ -14,6 +14,8 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<LearningState> LearningStates => Set<LearningState>();
     public DbSet<PracticeSession> PracticeSessions => Set<PracticeSession>();
     public DbSet<Attempt> Attempts => Set<Attempt>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<JourneyState> JourneyStates => Set<JourneyState>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -99,6 +101,30 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
                 .HasForeignKey(a => a.EntryId)
                 .OnDelete(DeleteBehavior.SetNull);
             e.HasIndex(a => a.SessionId);
+        });
+
+        builder.Entity<RefreshToken>(e =>
+        {
+            e.Property(t => t.TokenHash).IsRequired().HasMaxLength(128);
+            e.HasOne(t => t.User)
+                .WithMany(u => u.RefreshTokens)
+                .HasForeignKey(t => t.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            // Tokens are looked up by their hash; one row per token.
+            e.HasIndex(t => t.TokenHash).IsUnique();
+        });
+
+        builder.Entity<JourneyState>(e =>
+        {
+            e.Property(j => j.SourceLanguage).IsRequired().HasMaxLength(10);
+            e.Property(j => j.TargetLanguage).IsRequired().HasMaxLength(10);
+            e.Property(j => j.StateJson).IsRequired();
+            e.HasOne(j => j.Library)
+                .WithMany()
+                .HasForeignKey(j => j.LibraryId)
+                .OnDelete(DeleteBehavior.Cascade);
+            // One journey per user per library per direction.
+            e.HasIndex(j => new { j.UserId, j.LibraryId, j.SourceLanguage, j.TargetLanguage }).IsUnique();
         });
     }
 }

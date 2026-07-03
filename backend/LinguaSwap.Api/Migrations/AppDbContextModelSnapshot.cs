@@ -74,6 +74,12 @@ namespace LinguaSwap.Api.Migrations
                     b.Property<string>("StripeSubscriptionId")
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTime?>("TrialEndsAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("TrialStartedAt")
+                        .HasColumnType("TEXT");
+
                     b.Property<bool>("TwoFactorEnabled")
                         .HasColumnType("INTEGER");
 
@@ -155,6 +161,46 @@ namespace LinguaSwap.Api.Migrations
                     b.HasIndex("LibraryId");
 
                     b.ToTable("Entries");
+                });
+
+            modelBuilder.Entity("LinguaSwap.Api.Models.JourneyState", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("LibraryId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("SourceLanguage")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("StateJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TargetLanguage")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LibraryId");
+
+                    b.HasIndex("UserId", "LibraryId", "SourceLanguage", "TargetLanguage")
+                        .IsUnique();
+
+                    b.ToTable("JourneyStates");
                 });
 
             modelBuilder.Entity("LinguaSwap.Api.Models.LearningState", b =>
@@ -250,6 +296,9 @@ namespace LinguaSwap.Api.Migrations
                     b.Property<int?>("LibraryId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("Mode")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("SourceLanguage")
                         .IsRequired()
                         .HasMaxLength(10)
@@ -274,6 +323,40 @@ namespace LinguaSwap.Api.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("PracticeSessions");
+                });
+
+            modelBuilder.Entity("LinguaSwap.Api.Models.RefreshToken", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("RevokedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("RefreshTokens");
                 });
 
             modelBuilder.Entity("LinguaSwap.Api.Models.Translation", b =>
@@ -460,6 +543,17 @@ namespace LinguaSwap.Api.Migrations
                     b.Navigation("Library");
                 });
 
+            modelBuilder.Entity("LinguaSwap.Api.Models.JourneyState", b =>
+                {
+                    b.HasOne("LinguaSwap.Api.Models.Library", "Library")
+                        .WithMany()
+                        .HasForeignKey("LibraryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Library");
+                });
+
             modelBuilder.Entity("LinguaSwap.Api.Models.LearningState", b =>
                 {
                     b.HasOne("LinguaSwap.Api.Models.Entry", "Entry")
@@ -496,6 +590,17 @@ namespace LinguaSwap.Api.Migrations
                         .IsRequired();
 
                     b.Navigation("Library");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("LinguaSwap.Api.Models.RefreshToken", b =>
+                {
+                    b.HasOne("LinguaSwap.Api.Models.ApplicationUser", "User")
+                        .WithMany("RefreshTokens")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("User");
                 });
@@ -567,6 +672,8 @@ namespace LinguaSwap.Api.Migrations
                     b.Navigation("Libraries");
 
                     b.Navigation("PracticeSessions");
+
+                    b.Navigation("RefreshTokens");
                 });
 
             modelBuilder.Entity("LinguaSwap.Api.Models.Entry", b =>

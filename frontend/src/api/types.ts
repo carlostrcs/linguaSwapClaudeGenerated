@@ -1,10 +1,16 @@
 export interface AuthResponse {
   token: string;
   expiresAt: string;
+  refreshToken: string;
   userId: string;
   email: string;
   displayName?: string | null;
+  /** Effective premium (paid subscription OR active trial) — gates all premium UI. */
   isPremium: boolean;
+  /** The raw paid-subscription flag, so the UI can tell a trial apart from a paid plan. */
+  subscriptionActive: boolean;
+  /** When the free trial ends (ISO), or null if never started. */
+  trialEndsAt?: string | null;
 }
 
 export interface Account {
@@ -12,6 +18,10 @@ export interface Account {
   email: string;
   displayName?: string | null;
   isPremium: boolean;
+  subscriptionActive: boolean;
+  trialEndsAt?: string | null;
+  /** How many of the user's libraries are hidden by the free-tier cap (0 for premium). */
+  hiddenLibraries: number;
 }
 
 export interface LibrarySummary {
@@ -19,7 +29,10 @@ export interface LibrarySummary {
   name: string;
   description?: string | null;
   createdAt: string;
+  /** Visible word count (capped at the free limit for free users). */
   entryCount: number;
+  /** Words hidden by the free-tier cap (0 for premium). */
+  hiddenEntryCount: number;
 }
 
 export interface TranslationDto {
@@ -52,6 +65,9 @@ export interface LibraryImportResult {
 
 export type Difficulty = 'Easy' | 'Medium' | 'Hard';
 
+/** Which practice *system* a session runs. SmartReview is free; the rest are premium. */
+export type PracticeMode = 'SmartReview' | 'LearnNew' | 'Journey' | 'Cram' | 'Weak';
+
 export interface PracticeWord {
   entryId: number;
   prompt: string;
@@ -61,12 +77,29 @@ export interface PracticeWord {
   notes?: string | null;
 }
 
+/** Persisted per-word Journey progress (mirrors the backend JourneyWordDto). */
+export interface JourneyWord {
+  entryId: number;
+  attempts: number;
+  correct: number;
+  streak: number;
+}
+
+/** A saved Journey position for one library+direction: how many words are active + their progress. */
+export interface JourneyState {
+  activeCount: number;
+  words: JourneyWord[];
+}
+
 export interface StartSessionResponse {
   sessionId: number;
   difficulty: Difficulty;
+  mode: PracticeMode;
   sourceLanguage: string;
   targetLanguage: string;
   words: PracticeWord[];
+  /** Present only for Journey mode: the saved progress to resume from (null if none yet). */
+  journey?: JourneyState | null;
 }
 
 export interface AnswerResponse {

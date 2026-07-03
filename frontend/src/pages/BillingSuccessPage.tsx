@@ -31,7 +31,13 @@ export default function BillingSuccessPage() {
 
     confirmCheckout(sessionId)
       .then((acc) => {
-        if (user) updateUser({ ...user, isPremium: acc.isPremium });
+        if (user)
+          updateUser({
+            ...user,
+            isPremium: acc.isPremium,
+            subscriptionActive: acc.subscriptionActive,
+            trialEndsAt: acc.trialEndsAt,
+          });
         qc.invalidateQueries({ queryKey: ['account'] });
         setStatus('success');
       })

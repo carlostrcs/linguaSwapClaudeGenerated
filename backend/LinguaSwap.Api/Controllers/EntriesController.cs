@@ -17,11 +17,12 @@ public class EntriesController(AppDbContext db, PremiumService premium) : Contro
     public async Task<IActionResult> ListForLibrary(int libraryId)
     {
         var userId = User.GetUserId();
-        if (!await db.Libraries.AnyAsync(l => l.Id == libraryId && l.UserId == userId))
+        var isPremium = await premium.IsPremiumAsync(userId);
+        if (!await premium.VisibleLibraries(userId, isPremium).AnyAsync(l => l.Id == libraryId))
             return NotFound();
 
-        var entries = await db.Entries
-            .Where(e => e.LibraryId == libraryId)
+        // Free users only see the oldest FreeWordsPerLibrary words in the library.
+        var entries = await premium.VisibleEntries(libraryId, isPremium)
             .OrderBy(e => e.Id)
             .Select(e => new EntryDto(
                 e.Id, e.Notes, e.CreatedAt,
@@ -34,23 +35,29 @@ public class EntriesController(AppDbContext db, PremiumService premium) : Contro
     public async Task<IActionResult> Get(int id)
     {
         var userId = User.GetUserId();
+        var isPremium = await premium.IsPremiumAsync(userId);
         var entry = await db.Entries
             .Where(e => e.Id == id && e.Library!.UserId == userId)
             .Select(e => new EntryDto(
                 e.Id, e.Notes, e.CreatedAt,
                 e.Translations.Select(t => new TranslationDto(t.LanguageCode, t.Text)).ToList()))
             .FirstOrDefaultAsync();
-        return entry is null ? NotFound() : Ok(entry);
+        if (entry is null) return NotFound();
+        // Hidden entries (in a hidden library) aren't reachable while free.
+        if (!await premium.VisibleLibraries(userId, isPremium).AnyAsync(l => l.Entries.Any(e => e.Id == id)))
+            return NotFound();
+        return Ok(entry);
     }
 
     [HttpPost("libraries/{libraryId:int}/entries")]
     public async Task<IActionResult> Create(int libraryId, SaveEntryRequest req)
     {
         var userId = User.GetUserId();
-        if (!await db.Libraries.AnyAsync(l => l.Id == libraryId && l.UserId == userId))
+        var isPremium = await premium.IsPremiumAsync(userId);
+        if (!await premium.VisibleLibraries(userId, isPremium).AnyAsync(l => l.Id == libraryId))
             return NotFound();
 
-        if (!await premium.IsPremiumAsync(userId)
+        if (!isPremium
             && await db.Entries.CountAsync(e => e.LibraryId == libraryId) >= PremiumService.FreeWordsPerLibrary)
         {
             return StatusCode(StatusCodes.Status403Forbidden, new
@@ -79,10 +86,13 @@ public class EntriesController(AppDbContext db, PremiumService premium) : Contro
     public async Task<IActionResult> Update(int id, SaveEntryRequest req)
     {
         var userId = User.GetUserId();
+        var isPremium = await premium.IsPremiumAsync(userId);
         var entry = await db.Entries
             .Include(e => e.Translations)
             .FirstOrDefaultAsync(e => e.Id == id && e.Library!.UserId == userId);
         if (entry is null) return NotFound();
+        if (!await premium.VisibleLibraries(userId, isPremium).AnyAsync(l => l.Id == entry.LibraryId))
+            return NotFound();
 
         var translations = EntryImport.NormalizeTranslations(req.Translations);
         if (translations is null) return BadRequest(new { message = "Each language can appear at most once." });
@@ -143,8 +153,11 @@ public class EntriesController(AppDbContext db, PremiumService premium) : Contro
     public async Task<IActionResult> Delete(int id)
     {
         var userId = User.GetUserId();
+        var isPremium = await premium.IsPremiumAsync(userId);
         var entry = await db.Entries.FirstOrDefaultAsync(e => e.Id == id && e.Library!.UserId == userId);
         if (entry is null) return NotFound();
+        if (!await premium.VisibleLibraries(userId, isPremium).AnyAsync(l => l.Id == entry.LibraryId))
+            return NotFound();
 
         db.Entries.Remove(entry);
         await db.SaveChangesAsync();

@@ -8,7 +8,10 @@ namespace LinguaSwap.Api.Controllers;
 
 [ApiController]
 [Route("api/auth")]
-public class AuthController(UserManager<ApplicationUser> users, TokenService tokens) : ControllerBase
+public class AuthController(
+    UserManager<ApplicationUser> users,
+    TokenService tokens,
+    RefreshTokenService refreshTokens) : ControllerBase
 {
     [HttpPost("register")]
     public async Task<IActionResult> Register(RegisterRequest req)
@@ -25,9 +28,18 @@ public class AuthController(UserManager<ApplicationUser> users, TokenService tok
 
         var result = await users.CreateAsync(user, req.Password);
         if (!result.Succeeded)
-            return BadRequest(new { errors = result.Errors.Select(e => e.Description) });
+        {
+            var errors = result.Errors.Select(e => e.Description).ToArray();
+            return BadRequest(new { message = string.Join(" ", errors), errors });
+        }
 
-        return Ok(BuildAuthResponse(user));
+        // New accounts start their one-time free trial automatically.
+        var now = DateTime.UtcNow;
+        user.TrialStartedAt = now;
+        user.TrialEndsAt = now.AddDays(PremiumService.TrialDays);
+        await users.UpdateAsync(user);
+
+        return Ok(await BuildAuthResponseAsync(user));
     }
 
     [HttpPost("login")]
@@ -37,12 +49,38 @@ public class AuthController(UserManager<ApplicationUser> users, TokenService tok
         if (user is null || !await users.CheckPasswordAsync(user, req.Password))
             return Unauthorized(new { message = "Invalid email or password." });
 
-        return Ok(BuildAuthResponse(user));
+        return Ok(await BuildAuthResponseAsync(user));
     }
 
-    private AuthResponse BuildAuthResponse(ApplicationUser user)
+    /// <summary>Exchange a valid refresh token for a fresh access token + a rotated refresh token.</summary>
+    [HttpPost("refresh")]
+    public async Task<IActionResult> Refresh(RefreshRequest req)
+    {
+        var rotated = await refreshTokens.ValidateAndRotateAsync(req.RefreshToken);
+        if (rotated is null)
+            return Unauthorized(new { message = "Invalid or expired refresh token." });
+
+        var (user, newRefreshToken) = rotated.Value;
+        var (token, expiresAt) = tokens.CreateToken(user);
+        return Ok(new AuthResponse(
+            token, expiresAt, newRefreshToken, user.Id, user.Email!, user.DisplayName,
+            user.HasPremiumAccess(DateTime.UtcNow), user.IsPremium, user.TrialEndsAt));
+    }
+
+    /// <summary>Revoke a refresh token so it can no longer renew a session.</summary>
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout(LogoutRequest req)
+    {
+        await refreshTokens.RevokeAsync(req.RefreshToken);
+        return NoContent();
+    }
+
+    private async Task<AuthResponse> BuildAuthResponseAsync(ApplicationUser user)
     {
         var (token, expiresAt) = tokens.CreateToken(user);
-        return new AuthResponse(token, expiresAt, user.Id, user.Email!, user.DisplayName, user.IsPremium);
+        var refreshToken = await refreshTokens.IssueAsync(user.Id);
+        return new AuthResponse(
+            token, expiresAt, refreshToken, user.Id, user.Email!, user.DisplayName,
+            user.HasPremiumAccess(DateTime.UtcNow), user.IsPremium, user.TrialEndsAt);
     }
 }

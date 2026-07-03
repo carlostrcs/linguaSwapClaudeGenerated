@@ -3,6 +3,7 @@ import type { ChangeEvent, FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createLibrary, deleteLibrary, listLibraries, updateLibrary } from '../api/libraries';
+import { getAccount } from '../api/account';
 import { importEntries } from '../api/entries';
 import { ApiError } from '../api/client';
 import type { ImportEntry } from '../api/types';
@@ -21,6 +22,10 @@ export default function LibrariesPage() {
   const isPremium = user?.isPremium ?? false;
   const libraryCount = libraries?.length ?? 0;
   const atLibraryLimit = !isPremium && libraryCount >= FREE_LIBRARY_LIMIT;
+
+  // How many libraries are hidden by the free-tier cap (from the shared account query).
+  const account = useQuery({ queryKey: ['account'], queryFn: getAccount });
+  const hiddenLibraries = account.data?.hiddenLibraries ?? 0;
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -164,6 +169,13 @@ export default function LibrariesPage() {
       {isLoading && <p className="muted">{t('common.loading')}</p>}
       {isError && <p className="alert alert-error">{t('libraries.loadFailed')}</p>}
       {libraries && libraries.length === 0 && <p className="muted">{t('libraries.empty')}</p>}
+
+      {hiddenLibraries > 0 && (
+        <p className="alert alert-info">
+          {t('premium.hiddenLibraries', { count: hiddenLibraries })}{' '}
+          <Link to="/account">{t('premium.restoreCta')}</Link>
+        </p>
+      )}
 
       <div className="library-grid">
         {libraries?.map((lib) => (
