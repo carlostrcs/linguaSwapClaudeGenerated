@@ -20,6 +20,10 @@ public record RefreshRequest(
 public record LogoutRequest(
     string? RefreshToken);
 
+public record ConfirmEmailRequest(
+    [Required] string UserId,
+    [Required] string Token);
+
 public record AuthResponse(
     string Token,
     DateTime ExpiresAt,
@@ -32,4 +36,6 @@ public record AuthResponse(
     // the UI distinguish a trial from a paid plan and show a countdown.
     bool IsPremium,
     bool SubscriptionActive,
-    DateTime? TrialEndsAt);
+    DateTime? TrialEndsAt,
+    // Whether the email address has been confirmed; drives the soft "confirm your email" banner.
+    bool EmailConfirmed);

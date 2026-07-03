@@ -56,6 +56,11 @@ builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<RefreshTokenService>();
 builder.Services.AddScoped<PremiumService>();
 
+// Email: transactional mail (account confirmation) over SMTP. Real credentials come from
+// user-secrets / env vars; with none configured the sender logs the message instead.
+builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
+builder.Services.AddScoped<EmailConfirmationService>();
+
 // Stripe (premium subscriptions). The secret key is global SDK config; real values come
 // from user-secrets / env vars (appsettings ships empty placeholders).
 Stripe.StripeConfiguration.ApiKey = builder.Configuration["Stripe:SecretKey"];

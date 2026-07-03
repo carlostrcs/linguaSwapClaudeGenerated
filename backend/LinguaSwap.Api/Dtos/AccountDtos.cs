@@ -12,7 +12,8 @@ public record AccountResponse(
     bool IsPremium,
     bool SubscriptionActive,
     DateTime? TrialEndsAt,
-    int HiddenLibraries);
+    int HiddenLibraries,
+    bool EmailConfirmed);
 
 public record UpdateProfileRequest(
     [Required, EmailAddress] string Email,

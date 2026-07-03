@@ -72,6 +72,37 @@ short access token with a long-lived, DB-backed refresh token:
   silent refresh and replays the request once; if the refresh fails it signs out. No screen ever sees
   the expiry — `signIn`/`signOut` in `auth/AuthContext.tsx` persist and revoke the refresh token.
 
+#### Email confirmation (soft — never blocks)
+
+New accounts are emailed a confirmation link, but confirmation is a **gentle nudge, not a gate**:
+register still auto-logs the user in and login is **never** blocked. Verification just proves the
+address is real.
+
+- **Send:** `register` (and an email change in `AccountController.Update`, which un-confirms via
+  `SetEmailAsync`) calls `Services/EmailConfirmationService.SendConfirmationEmailAsync` —
+  `UserManager.GenerateEmailConfirmationTokenAsync` (works because `Program.cs` already calls
+  `AddDefaultTokenProviders()`) → a link `{FrontendBaseUrl}/confirm-email?userId=…&token=…` (token is
+  `Uri.EscapeDataString`-encoded; default Identity tokens contain `+`/`/`/`=`). Sending is
+  **best-effort** (try/catch, logged, never rethrown) so a mail failure can't fail registration.
+- **Transport:** `Services/IEmailSender` → `SmtpEmailSender` (MailKit) driven by the `Email` config
+  section. **With no SMTP configured it logs the message (link included) instead of sending**, so the
+  flow is testable before secrets are set. `EmailConfirmed` is the inherited `IdentityUser` column —
+  **no migration.**
+- **Endpoints:** `POST /api/auth/confirm-email` (`{ userId, token }` → `ConfirmEmailAsync`, anonymous —
+  the link is often opened logged-out) and `POST /api/auth/resend-confirmation` (`[Authorize]`, no
+  body → resend to the current user, idempotent no-op if already confirmed, `204`).
+- **`emailConfirmed`** rides on `AuthResponse`/`AccountResponse` (mirrored into `AuthUser` and synced
+  from the `['account']` query in `Layout`). The frontend shows a **dismissible** `ConfirmEmailBanner`
+  (session-scoped dismiss) with a **Resend** button until confirmed; the emailed link lands on the
+  public `pages/ConfirmEmailPage.tsx` (modeled on `BillingSuccessPage`). The seeded demo user is
+  `EmailConfirmed = true`, so it never sees the banner.
+- **Config:** `Email:FromAddress`, `Email:FromName`, `Email:Smtp:{Host,Port,User,Password,UseStartTls}`
+  in `appsettings.json` — Gmail defaults (`smtp.gmail.com:587`, STARTTLS) with **empty** secret
+  placeholders. Supply real values via **user-secrets** (`Email:Smtp:User` = the Gmail address,
+  `Email:Smtp:Password` = a 16-char **App Password**, which requires 2FA on the account;
+  `Email:FromAddress`). Env-var form for prod: `Email__Smtp__User`, `Email__Smtp__Password`,
+  `Email__FromAddress`. **Never commit real values.**
+
 ## Common commands
 
 - Build backend: `dotnet build backend/LinguaSwap.slnx`
@@ -91,7 +122,8 @@ backend/LinguaSwap.Api/
   Dtos/          request/response shapes
   Services/      LeitnerService, AnswerChecker, HintService, TokenService, EntryImport,
                  PracticeSelectors (per-mode word selection), PremiumService (gating rules),
-                 StripeService (subscription billing)
+                 StripeService (subscription billing), IEmailSender/SmtpEmailSender (MailKit)
+                 + EmailConfirmationService (account email confirmation)
 backend/LinguaSwap.Tests/   xUnit tests (LeitnerService, AnswerChecker, HintService, EntryImport,
                             PracticeSelectors)
 frontend/src/
@@ -266,7 +298,8 @@ sample-imports/  example .json files for testing import (not used by the app at 
    `http://localhost:5173`). *This is the one code edit; optionally refactor it to read from config.*
 8. **Prod secret storage** → NOT `dotnet user-secrets` (dev only). Use the host's env vars /
    secrets manager; ASP.NET maps `Stripe__SecretKey`, `Stripe__WebhookSecret`, `Stripe__PriceId`,
-   `FrontendBaseUrl`. **Never commit live keys.**
+   `FrontendBaseUrl`, and the email secrets `Email__Smtp__User`, `Email__Smtp__Password`,
+   `Email__FromAddress`. **Never commit live keys.**
 9. **Customer Portal** → configure it in **live** mode (Settings → Billing → Customer portal) or
    `POST /api/billing/portal` errors.
 10. **Data note** → test customers/subscriptions don't migrate; existing

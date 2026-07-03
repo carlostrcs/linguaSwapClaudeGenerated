@@ -10,7 +10,10 @@ namespace LinguaSwap.Api.Controllers;
 [ApiController]
 [Route("api/account")]
 [Authorize]
-public class AccountController(UserManager<ApplicationUser> users, PremiumService premium) : ControllerBase
+public class AccountController(
+    UserManager<ApplicationUser> users,
+    PremiumService premium,
+    EmailConfirmationService confirmations) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> Get()
@@ -26,7 +29,8 @@ public class AccountController(UserManager<ApplicationUser> users, PremiumServic
         var user = await users.FindByIdAsync(User.GetUserId());
         if (user is null) return NotFound();
 
-        if (!string.Equals(user.Email, req.Email, StringComparison.OrdinalIgnoreCase))
+        var emailChanged = !string.Equals(user.Email, req.Email, StringComparison.OrdinalIgnoreCase);
+        if (emailChanged)
         {
             if (await users.FindByEmailAsync(req.Email) is not null)
                 return Conflict(new { message = "That email is already in use." });
@@ -42,6 +46,11 @@ public class AccountController(UserManager<ApplicationUser> users, PremiumServic
         if (!update.Succeeded)
             return BadRequest(new { errors = update.Errors.Select(e => e.Description) });
 
+        // Changing the email un-confirms it (SetEmailAsync resets EmailConfirmed), so mail a fresh
+        // confirmation link for the new address.
+        if (emailChanged)
+            await confirmations.SendConfirmationEmailAsync(user);
+
         return Ok(await BuildAccountResponseAsync(user));
     }
 
@@ -52,7 +61,7 @@ public class AccountController(UserManager<ApplicationUser> users, PremiumServic
         var hiddenLibraries = await premium.HiddenLibraryCountAsync(user.Id, isPremium);
         return new AccountResponse(
             user.Id, user.Email!, user.DisplayName,
-            isPremium, user.IsPremium, user.TrialEndsAt, hiddenLibraries);
+            isPremium, user.IsPremium, user.TrialEndsAt, hiddenLibraries, user.EmailConfirmed);
     }
 
     [HttpPut("password")]

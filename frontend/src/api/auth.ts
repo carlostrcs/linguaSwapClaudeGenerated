@@ -22,3 +22,16 @@ export function logout(refreshToken: string) {
     body: JSON.stringify({ refreshToken }),
   });
 }
+
+// Confirm an email address from the link in the confirmation email.
+export function confirmEmail(userId: string, token: string) {
+  return api<{ confirmed: boolean }>('/auth/confirm-email', {
+    method: 'POST',
+    body: JSON.stringify({ userId, token }),
+  });
+}
+
+// Re-send the confirmation email to the signed-in user (auth token attached automatically).
+export function resendConfirmation() {
+  return api<void>('/auth/resend-confirmation', { method: 'POST' });
+}

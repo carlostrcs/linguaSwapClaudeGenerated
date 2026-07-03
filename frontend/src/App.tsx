@@ -9,6 +9,7 @@ import DemoLibraryEditorPage from './pages/DemoLibraryEditorPage';
 import DemoPracticePage from './pages/DemoPracticePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import ConfirmEmailPage from './pages/ConfirmEmailPage';
 import LibrariesPage from './pages/LibrariesPage';
 import LibraryEditorPage from './pages/LibraryEditorPage';
 import PracticePage from './pages/PracticePage';
@@ -28,6 +29,8 @@ export default function App() {
       <Route element={<AuthLayout />}>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        {/* Public: the emailed confirmation link is usually opened while logged out. */}
+        <Route path="/confirm-email" element={<ConfirmEmailPage />} />
       </Route>
       <Route element={<ProtectedRoute />}>
         <Route element={<Layout />}>

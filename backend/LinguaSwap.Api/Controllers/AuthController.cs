@@ -1,6 +1,7 @@
 using LinguaSwap.Api.Dtos;
 using LinguaSwap.Api.Models;
 using LinguaSwap.Api.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,7 +12,8 @@ namespace LinguaSwap.Api.Controllers;
 public class AuthController(
     UserManager<ApplicationUser> users,
     TokenService tokens,
-    RefreshTokenService refreshTokens) : ControllerBase
+    RefreshTokenService refreshTokens,
+    EmailConfirmationService confirmations) : ControllerBase
 {
     [HttpPost("register")]
     public async Task<IActionResult> Register(RegisterRequest req)
@@ -39,6 +41,9 @@ public class AuthController(
         user.TrialEndsAt = now.AddDays(PremiumService.TrialDays);
         await users.UpdateAsync(user);
 
+        // Email the confirmation link (best-effort — a mail failure won't fail registration).
+        await confirmations.SendConfirmationEmailAsync(user);
+
         return Ok(await BuildAuthResponseAsync(user));
     }
 
@@ -64,7 +69,8 @@ public class AuthController(
         var (token, expiresAt) = tokens.CreateToken(user);
         return Ok(new AuthResponse(
             token, expiresAt, newRefreshToken, user.Id, user.Email!, user.DisplayName,
-            user.HasPremiumAccess(DateTime.UtcNow), user.IsPremium, user.TrialEndsAt));
+            user.HasPremiumAccess(DateTime.UtcNow), user.IsPremium, user.TrialEndsAt,
+            user.EmailConfirmed));
     }
 
     /// <summary>Revoke a refresh token so it can no longer renew a session.</summary>
@@ -75,12 +81,38 @@ public class AuthController(
         return NoContent();
     }
 
+    /// <summary>Confirm an email address from the link in the confirmation email.</summary>
+    [HttpPost("confirm-email")]
+    public async Task<IActionResult> ConfirmEmail(ConfirmEmailRequest req)
+    {
+        if (await confirmations.ConfirmAsync(req.UserId, req.Token))
+            return Ok(new { confirmed = true });
+
+        return BadRequest(new { message = "This confirmation link is invalid or has expired." });
+    }
+
+    /// <summary>Re-send the confirmation email to the signed-in user (from the in-app banner).</summary>
+    [Authorize]
+    [HttpPost("resend-confirmation")]
+    public async Task<IActionResult> ResendConfirmation()
+    {
+        var user = await users.FindByIdAsync(User.GetUserId());
+        if (user is null) return NotFound();
+
+        // Idempotent no-op if already confirmed.
+        if (!user.EmailConfirmed)
+            await confirmations.SendConfirmationEmailAsync(user);
+
+        return NoContent();
+    }
+
     private async Task<AuthResponse> BuildAuthResponseAsync(ApplicationUser user)
     {
         var (token, expiresAt) = tokens.CreateToken(user);
         var refreshToken = await refreshTokens.IssueAsync(user.Id);
         return new AuthResponse(
             token, expiresAt, refreshToken, user.Id, user.Email!, user.DisplayName,
-            user.HasPremiumAccess(DateTime.UtcNow), user.IsPremium, user.TrialEndsAt);
+            user.HasPremiumAccess(DateTime.UtcNow), user.IsPremium, user.TrialEndsAt,
+            user.EmailConfirmed);
     }
 }

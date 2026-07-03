@@ -88,7 +88,7 @@ public class BillingController(
         var hiddenLibraries = await premium.HiddenLibraryCountAsync(user.Id, isPremium);
         return new AccountResponse(
             user.Id, user.Email!, user.DisplayName,
-            isPremium, user.IsPremium, user.TrialEndsAt, hiddenLibraries);
+            isPremium, user.IsPremium, user.TrialEndsAt, hiddenLibraries, user.EmailConfirmed);
     }
 
     /// <summary>Open the Stripe Customer Portal so the user can manage/cancel their subscription.</summary>

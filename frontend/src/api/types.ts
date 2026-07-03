@@ -11,6 +11,8 @@ export interface AuthResponse {
   subscriptionActive: boolean;
   /** When the free trial ends (ISO), or null if never started. */
   trialEndsAt?: string | null;
+  /** Whether the email address has been confirmed (drives the soft "confirm your email" banner). */
+  emailConfirmed: boolean;
 }
 
 export interface Account {
@@ -22,6 +24,8 @@ export interface Account {
   trialEndsAt?: string | null;
   /** How many of the user's libraries are hidden by the free-tier cap (0 for premium). */
   hiddenLibraries: number;
+  /** Whether the email address has been confirmed. */
+  emailConfirmed: boolean;
 }
 
 export interface LibrarySummary {

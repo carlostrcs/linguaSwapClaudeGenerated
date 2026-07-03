@@ -5,6 +5,7 @@ import { getAccount } from '../api/account';
 import { useAuth } from '../auth/AuthContext';
 import { trialDaysLeft } from '../lib/premium';
 import { useI18n } from '../i18n/I18nProvider';
+import ConfirmEmailBanner from './ConfirmEmailBanner';
 
 export default function Layout() {
   const { user, updateUser, signOut } = useAuth();
@@ -16,13 +17,14 @@ export default function Layout() {
   const account = useQuery({ queryKey: ['account'], queryFn: getAccount });
   useEffect(() => {
     if (!account.data || !user) return;
-    const { isPremium, subscriptionActive, trialEndsAt } = account.data;
+    const { isPremium, subscriptionActive, trialEndsAt, emailConfirmed } = account.data;
     if (
       isPremium !== user.isPremium ||
       subscriptionActive !== user.subscriptionActive ||
-      (trialEndsAt ?? null) !== (user.trialEndsAt ?? null)
+      (trialEndsAt ?? null) !== (user.trialEndsAt ?? null) ||
+      emailConfirmed !== user.emailConfirmed
     ) {
-      updateUser({ ...user, isPremium, subscriptionActive, trialEndsAt });
+      updateUser({ ...user, isPremium, subscriptionActive, trialEndsAt, emailConfirmed });
     }
   }, [account.data, user, updateUser]);
 
@@ -36,6 +38,7 @@ export default function Layout() {
 
   return (
     <div className="app">
+      <ConfirmEmailBanner />
       {onTrial && (
         <div className="trial-banner">
           {t('premium.trialBanner', { days: trialDaysLeft(user!.trialEndsAt) })}{' '}

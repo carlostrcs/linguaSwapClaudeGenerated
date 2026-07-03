@@ -14,6 +14,8 @@ interface AuthUser {
   subscriptionActive?: boolean;
   /** When the free trial ends (ISO), or null/undefined if never started. */
   trialEndsAt?: string | null;
+  /** Whether the email address has been confirmed (drives the soft confirm-email banner). */
+  emailConfirmed?: boolean;
 }
 
 interface AuthContextValue {
@@ -45,6 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isPremium: auth.isPremium,
       subscriptionActive: auth.subscriptionActive,
       trialEndsAt: auth.trialEndsAt,
+      emailConfirmed: auth.emailConfirmed,
     };
     localStorage.setItem(USER_KEY, JSON.stringify(u));
     setUserState(u);
