@@ -85,7 +85,10 @@ public class PracticeController(
             var primary = AnswerChecker.PrimaryAnswer(c.Answer);
             var hint = hintService.BuildHint(primary, req.Difficulty);
             var length = req.Difficulty == Difficulty.Hard ? 0 : primary.Length;
-            var expectedForClient = req.Difficulty == Difficulty.Easy ? primary : null;
+            // Easy sends the answer for the live green/red border; Learn New also sends it (at every
+            // difficulty) so its up-front preview pass can show each word's translation. Both are
+            // fine to expose — Learn New's preview reveals the answer anyway. Checking stays server-side.
+            var expectedForClient = req.Difficulty == Difficulty.Easy || req.Mode == PracticeMode.LearnNew ? primary : null;
             return new PracticeWordDto(c.Entry.Id, c.Prompt, hint, length, expectedForClient, c.Entry.Notes);
         }).ToList();
 

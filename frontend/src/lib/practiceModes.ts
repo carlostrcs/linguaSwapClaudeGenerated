@@ -8,11 +8,14 @@ export const PRACTICE_MODES: PracticeMode[] = ['SmartReview', 'LearnNew', 'Journ
 /** Smart Review is free; the other systems are premium (mirrors the server-side 403 gate). */
 export const isPremiumMode = (mode: PracticeMode): boolean => mode !== 'SmartReview';
 
-/** Modes that repeat a missed word later in the same finite session (Learn New, Cram). */
-export const isReinforcingMode = (mode: PracticeMode): boolean => mode === 'LearnNew' || mode === 'Cram';
+/** Modes that repeat a missed word later in the same finite session (Cram). */
+export const isReinforcingMode = (mode: PracticeMode): boolean => mode === 'Cram';
 
 /** The endless, self-paced mode — it runs in JourneyRunner instead of the finite PracticeRunner. */
 export const isJourneyMode = (mode: PracticeMode): boolean => mode === 'Journey';
+
+/** Learn New — its own endless, self-paced runner (LearnNewRunner): preview pass, then drill to learn. */
+export const isLearnNewMode = (mode: PracticeMode): boolean => mode === 'LearnNew';
 
 /** Whether answers move Leitner boxes. Cram and Journey are practice-only (mirror the selectors). */
 export const modeReschedules = (mode: PracticeMode): boolean => mode !== 'Cram' && mode !== 'Journey';

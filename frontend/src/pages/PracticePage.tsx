@@ -10,7 +10,8 @@ import type { Difficulty, PracticeMode, PracticeWord, StartSessionResponse } fro
 import PracticeSetup from '../components/PracticeSetup';
 import PracticeRunner from '../components/PracticeRunner';
 import JourneyRunner from '../components/JourneyRunner';
-import { isJourneyMode } from '../lib/practiceModes';
+import LearnNewRunner from '../components/LearnNewRunner';
+import { isJourneyMode, isLearnNewMode } from '../lib/practiceModes';
 import { useAuth } from '../auth/AuthContext';
 import { useI18n } from '../i18n/I18nProvider';
 
@@ -87,6 +88,23 @@ export default function PracticePage() {
             void saveJourneyState(libraryId, session.sourceLanguage, session.targetLanguage, state).catch(
               () => {},
             )}
+          onExit={() => {
+            void endSession(session.sessionId).catch(() => {});
+            setSession(null);
+          }}
+          backSlot={backSlot}
+        />
+      );
+    }
+
+    if (isLearnNewMode(session.mode)) {
+      return (
+        <LearnNewRunner
+          words={session.words}
+          difficulty={session.difficulty}
+          sourceLanguage={session.sourceLanguage}
+          targetLanguage={session.targetLanguage}
+          checkAnswer={checkAnswer}
           onExit={() => {
             void endSession(session.sessionId).catch(() => {});
             setSession(null);

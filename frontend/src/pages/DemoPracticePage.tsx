@@ -5,6 +5,7 @@ import type { Difficulty, EntryDto, PracticeMode, PracticeWord } from '../api/ty
 import PracticeSetup from '../components/PracticeSetup';
 import PracticeRunner from '../components/PracticeRunner';
 import JourneyRunner from '../components/JourneyRunner';
+import LearnNewRunner from '../components/LearnNewRunner';
 import RegisterPromptModal from '../components/RegisterPromptModal';
 import { useAuth } from '../auth/AuthContext';
 import { useI18n } from '../i18n/I18nProvider';
@@ -17,7 +18,7 @@ import {
   saveDemoJourney,
 } from '../lib/demo/demoStore';
 import { availableLanguages, buildDemoWords, isCorrect, isMastered, primaryAnswer } from '../lib/demo/demoEngine';
-import { isJourneyMode, modeReschedules } from '../lib/practiceModes';
+import { isJourneyMode, isLearnNewMode, modeReschedules } from '../lib/practiceModes';
 import { isCaseSensitiveLang } from '../lib/languages';
 
 /**
@@ -108,6 +109,16 @@ export default function DemoPracticePage() {
             checkAnswer={checkAnswer}
             initialState={getDemoJourney(libraryId, source, target)}
             onPersist={(state) => saveDemoJourney(libraryId, source, target, state)}
+            onExit={() => setWords(null)}
+            backSlot={backSlot}
+          />
+        ) : isLearnNewMode(mode) ? (
+          <LearnNewRunner
+            words={words}
+            difficulty={difficulty}
+            sourceLanguage={source}
+            targetLanguage={target}
+            checkAnswer={checkAnswer}
             onExit={() => setWords(null)}
             backSlot={backSlot}
           />

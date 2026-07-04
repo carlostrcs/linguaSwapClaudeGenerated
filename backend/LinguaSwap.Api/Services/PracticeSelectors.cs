@@ -51,8 +51,11 @@ public class SmartReviewSelector : IPracticeSelector
 }
 
 /// <summary>
-/// Learn New: only never-seen words (no LearningState yet), shuffled and capped. Paired with the
-/// runner's in-session reinforcement so a missed new word reappears before the session ends.
+/// Learn New: only never-seen words (no LearningState yet), shuffled and capped — the fresh batch to
+/// learn this session. The client (LearnNewRunner) owns the flow: a preview pass showing each word +
+/// translation, then endless drilling of the batch until every word is learned (no auto-finish).
+/// Answers still <see cref="Reschedules"/> the Leitner boxes, so a learned word graduates out of
+/// "never-seen" and the next session pulls the next batch.
 /// </summary>
 public class LearnNewSelector : IPracticeSelector
 {
