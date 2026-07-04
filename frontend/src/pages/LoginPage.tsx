@@ -65,7 +65,7 @@ export default function LoginPage() {
         <p className="muted">
           {t('auth.noAccount')} <Link to="/register">{t('auth.createOne')}</Link>
         </p>
-        <p className="muted small">{t('auth.demoHint')}</p>
+        {import.meta.env.DEV && <p className="muted small">{t('auth.demoHint')}</p>}
       </form>
     </div>
   );
