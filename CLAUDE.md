@@ -149,15 +149,25 @@ sample-imports/  example .json files for testing import (not used by the app at 
   `PracticeSelectorResolver`); `PracticeController.Start` calls the resolved selector instead of
   hard-coding the query, and the chosen mode is stored on `PracticeSession.Mode`.
   - `SmartReview` — the original Leitner due→new→not-due selection (unchanged). **Free, default.**
-  - `LearnNew` — only never-seen words. `Cram` — the whole library, shuffled, no cap. `Weak` —
-    seen words, lowest box / most-missed first. `Journey` — the whole library in order (see below).
-    **All four are premium** (`Start` returns `403` for free users via `PremiumService`); the picker
-    locks them for free users.
+  - `LearnNew` — only never-seen words (a fresh batch, capped at ~20); endless and client-driven
+    (see below). `Cram` — the whole library, shuffled, no cap. `Weak` — seen words, lowest box /
+    most-missed first. `Journey` — the whole library in order (see below). **All four are premium**
+    (`Start` returns `403` for free users via `PremiumService`); the picker locks them for free users.
   - **Rescheduling is per-mode** (`IPracticeSelector.Reschedules`): SmartReview/LearnNew/Weak move
     Leitner boxes; **Cram and Journey are practice-only** — `Answer` still records the `Attempt` (so
-    stats count) but skips `LeitnerService.ApplyAnswer`, so they never disturb the schedule.
-  - **In-session reinforcement**: in `LearnNew`/`Cram`, `PracticeRunner` re-queues a missed word a
-    few cards ahead (capped) so it recurs before the session ends.
+    stats count) but skips `LeitnerService.ApplyAnswer`, so they never disturb the schedule. LearnNew
+    reschedules so learned words graduate out of "never-seen" and the next batch pulls new words.
+  - **In-session reinforcement**: in `Cram`, `PracticeRunner` re-queues a missed word a few cards
+    ahead (capped) so it recurs before the finite session ends.
+  - **`LearnNew` is endless and client-driven**: the selector returns the fresh batch (~20 never-seen
+    words); the flow lives in `frontend/src/components/LearnNewRunner.tsx` (reusing `lib/journeyEngine`).
+    First a **preview pass** flips through each word + its translation (study, no typing — the backend
+    sends the answer via `expectedForClient` for LearnNew at every difficulty so the card can show it),
+    then **endless drilling** of the batch in reshuffled iterations (most-missed first, only the
+    not-yet-learned words) until every word is _learned_ (same criterion as Journey: ≥3 attempts, ≥90%,
+    `streak >= 3`). No end screen and **no growing** (the active set is the whole fixed batch); the user
+    leaves via the back links. Unlike Journey, **progress is not persisted** — each session previews +
+    drills a new batch. `PracticeCard` is the shared one-word view used by all runners.
   - **`Journey` is endless and client-driven**: the `JourneySelector` just returns the library in
     order (by entry id); the whole loop lives in `frontend/src/components/JourneyRunner.tsx` +
     `lib/journeyEngine.ts`. An active set of ~20 is drilled in reshuffled iterations (most-missed

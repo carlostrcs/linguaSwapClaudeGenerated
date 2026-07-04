@@ -315,6 +315,12 @@ select { text-transform: uppercase; }
 /* tuck the note just under the prompt word (keeps the no-note layout unchanged) */
 .prompt-note { color: var(--muted); font-size: 0.9rem; font-style: italic; margin: -0.9rem 0 1.25rem; }
 
+/* Learn New preview pass: study each word's translation before the drilling loop begins. */
+.preview-answer { border-top: 1px solid var(--border); padding-top: 1rem; margin-top: 0.25rem; }
+.preview-answer-label { text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; color: var(--muted); }
+.preview-answer .prompt-word-row { margin-bottom: 0.5rem; }
+.preview-actions { display: flex; flex-direction: column; gap: 0.5rem; align-items: center; margin-top: 1rem; }
+
 /* Speaker button: pronounces the word via the Web Speech API. Inherits the SVG colour via
    currentColor, so it recolours with the theme. */
 .speak-btn {

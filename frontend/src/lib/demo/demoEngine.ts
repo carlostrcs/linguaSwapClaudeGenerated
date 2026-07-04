@@ -124,7 +124,9 @@ export function buildDemoWords(
       prompt: c.prompt,
       hint: buildHint(primary, difficulty),
       answerLength: difficulty === 'Hard' ? 0 : primary.length,
-      expectedAnswer: difficulty === 'Easy' ? primary : null,
+      // Easy sends the answer for the live border; Learn New also sends it (all difficulties) so its
+      // preview pass can show each translation. Mirrors PracticeController.Start.
+      expectedAnswer: difficulty === 'Easy' || mode === 'LearnNew' ? primary : null,
       notes: c.entry.notes ?? null,
     };
   });
