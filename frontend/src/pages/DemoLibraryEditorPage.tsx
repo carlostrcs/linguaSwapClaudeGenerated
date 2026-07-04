@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import type { EntryDto } from '../api/types';
 import EntryForm from '../components/EntryForm';
-import { addDemoEntry, deleteDemoEntry, getDemoLibrary, listDemoEntries, updateDemoEntry } from '../lib/demo/demoStore';
+import RenameLibraryModal from '../components/RenameLibraryModal';
+import { addDemoEntry, deleteDemoEntry, getDemoLibrary, listDemoEntries, renameDemoLibrary, updateDemoEntry } from '../lib/demo/demoStore';
 import { useI18n } from '../i18n/I18nProvider';
 
 /**
@@ -14,12 +15,19 @@ export default function DemoLibraryEditorPage() {
   const libraryId = Number(id);
   const { t } = useI18n();
 
-  const [library] = useState(() => getDemoLibrary(libraryId));
+  const [library, setLibrary] = useState(() => getDemoLibrary(libraryId));
   const [entries, setEntries] = useState<EntryDto[]>(() => listDemoEntries(libraryId));
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<EntryDto | null>(null);
+  const [renaming, setRenaming] = useState(false);
 
   const reload = () => setEntries(listDemoEntries(libraryId));
+
+  const onRename = (name: string) => {
+    renameDemoLibrary(libraryId, name);
+    setLibrary(getDemoLibrary(libraryId));
+    setRenaming(false);
+  };
 
   if (!Number.isFinite(libraryId) || !library) {
     return <p className="alert alert-error">{t('editor.invalidLibrary')}</p>;
@@ -32,8 +40,21 @@ export default function DemoLibraryEditorPage() {
           {t('editor.back')}
         </Link>
       </p>
-      <h1>{library.name}</h1>
+      <div className="section-head">
+        <h1>{library.name}</h1>
+        <button type="button" className="btn btn-ghost" onClick={() => setRenaming(true)}>
+          {t('libraries.rename')}
+        </button>
+      </div>
       {library.description && <p className="muted">{library.description}</p>}
+
+      {renaming && (
+        <RenameLibraryModal
+          currentName={library.name}
+          onSubmit={onRename}
+          onClose={() => setRenaming(false)}
+        />
+      )}
 
       <div className="card">
         <div className="section-head">

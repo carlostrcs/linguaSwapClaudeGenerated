@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { createDemoLibrary, deleteDemoLibrary, listDemoLibraries, renameDemoLibrary } from '../lib/demo/demoStore';
+import { createDemoLibrary, deleteDemoLibrary, listDemoLibraries } from '../lib/demo/demoStore';
 import { useI18n } from '../i18n/I18nProvider';
 
 /**
@@ -28,14 +28,6 @@ export default function DemoLibrariesPage() {
     setDescription('');
     setFormError(null);
     reload();
-  };
-
-  const onRename = (id: number, current: string) => {
-    const next = window.prompt(t('libraries.renamePrompt'), current);
-    if (next && next.trim()) {
-      renameDemoLibrary(id, next.trim());
-      reload();
-    }
   };
 
   const onDelete = (id: number, libName: string) => {
@@ -82,14 +74,11 @@ export default function DemoLibrariesPage() {
             {lib.description && <p className="muted">{lib.description}</p>}
             <div className="card-actions">
               <Link className="btn btn-secondary" to={`/demo/libraries/${lib.id}`}>
-                {t('libraries.open')}
+                {t('libraries.edit')}
               </Link>
               <Link className="btn btn-primary" to={`/demo/practice/${lib.id}`}>
                 {t('libraries.practise')}
               </Link>
-              <button type="button" className="btn btn-ghost" onClick={() => onRename(lib.id, lib.name)}>
-                {t('libraries.rename')}
-              </button>
               <button type="button" className="btn btn-danger" onClick={() => onDelete(lib.id, lib.name)}>
                 {t('common.delete')}
               </button>

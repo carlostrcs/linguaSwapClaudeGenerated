@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createLibrary, deleteLibrary, listLibraries, updateLibrary } from '../api/libraries';
+import { createLibrary, deleteLibrary, listLibraries } from '../api/libraries';
 import { getAccount } from '../api/account';
 import { importEntries } from '../api/entries';
 import { ApiError } from '../api/client';
@@ -50,11 +50,6 @@ export default function LibrariesPage() {
     onError: (e) => setFormError(e instanceof ApiError ? e.message : t('libraries.createFailed')),
   });
 
-  const rename = useMutation({
-    mutationFn: (vars: { id: number; name: string }) => updateLibrary(vars.id, vars.name),
-    onSuccess: invalidate,
-  });
-
   const remove = useMutation({
     mutationFn: (id: number) => deleteLibrary(id),
     onSuccess: invalidate,
@@ -90,11 +85,6 @@ export default function LibrariesPage() {
       return;
     }
     create.mutate();
-  };
-
-  const onRename = (id: number, current: string) => {
-    const next = window.prompt(t('libraries.renamePrompt'), current);
-    if (next && next.trim()) rename.mutate({ id, name: next.trim() });
   };
 
   const onDelete = (id: number, libName: string) => {
@@ -191,7 +181,7 @@ export default function LibrariesPage() {
             {lib.description && <p className="muted">{lib.description}</p>}
             <div className="card-actions">
               <Link className="btn btn-secondary" to={`/libraries/${lib.id}`}>
-                {t('libraries.open')}
+                {t('libraries.edit')}
               </Link>
               <Link className="btn btn-primary" to={`/practice/${lib.id}`}>
                 {t('libraries.practise')}
@@ -201,9 +191,6 @@ export default function LibrariesPage() {
                   {t('libraries.import')}
                 </button>
               )}
-              <button type="button" className="btn btn-ghost" onClick={() => onRename(lib.id, lib.name)}>
-                {t('libraries.rename')}
-              </button>
               <button type="button" className="btn btn-danger" onClick={() => onDelete(lib.id, lib.name)}>
                 {t('common.delete')}
               </button>

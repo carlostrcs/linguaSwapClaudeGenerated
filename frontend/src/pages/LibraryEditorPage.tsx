@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createEntry, deleteEntry, listEntries, updateEntry } from '../api/entries';
-import { getLibrary } from '../api/libraries';
+import { getLibrary, updateLibrary } from '../api/libraries';
 import { ApiError } from '../api/client';
 import type { EntryDto, TranslationDto } from '../api/types';
 import EntryForm from '../components/EntryForm';
+import RenameLibraryModal from '../components/RenameLibraryModal';
 import { useAuth } from '../auth/AuthContext';
 import { FREE_WORDS_PER_LIBRARY } from '../lib/premium';
 import { flagFor } from '../lib/languages';
@@ -22,6 +23,8 @@ export default function LibraryEditorPage() {
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<EntryDto | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const [renaming, setRenaming] = useState(false);
+  const [renameError, setRenameError] = useState<string | null>(null);
 
   const library = useQuery({ queryKey: ['library', libraryId], queryFn: () => getLibrary(libraryId), enabled: Number.isFinite(libraryId) });
   const entries = useQuery({ queryKey: ['entries', libraryId], queryFn: () => listEntries(libraryId), enabled: Number.isFinite(libraryId) });
@@ -51,6 +54,19 @@ export default function LibraryEditorPage() {
     onSuccess: invalidate,
   });
 
+  // Renaming a library lives here (not on the Libraries page). Pass the current description so
+  // the PUT doesn't wipe it — the backend Update overwrites Description with what it receives.
+  const rename = useMutation({
+    mutationFn: (name: string) => updateLibrary(libraryId, name, library.data?.description ?? null),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['library', libraryId] });
+      qc.invalidateQueries({ queryKey: ['libraries'] });
+      setRenaming(false);
+      setRenameError(null);
+    },
+    onError: (e) => setRenameError(e instanceof ApiError ? e.message : t('libraries.renameFailed')),
+  });
+
   if (!Number.isFinite(libraryId)) return <p className="alert alert-error">{t('editor.invalidLibrary')}</p>;
 
   return (
@@ -60,8 +76,25 @@ export default function LibraryEditorPage() {
           {t('editor.back')}
         </Link>
       </p>
-      <h1>{library.data?.name ?? t('editor.library')}</h1>
+      <div className="section-head">
+        <h1>{library.data?.name ?? t('editor.library')}</h1>
+        {library.data && (
+          <button type="button" className="btn btn-ghost" onClick={() => { setRenameError(null); setRenaming(true); }}>
+            {t('libraries.rename')}
+          </button>
+        )}
+      </div>
       {library.data?.description && <p className="muted">{library.data.description}</p>}
+
+      {renaming && library.data && (
+        <RenameLibraryModal
+          currentName={library.data.name}
+          busy={rename.isPending}
+          error={renameError}
+          onSubmit={(name) => rename.mutate(name)}
+          onClose={() => { setRenaming(false); setRenameError(null); }}
+        />
+      )}
 
       <div className="card">
         <div className="section-head">
