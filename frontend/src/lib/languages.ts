@@ -21,14 +21,26 @@ const PROFILES: Record<string, LanguageProfile> = {
 };
 
 // Representative country-flag emoji per language code, for quick visual identification in the UI.
+// A language code is not always its country code (en→GB, ja→JP, sv→SE, uk→UA, …), so this is an
+// explicit table rather than an algorithmic code→flag derivation, which would show wrong flags.
+// Codes are open-ended (free-text on the entry form); anything absent here just renders no flag.
 const FLAGS: Record<string, string> = {
   en: '🇬🇧', es: '🇪🇸', fr: '🇫🇷', de: '🇩🇪', it: '🇮🇹', pt: '🇵🇹',
+  nl: '🇳🇱', pl: '🇵🇱', ru: '🇷🇺', uk: '🇺🇦', sv: '🇸🇪', no: '🇳🇴', da: '🇩🇰', fi: '🇫🇮',
+  cs: '🇨🇿', sk: '🇸🇰', ro: '🇷🇴', hu: '🇭🇺', el: '🇬🇷', tr: '🇹🇷', bg: '🇧🇬', hr: '🇭🇷',
+  ja: '🇯🇵', zh: '🇨🇳', ko: '🇰🇷', ar: '🇸🇦', he: '🇮🇱', hi: '🇮🇳', th: '🇹🇭', vi: '🇻🇳',
+  id: '🇮🇩',
 };
 
 // BCP-47 locale used for Web Speech pronunciation (SpeechSynthesisUtterance.lang). The app's codes
-// are bare 2-letter; a region tag helps the browser pick a voice for the right accent.
+// are bare 2-letter; a region tag helps the browser pick a voice for the right accent. Kept aligned
+// with FLAGS so a language that shows a flag also pronounces with a sensible voice.
 const SPEECH_LANGS: Record<string, string> = {
   en: 'en-US', es: 'es-ES', fr: 'fr-FR', de: 'de-DE', it: 'it-IT', pt: 'pt-PT',
+  nl: 'nl-NL', pl: 'pl-PL', ru: 'ru-RU', uk: 'uk-UA', sv: 'sv-SE', no: 'nb-NO', da: 'da-DK', fi: 'fi-FI',
+  cs: 'cs-CZ', sk: 'sk-SK', ro: 'ro-RO', hu: 'hu-HU', el: 'el-GR', tr: 'tr-TR', bg: 'bg-BG', hr: 'hr-HR',
+  ja: 'ja-JP', zh: 'zh-CN', ko: 'ko-KR', ar: 'ar-SA', he: 'he-IL', hi: 'hi-IN', th: 'th-TH', vi: 'vi-VN',
+  id: 'id-ID',
 };
 
 function profile(lang: string | undefined): LanguageProfile | undefined {
