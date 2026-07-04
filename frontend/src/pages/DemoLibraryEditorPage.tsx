@@ -5,6 +5,7 @@ import EntryForm from '../components/EntryForm';
 import RenameLibraryModal from '../components/RenameLibraryModal';
 import ConfirmModal from '../components/ConfirmModal';
 import { addDemoEntry, deleteDemoEntry, getDemoLibrary, listDemoEntries, renameDemoLibrary, updateDemoEntry } from '../lib/demo/demoStore';
+import { filterEntries } from '../lib/searchEntries';
 import { useI18n } from '../i18n/I18nProvider';
 
 /**
@@ -22,6 +23,10 @@ export default function DemoLibraryEditorPage() {
   const [editing, setEditing] = useState<EntryDto | null>(null);
   const [renaming, setRenaming] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<number | null>(null);
+  const [search, setSearch] = useState('');
+
+  const visibleEntries = filterEntries(entries, search);
+  const noMatches = entries.length > 0 && visibleEntries.length === 0 && search.trim().length > 0;
 
   const reload = () => setEntries(listDemoEntries(libraryId));
 
@@ -96,10 +101,28 @@ export default function DemoLibraryEditorPage() {
           />
         )}
 
+        {entries.length > 0 && (
+          <div className="entry-search">
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={t('editor.searchPlaceholder')}
+              aria-label={t('editor.searchPlaceholder')}
+            />
+            {search && (
+              <button type="button" className="btn btn-ghost" onClick={() => setSearch('')} title={t('editor.searchClear')}>
+                ✕
+              </button>
+            )}
+          </div>
+        )}
+
         {entries.length === 0 && !adding && <p className="muted">{t('editor.empty')}</p>}
+        {noMatches && <p className="muted">{t('editor.searchNoMatch', { query: search.trim() })}</p>}
 
         <ul className="entry-list">
-          {entries.map((entry) => (
+          {visibleEntries.map((entry) => (
             <li className="entry-item" key={entry.id}>
               {editing?.id === entry.id ? (
                 <EntryForm
