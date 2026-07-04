@@ -9,6 +9,7 @@ import { ApiError } from '../api/client';
 import type { ImportEntry } from '../api/types';
 import { parseImportFile } from '../lib/importFile';
 import ImportPanel from '../components/ImportPanel';
+import ConfirmModal from '../components/ConfirmModal';
 import { useAuth } from '../auth/AuthContext';
 import { FREE_LIBRARY_LIMIT } from '../lib/premium';
 import { useI18n } from '../i18n/I18nProvider';
@@ -30,6 +31,7 @@ export default function LibrariesPage() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<{ id: number; name: string } | null>(null);
 
   // Per-card quick import (the central ImportPanel handles new-library + target selection).
   const [importMsg, setImportMsg] = useState<string | null>(null);
@@ -52,7 +54,10 @@ export default function LibrariesPage() {
 
   const remove = useMutation({
     mutationFn: (id: number) => deleteLibrary(id),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      setPendingDelete(null);
+      invalidate();
+    },
   });
 
   const importMut = useMutation({
@@ -85,10 +90,6 @@ export default function LibrariesPage() {
       return;
     }
     create.mutate();
-  };
-
-  const onDelete = (id: number, libName: string) => {
-    if (window.confirm(t('libraries.deleteConfirm', { name: libName }))) remove.mutate(id);
   };
 
   const onImportClick = (id: number, libName: string) => {
@@ -191,13 +192,23 @@ export default function LibrariesPage() {
                   {t('libraries.import')}
                 </button>
               )}
-              <button type="button" className="btn btn-danger" onClick={() => onDelete(lib.id, lib.name)}>
+              <button type="button" className="btn btn-danger" onClick={() => setPendingDelete({ id: lib.id, name: lib.name })}>
                 {t('common.delete')}
               </button>
             </div>
           </div>
         ))}
       </div>
+
+      {pendingDelete && (
+        <ConfirmModal
+          title={t('libraries.deleteTitle')}
+          message={t('libraries.deleteConfirm', { name: pendingDelete.name })}
+          busy={remove.isPending}
+          onConfirm={() => remove.mutate(pendingDelete.id)}
+          onClose={() => setPendingDelete(null)}
+        />
+      )}
     </div>
   );
 }

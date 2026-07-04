@@ -12,6 +12,7 @@ import { DEFAULT_THEME, isPremiumTheme, THEMES } from '../theme/themes';
 import { useI18n } from '../i18n/I18nProvider';
 import { LANGUAGES } from '../i18n/translations';
 import type { LanguageId } from '../i18n/translations';
+import ConfirmModal from '../components/ConfirmModal';
 
 export default function AccountPage() {
   const { updateUser, signOut } = useAuth();
@@ -32,6 +33,8 @@ export default function AccountPage() {
   const [pwErr, setPwErr] = useState<string | null>(null);
 
   const [billingErr, setBillingErr] = useState<string | null>(null);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleteErr, setDeleteErr] = useState<string | null>(null);
   const isPremium = account.data?.isPremium ?? false;
   const subscriptionActive = account.data?.subscriptionActive ?? false;
   const trialEndsAt = account.data?.trialEndsAt ?? null;
@@ -120,16 +123,14 @@ export default function AccountPage() {
     }
   };
 
-  const onDelete = async () => {
-    if (!window.confirm(t('account.deleteConfirm'))) return;
-    try {
-      await deleteAccount();
+  const del = useMutation({
+    mutationFn: () => deleteAccount(),
+    onSuccess: () => {
       signOut();
       navigate('/login');
-    } catch {
-      window.alert(t('account.deleteFailed'));
-    }
-  };
+    },
+    onError: (e) => setDeleteErr(e instanceof ApiError ? e.message : t('account.deleteFailed')),
+  });
 
   return (
     <div className="page narrow">
@@ -287,10 +288,26 @@ export default function AccountPage() {
       <div className="card danger-zone">
         <h2>{t('account.dangerZone')}</h2>
         <p className="muted">{t('account.deleteDesc')}</p>
-        <button type="button" className="btn btn-danger" onClick={onDelete}>
+        <button
+          type="button"
+          className="btn btn-danger"
+          onClick={() => { setDeleteErr(null); setConfirmingDelete(true); }}
+        >
           {t('account.deleteAccount')}
         </button>
       </div>
+
+      {confirmingDelete && (
+        <ConfirmModal
+          title={t('account.deleteTitle')}
+          message={t('account.deleteConfirm')}
+          confirmLabel={t('account.deleteAccount')}
+          busy={del.isPending}
+          error={deleteErr}
+          onConfirm={() => { setDeleteErr(null); del.mutate(); }}
+          onClose={() => { setConfirmingDelete(false); setDeleteErr(null); }}
+        />
+      )}
     </div>
   );
 }
