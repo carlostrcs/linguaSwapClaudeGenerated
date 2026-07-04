@@ -165,7 +165,7 @@ export default function LibraryEditorPage() {
         {wordCount > 0 && (
           <div className="entry-search">
             <input
-              type="search"
+              type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={t('editor.searchPlaceholder')}
