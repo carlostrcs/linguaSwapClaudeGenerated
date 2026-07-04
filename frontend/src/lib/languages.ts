@@ -25,6 +25,12 @@ const FLAGS: Record<string, string> = {
   en: '🇬🇧', es: '🇪🇸', fr: '🇫🇷', de: '🇩🇪', it: '🇮🇹', pt: '🇵🇹',
 };
 
+// BCP-47 locale used for Web Speech pronunciation (SpeechSynthesisUtterance.lang). The app's codes
+// are bare 2-letter; a region tag helps the browser pick a voice for the right accent.
+const SPEECH_LANGS: Record<string, string> = {
+  en: 'en-US', es: 'es-ES', fr: 'fr-FR', de: 'de-DE', it: 'it-IT', pt: 'pt-PT',
+};
+
 function profile(lang: string | undefined): LanguageProfile | undefined {
   return lang ? PROFILES[lang.toLowerCase()] : undefined;
 }
@@ -48,4 +54,9 @@ export function specialCharsFor(lang: string): string[] {
 /** Whether answers in this language are graded case-sensitively. Mirrors backend LanguageRules. */
 export function isCaseSensitiveLang(lang: string): boolean {
   return profile(lang)?.caseSensitive ?? false;
+}
+
+/** BCP-47 locale for speech synthesis, or the bare code when unknown (codes are open-ended). */
+export function speechLangFor(lang: string): string {
+  return SPEECH_LANGS[lang?.toLowerCase()] ?? lang;
 }

@@ -119,6 +119,13 @@ export interface BoxCount {
   count: number;
 }
 
+/** Practice volume for a single UTC day. `date` is "yyyy-MM-dd". */
+export interface DailyActivity {
+  date: string;
+  total: number;
+  correct: number;
+}
+
 export interface LibraryStats {
   libraryId: number;
   name: string;
@@ -128,6 +135,7 @@ export interface LibraryStats {
   accuracy: number;
   mastered: number;
   dueNow: number;
+  unseen: number;
   boxDistribution: BoxCount[];
 }
 
@@ -141,4 +149,6 @@ export interface OverviewStats {
   dueNow: number;
   studyStreakDays: number;
   perLibrary: LibraryStats[];
+  /** Daily practice volume (last ~year, days with attempts only, ascending). Feeds the heatmap + trend. */
+  activity: DailyActivity[];
 }

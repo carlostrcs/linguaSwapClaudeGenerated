@@ -2,6 +2,9 @@ namespace LinguaSwap.Api.Dtos;
 
 public record BoxCount(int Box, int Count);
 
+/// <summary>Practice volume for a single UTC day. <c>Date</c> is "yyyy-MM-dd".</summary>
+public record DailyActivity(string Date, int Total, int Correct);
+
 public record LibraryStats(
     int LibraryId,
     string Name,
@@ -11,6 +14,7 @@ public record LibraryStats(
     int Accuracy,
     int Mastered,
     int DueNow,
+    int Unseen,
     IReadOnlyList<BoxCount> BoxDistribution);
 
 public record OverviewStats(
@@ -22,4 +26,5 @@ public record OverviewStats(
     int Mastered,
     int DueNow,
     int StudyStreakDays,
-    IReadOnlyList<LibraryStats> PerLibrary);
+    IReadOnlyList<LibraryStats> PerLibrary,
+    IReadOnlyList<DailyActivity> Activity);

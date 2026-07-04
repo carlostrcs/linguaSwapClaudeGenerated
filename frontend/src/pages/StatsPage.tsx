@@ -1,12 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { getOverview } from '../api/stats';
-import type { LibraryStats } from '../api/types';
+import ActivityHeatmap from '../components/ActivityHeatmap';
+import AccuracyTrendChart from '../components/AccuracyTrendChart';
+import BoxBar from '../components/BoxBar';
 import { useAuth } from '../auth/AuthContext';
 import { useI18n } from '../i18n/I18nProvider';
-
-// box 1..5 colours (struggling -> mastered)
-const BOX_COLORS = ['#fca5a5', '#fcd34d', '#bef264', '#6ee7b7', '#34d399'];
 
 function StatCard({ label, value, hint }: { label: string; value: string | number; hint?: string }) {
   return (
@@ -14,22 +13,6 @@ function StatCard({ label, value, hint }: { label: string; value: string | numbe
       <div className="stat-value">{value}</div>
       <div className="stat-label">{label}</div>
       {hint && <div className="muted small">{hint}</div>}
-    </div>
-  );
-}
-
-function BoxBar({ stats, emptyLabel }: { stats: LibraryStats; emptyLabel: string }) {
-  const total = stats.boxDistribution.reduce((sum, b) => sum + b.count, 0);
-  if (total === 0) return <p className="muted small">{emptyLabel}</p>;
-  return (
-    <div className="box-bar" title="Leitner box distribution (box 1 → 5)">
-      {stats.boxDistribution.map((b, i) =>
-        b.count > 0 ? (
-          <div key={b.box} className="box-seg" style={{ flexGrow: b.count, background: BOX_COLORS[i] }}>
-            {b.count}
-          </div>
-        ) : null,
-      )}
     </div>
   );
 }
@@ -61,8 +44,21 @@ export default function StatsPage() {
             <StatCard label={t('stats.libraries')} value={data.libraries} />
           </div>
 
+          {/* Activity heatmap — free for everyone (engagement / streak motivator). */}
+          <div className="card">
+            <h2>{t('stats.activity')}</h2>
+            <p className="muted small">{t('stats.activitySub')}</p>
+            <ActivityHeatmap activity={data.activity} />
+          </div>
+
           {isPremium ? (
             <>
+              <div className="card">
+                <h2>{t('stats.trend')}</h2>
+                <p className="muted small">{t('stats.trendSub')}</p>
+                <AccuracyTrendChart activity={data.activity} />
+              </div>
+
               <h2>{t('stats.byLibrary')}</h2>
               {data.perLibrary.length === 0 && <p className="muted">{t('stats.noLibraries')}</p>}
               <div className="lib-stats-list">
@@ -76,7 +72,7 @@ export default function StatsPage() {
                         {t('stats.libSummary', { words: l.words, acc: l.accuracy, mastered: l.mastered, due: l.dueNow })}
                       </span>
                     </div>
-                    <BoxBar stats={l} emptyLabel={t('stats.notPractised')} />
+                    <BoxBar stats={l} />
                   </div>
                 ))}
               </div>

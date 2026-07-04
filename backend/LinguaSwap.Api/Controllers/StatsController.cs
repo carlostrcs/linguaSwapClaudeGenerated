@@ -12,7 +12,7 @@ namespace LinguaSwap.Api.Controllers;
 [Authorize]
 public class StatsController(AppDbContext db, PremiumService premium) : ControllerBase
 {
-    private record StateRow(int LibraryId, int BoxLevel, DateTime? NextReviewAt);
+    private record StateRow(int LibraryId, int EntryId, int BoxLevel, DateTime? NextReviewAt);
     private record AttemptRow(int? LibraryId, bool IsCorrect, DateTime AnsweredAt);
 
     [HttpGet("overview")]
@@ -31,7 +31,7 @@ public class StatsController(AppDbContext db, PremiumService premium) : Controll
 
         var states = await db.LearningStates
             .Where(s => s.Entry!.Library!.UserId == userId && visibleLibIds.Contains(s.Entry!.LibraryId))
-            .Select(s => new StateRow(s.Entry!.LibraryId, s.BoxLevel, s.NextReviewAt))
+            .Select(s => new StateRow(s.Entry!.LibraryId, s.EntryId, s.BoxLevel, s.NextReviewAt))
             .ToListAsync();
 
         // Keep attempts whose library was deleted (null LibraryId); drop those in hidden libraries.
@@ -55,16 +55,22 @@ public class StatsController(AppDbContext db, PremiumService premium) : Controll
         var mastered = states.Count(s => s.BoxLevel >= LeitnerService.MaxBox);
         var due = states.Count(s => s.NextReviewAt is null || s.NextReviewAt <= now);
 
+        // The daily activity series feeds the (free) heatmap and the (premium) accuracy trend; it is
+        // aggregate day counts, so it ships to every user and the client gates the trend view.
+        var activity = StatsCalculator.DailyActivitySeries(
+            attempts.Select(a => (a.AnsweredAt, a.IsCorrect)), now);
+
         var overview = new OverviewStats(
             libs.Count,
             libs.Sum(l => VisibleWords(l.Total)),
             totalAttempts,
             correct,
-            Pct(correct, totalAttempts),
+            StatsCalculator.Pct(correct, totalAttempts),
             mastered,
             due,
-            StudyStreak(attempts.Select(a => a.AnsweredAt), now),
-            perLibrary);
+            StatsCalculator.StudyStreak(attempts.Select(a => a.AnsweredAt), now),
+            perLibrary,
+            activity);
 
         return Ok(overview);
     }
@@ -87,7 +93,7 @@ public class StatsController(AppDbContext db, PremiumService premium) : Controll
 
         var states = await db.LearningStates
             .Where(s => s.Entry!.LibraryId == id && s.Entry!.Library!.UserId == userId)
-            .Select(s => new StateRow(s.Entry!.LibraryId, s.BoxLevel, s.NextReviewAt))
+            .Select(s => new StateRow(s.Entry!.LibraryId, s.EntryId, s.BoxLevel, s.NextReviewAt))
             .ToListAsync();
 
         var attempts = await db.Attempts
@@ -111,28 +117,10 @@ public class StatsController(AppDbContext db, PremiumService premium) : Controll
 
         return new LibraryStats(
             id, name, words,
-            at.Count, correct, Pct(correct, at.Count),
+            at.Count, correct, StatsCalculator.Pct(correct, at.Count),
             ls.Count(s => s.BoxLevel >= LeitnerService.MaxBox),
             ls.Count(s => s.NextReviewAt is null || s.NextReviewAt <= now),
+            StatsCalculator.Unseen(words, ls.Select(s => s.EntryId)),
             distribution);
-    }
-
-    private static int Pct(int correct, int total) =>
-        total == 0 ? 0 : (int)Math.Round(100.0 * correct / total);
-
-    /// <summary>Consecutive days (ending today, or yesterday if today is empty) with practice.</summary>
-    private static int StudyStreak(IEnumerable<DateTime> attemptTimes, DateTime now)
-    {
-        var days = attemptTimes.Select(t => t.Date).ToHashSet();
-        var day = now.Date;
-        if (!days.Contains(day)) day = day.AddDays(-1);
-
-        var streak = 0;
-        while (days.Contains(day))
-        {
-            streak++;
-            day = day.AddDays(-1);
-        }
-        return streak;
     }
 }

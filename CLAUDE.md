@@ -188,6 +188,14 @@ sample-imports/  example .json files for testing import (not used by the app at 
   typing). The per-language character sets **and** the case-sensitivity mirror live in
   `frontend/src/lib/languages.ts` — its `de` case-sensitivity flag must stay in sync with the backend
   `LanguageRules` (same mirror discipline as `AnswerChecker` ⇄ `demoEngine`).
+- **Audio pronunciation** (`PracticeCard`): a speaker button (`components/SpeakButton.tsx`) sits next
+  to the prompt word (source language) and the revealed answer (target language), pronouncing it via
+  the browser-native **Web Speech API** (`lib/speech.ts` → `window.speechSynthesis`). **100%
+  client-side — no audio stored, no backend, no external request**, so it also works in the no-account
+  demo for free. `lib/languages.ts` `speechLangFor` maps the bare code to a BCP-47 locale
+  (`es`→`es-ES`), joining the `FLAGS`/`PROFILES` maps. This is a **cosmetic client-only** feature —
+  unlike case-sensitivity/keypad it has **no backend mirror** to keep in sync. The button hides itself
+  when the browser lacks speech support. New i18n key: `practice.playAudio` (en/es).
 - The full build plan / change history lives at
   `C:\Users\carlo\.claude\plans\i-am-a-first-sorted-origami.md`.
 

@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { FormEvent, KeyboardEvent } from 'react';
 import type { Difficulty, PracticeWord } from '../api/types';
 import HintGuide from './HintGuide';
+import SpeakButton from './SpeakButton';
 import { normalize } from '../lib/demo/demoEngine';
 import { isCaseSensitiveLang, langLabel, specialCharsFor } from '../lib/languages';
 import { useI18n } from '../i18n/I18nProvider';
@@ -119,7 +120,10 @@ export default function PracticeCard({
       <div className="prompt-label">
         {langLabel(sourceLanguage)} → {langLabel(targetLanguage)}
       </div>
-      <div className="prompt-word">{word.prompt}</div>
+      <div className="prompt-word-row">
+        <span className="prompt-word">{word.prompt}</span>
+        <SpeakButton text={word.prompt} lang={sourceLanguage} />
+      </div>
       {word.notes && <div className="prompt-note">{word.notes}</div>}
 
       {difficulty !== 'Hard' && word.hint && <HintGuide hint={word.hint} />}
@@ -166,6 +170,7 @@ export default function PracticeCard({
                 {t('practice.notQuite')} <strong>{result.expectedAnswer}</strong>
               </span>
             )}
+            <SpeakButton text={result.expectedAnswer} lang={targetLanguage} />
             {result.mastered && <span className="mastered-badge">{t('practice.mastered')}</span>}
           </div>
         )}
