@@ -11,6 +11,7 @@ import ConfirmModal from '../components/ConfirmModal';
 import { useAuth } from '../auth/AuthContext';
 import { FREE_WORDS_PER_LIBRARY } from '../lib/premium';
 import { flagFor } from '../lib/languages';
+import { filterEntries } from '../lib/searchEntries';
 import { useI18n } from '../i18n/I18nProvider';
 
 export default function LibraryEditorPage() {
@@ -27,12 +28,15 @@ export default function LibraryEditorPage() {
   const [renaming, setRenaming] = useState(false);
   const [renameError, setRenameError] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<number | null>(null);
+  const [search, setSearch] = useState('');
 
   const library = useQuery({ queryKey: ['library', libraryId], queryFn: () => getLibrary(libraryId), enabled: Number.isFinite(libraryId) });
   const entries = useQuery({ queryKey: ['entries', libraryId], queryFn: () => listEntries(libraryId), enabled: Number.isFinite(libraryId) });
 
   const wordCount = entries.data?.length ?? 0;
   const atWordLimit = !isPremium && wordCount >= FREE_WORDS_PER_LIBRARY;
+  const visibleEntries = filterEntries(entries.data ?? [], search);
+  const noMatches = wordCount > 0 && visibleEntries.length === 0 && search.trim().length > 0;
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ['entries', libraryId] });
@@ -158,11 +162,29 @@ export default function LibraryEditorPage() {
           />
         )}
 
+        {wordCount > 0 && (
+          <div className="entry-search">
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={t('editor.searchPlaceholder')}
+              aria-label={t('editor.searchPlaceholder')}
+            />
+            {search && (
+              <button type="button" className="btn btn-ghost" onClick={() => setSearch('')} title={t('editor.searchClear')}>
+                ✕
+              </button>
+            )}
+          </div>
+        )}
+
         {entries.isLoading && <p className="muted">{t('editor.loadingWords')}</p>}
         {entries.data && entries.data.length === 0 && !adding && <p className="muted">{t('editor.empty')}</p>}
+        {noMatches && <p className="muted">{t('editor.searchNoMatch', { query: search.trim() })}</p>}
 
         <ul className="entry-list">
-          {entries.data?.map((entry) => (
+          {visibleEntries.map((entry) => (
             <li className="entry-item" key={entry.id}>
               {editing?.id === entry.id ? (
                 <EntryForm
