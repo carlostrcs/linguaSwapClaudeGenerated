@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { createDemoLibrary, deleteDemoLibrary, listDemoLibraries } from '../lib/demo/demoStore';
+import ConfirmModal from '../components/ConfirmModal';
 import { useI18n } from '../i18n/I18nProvider';
 
 /**
@@ -14,6 +15,7 @@ export default function DemoLibrariesPage() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<{ id: number; name: string } | null>(null);
 
   const reload = () => setLibraries(listDemoLibraries());
 
@@ -30,11 +32,11 @@ export default function DemoLibrariesPage() {
     reload();
   };
 
-  const onDelete = (id: number, libName: string) => {
-    if (window.confirm(t('libraries.deleteConfirm', { name: libName }))) {
-      deleteDemoLibrary(id);
-      reload();
-    }
+  const onConfirmDelete = () => {
+    if (!pendingDelete) return;
+    deleteDemoLibrary(pendingDelete.id);
+    setPendingDelete(null);
+    reload();
   };
 
   return (
@@ -79,13 +81,22 @@ export default function DemoLibrariesPage() {
               <Link className="btn btn-primary" to={`/demo/practice/${lib.id}`}>
                 {t('libraries.practise')}
               </Link>
-              <button type="button" className="btn btn-danger" onClick={() => onDelete(lib.id, lib.name)}>
+              <button type="button" className="btn btn-danger" onClick={() => setPendingDelete({ id: lib.id, name: lib.name })}>
                 {t('common.delete')}
               </button>
             </div>
           </div>
         ))}
       </div>
+
+      {pendingDelete && (
+        <ConfirmModal
+          title={t('libraries.deleteTitle')}
+          message={t('libraries.deleteConfirm', { name: pendingDelete.name })}
+          onConfirm={onConfirmDelete}
+          onClose={() => setPendingDelete(null)}
+        />
+      )}
     </div>
   );
 }

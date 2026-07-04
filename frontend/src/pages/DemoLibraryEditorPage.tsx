@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import type { EntryDto } from '../api/types';
 import EntryForm from '../components/EntryForm';
 import RenameLibraryModal from '../components/RenameLibraryModal';
+import ConfirmModal from '../components/ConfirmModal';
 import { addDemoEntry, deleteDemoEntry, getDemoLibrary, listDemoEntries, renameDemoLibrary, updateDemoEntry } from '../lib/demo/demoStore';
 import { useI18n } from '../i18n/I18nProvider';
 
@@ -20,8 +21,16 @@ export default function DemoLibraryEditorPage() {
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<EntryDto | null>(null);
   const [renaming, setRenaming] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<number | null>(null);
 
   const reload = () => setEntries(listDemoEntries(libraryId));
+
+  const onConfirmDelete = () => {
+    if (pendingDelete === null) return;
+    deleteDemoEntry(libraryId, pendingDelete);
+    setPendingDelete(null);
+    reload();
+  };
 
   const onRename = (name: string) => {
     renameDemoLibrary(libraryId, name);
@@ -53,6 +62,15 @@ export default function DemoLibraryEditorPage() {
           currentName={library.name}
           onSubmit={onRename}
           onClose={() => setRenaming(false)}
+        />
+      )}
+
+      {pendingDelete !== null && (
+        <ConfirmModal
+          title={t('editor.deleteWordTitle')}
+          message={t('editor.deleteWordConfirm')}
+          onConfirm={onConfirmDelete}
+          onClose={() => setPendingDelete(null)}
         />
       )}
 
@@ -111,12 +129,7 @@ export default function DemoLibraryEditorPage() {
                     <button
                       type="button"
                       className="btn btn-danger"
-                      onClick={() => {
-                        if (window.confirm(t('editor.deleteWordConfirm'))) {
-                          deleteDemoEntry(libraryId, entry.id);
-                          reload();
-                        }
-                      }}
+                      onClick={() => setPendingDelete(entry.id)}
                     >
                       {t('common.delete')}
                     </button>

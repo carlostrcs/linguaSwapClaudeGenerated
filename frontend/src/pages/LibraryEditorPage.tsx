@@ -7,6 +7,7 @@ import { ApiError } from '../api/client';
 import type { EntryDto, TranslationDto } from '../api/types';
 import EntryForm from '../components/EntryForm';
 import RenameLibraryModal from '../components/RenameLibraryModal';
+import ConfirmModal from '../components/ConfirmModal';
 import { useAuth } from '../auth/AuthContext';
 import { FREE_WORDS_PER_LIBRARY } from '../lib/premium';
 import { flagFor } from '../lib/languages';
@@ -25,6 +26,7 @@ export default function LibraryEditorPage() {
   const [formError, setFormError] = useState<string | null>(null);
   const [renaming, setRenaming] = useState(false);
   const [renameError, setRenameError] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<number | null>(null);
 
   const library = useQuery({ queryKey: ['library', libraryId], queryFn: () => getLibrary(libraryId), enabled: Number.isFinite(libraryId) });
   const entries = useQuery({ queryKey: ['entries', libraryId], queryFn: () => listEntries(libraryId), enabled: Number.isFinite(libraryId) });
@@ -51,7 +53,10 @@ export default function LibraryEditorPage() {
 
   const remove = useMutation({
     mutationFn: (entryId: number) => deleteEntry(entryId),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      setPendingDelete(null);
+      invalidate();
+    },
   });
 
   // Renaming a library lives here (not on the Libraries page). Pass the current description so
@@ -93,6 +98,16 @@ export default function LibraryEditorPage() {
           error={renameError}
           onSubmit={(name) => rename.mutate(name)}
           onClose={() => { setRenaming(false); setRenameError(null); }}
+        />
+      )}
+
+      {pendingDelete !== null && (
+        <ConfirmModal
+          title={t('editor.deleteWordTitle')}
+          message={t('editor.deleteWordConfirm')}
+          busy={remove.isPending}
+          onConfirm={() => remove.mutate(pendingDelete)}
+          onClose={() => setPendingDelete(null)}
         />
       )}
 
@@ -176,7 +191,7 @@ export default function LibraryEditorPage() {
                     <button
                       type="button"
                       className="btn btn-danger"
-                      onClick={() => { if (window.confirm(t('editor.deleteWordConfirm'))) remove.mutate(entry.id); }}
+                      onClick={() => setPendingDelete(entry.id)}
                     >
                       {t('common.delete')}
                     </button>
