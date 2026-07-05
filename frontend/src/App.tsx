@@ -11,6 +11,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ConfirmEmailPage from './pages/ConfirmEmailPage';
 import LibrariesPage from './pages/LibrariesPage';
+import FeaturedPage from './pages/FeaturedPage';
 import LibraryEditorPage from './pages/LibraryEditorPage';
 import PracticePage from './pages/PracticePage';
 import StatsPage from './pages/StatsPage';
@@ -35,6 +36,7 @@ export default function App() {
       <Route element={<ProtectedRoute />}>
         <Route element={<Layout />}>
           <Route path="/libraries" element={<LibrariesPage />} />
+          <Route path="/featured" element={<FeaturedPage />} />
           <Route path="/libraries/:id" element={<LibraryEditorPage />} />
           <Route path="/practice/:id" element={<PracticePage />} />
           <Route path="/stats" element={<StatsPage />} />

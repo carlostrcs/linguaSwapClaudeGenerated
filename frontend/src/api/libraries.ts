@@ -1,7 +1,14 @@
 import { api } from './client';
-import type { ImportEntry, LibraryImportResult, LibrarySummary } from './types';
+import type { FeaturedLibrarySummary, ImportEntry, LibraryImportResult, LibrarySummary } from './types';
 
 export const listLibraries = () => api<LibrarySummary[]>('/libraries');
+
+/** Curated default libraries the user can add (excludes ones already added). */
+export const listFeaturedLibraries = () => api<FeaturedLibrarySummary[]>('/libraries/featured');
+
+/** Add a curated default library to the account (premium only) — returns the new copy. */
+export const addFeaturedLibrary = (id: number) =>
+  api<LibrarySummary>(`/libraries/featured/${id}/add`, { method: 'POST' });
 
 export const getLibrary = (id: number) => api<LibrarySummary>(`/libraries/${id}`);
 

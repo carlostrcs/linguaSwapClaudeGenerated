@@ -4,7 +4,7 @@
 // real across sessions. Nothing here is sent to the server; it lives only in the visitor's browser
 // until they create a real account.
 import type { EntryDto, JourneyState, LibrarySummary, TranslationDto } from '../../api/types';
-import { EXAMPLE_ENTRIES, EXAMPLE_LIBRARY_DESCRIPTION, EXAMPLE_LIBRARY_NAME } from './demoData';
+import { DEMO_FEATURED, EXAMPLE_ENTRIES, EXAMPLE_LIBRARY_DESCRIPTION, EXAMPLE_LIBRARY_NAME } from './demoData';
 import { applyLeitner, isMastered } from './demoEngine';
 
 const STORAGE_KEY = 'linguaswap.demo.v2';
@@ -100,6 +100,57 @@ export function renameDemoLibrary(id: number, name: string) {
 export function deleteDemoLibrary(id: number) {
   const state = load();
   save({ ...state, libraries: state.libraries.filter((l) => l.id !== id) });
+}
+
+// ---------- Featured (curated) libraries ----------
+// Mirrors the backend's default-library shelf. The demo is a fully-unlocked showcase, so any set the
+// visitor hasn't added yet is offered; adding clones it into the local store like the real "add".
+export interface DemoFeaturedSummary {
+  name: string;
+  description: string;
+  wordCount: number;
+  sampleWords: string[];
+}
+
+// A short "en · es"-style teaser: up to two translations, English first (mirrors LibrariesController.Teaser).
+function teaser(translations: Record<string, string>): string {
+  return Object.entries(translations)
+    .sort(([a], [b]) => (a === 'en' ? -1 : b === 'en' ? 1 : a.localeCompare(b)))
+    .slice(0, 2)
+    .map(([, text]) => text)
+    .join(' · ');
+}
+
+export function listDemoFeatured(): DemoFeaturedSummary[] {
+  const existing = new Set(load().libraries.map((l) => l.name));
+  return DEMO_FEATURED.filter((f) => !existing.has(f.name)).map((f) => ({
+    name: f.name,
+    description: f.description,
+    wordCount: f.entries.length,
+    sampleWords: f.entries.slice(0, 4).map((e) => teaser(e.translations)),
+  }));
+}
+
+export function addDemoFeatured(name: string): LibrarySummary | null {
+  const state = load();
+  const seed = DEMO_FEATURED.find((f) => f.name === name);
+  if (!seed) return null;
+  let nextEntryId = state.nextEntryId;
+  const entries: EntryDto[] = seed.entries.map((e) => ({
+    id: nextEntryId++,
+    notes: e.notes ?? null,
+    createdAt: new Date().toISOString(),
+    translations: Object.entries(e.translations).map(([languageCode, text]) => ({ languageCode, text })),
+  }));
+  const lib: StoredLibrary = {
+    id: state.nextLibraryId,
+    name: seed.name,
+    description: seed.description,
+    createdAt: new Date().toISOString(),
+    entries,
+  };
+  save({ ...state, libraries: [...state.libraries, lib], nextLibraryId: state.nextLibraryId + 1, nextEntryId });
+  return summary(lib);
 }
 
 // ---------- Entries ----------

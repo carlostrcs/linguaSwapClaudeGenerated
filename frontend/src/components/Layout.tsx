@@ -69,6 +69,7 @@ export default function Layout() {
         <div className="nav-collapse">
           <nav className="nav">
             <NavLink to="/libraries">{t('nav.libraries')}</NavLink>
+            <NavLink to="/featured">{t('nav.featured')}</NavLink>
             <NavLink to="/stats">{t('nav.stats')}</NavLink>
             <NavLink to="/account">{t('nav.account')}</NavLink>
           </nav>

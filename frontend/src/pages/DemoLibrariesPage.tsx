@@ -1,9 +1,37 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { Link } from 'react-router-dom';
-import { createDemoLibrary, deleteDemoLibrary, listDemoLibraries } from '../lib/demo/demoStore';
+import { Link, useNavigate } from 'react-router-dom';
+import {
+  addDemoFeatured,
+  createDemoLibrary,
+  deleteDemoLibrary,
+  listDemoFeatured,
+  listDemoLibraries,
+} from '../lib/demo/demoStore';
 import ConfirmModal from '../components/ConfirmModal';
 import { useI18n } from '../i18n/I18nProvider';
+
+// Feather "trash-2", inlined (mirrors LibrariesPage; no icon lib in this project, keeps it CSP-safe).
+function TrashIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+      <line x1="10" y1="11" x2="10" y2="17" />
+      <line x1="14" y1="11" x2="14" y2="17" />
+    </svg>
+  );
+}
 
 /**
  * The demo's libraries dashboard — mirrors LibrariesPage (create / open / practise / rename /
@@ -11,13 +39,24 @@ import { useI18n } from '../i18n/I18nProvider';
  */
 export default function DemoLibrariesPage() {
   const { t } = useI18n();
+  const navigate = useNavigate();
   const [libraries, setLibraries] = useState(() => listDemoLibraries());
+  const [featured, setFeatured] = useState(() => listDemoFeatured());
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<{ id: number; name: string } | null>(null);
 
-  const reload = () => setLibraries(listDemoLibraries());
+  const reload = () => {
+    setLibraries(listDemoLibraries());
+    setFeatured(listDemoFeatured());
+  };
+
+  const onAddFeatured = (featuredName: string) => {
+    const lib = addDemoFeatured(featuredName);
+    reload();
+    if (lib) navigate(`/demo/libraries/${lib.id}`);
+  };
 
   const onCreate = (e: FormEvent) => {
     e.preventDefault();
@@ -81,13 +120,53 @@ export default function DemoLibrariesPage() {
               <Link className="btn btn-primary" to={`/demo/practice/${lib.id}`}>
                 {t('libraries.practise')}
               </Link>
-              <button type="button" className="btn btn-danger" onClick={() => setPendingDelete({ id: lib.id, name: lib.name })}>
-                {t('common.delete')}
+              <button
+                type="button"
+                className="library-delete"
+                aria-label={t('libraries.deleteAria', { name: lib.name })}
+                title={t('common.delete')}
+                onClick={() => setPendingDelete({ id: lib.id, name: lib.name })}
+              >
+                <TrashIcon />
               </button>
             </div>
           </div>
         ))}
       </div>
+
+      {featured.length > 0 && (
+        <section className="featured-section">
+          <div className="featured-head">
+            <h2>{t('featured.title')}</h2>
+          </div>
+          <p className="muted">{t('featured.subtitle')}</p>
+          <div className="library-grid">
+            {featured.map((f) => (
+              <div className="card library-card featured-card" key={f.name}>
+                <div className="library-card-head">
+                  <span className="library-title">{f.name}</span>
+                  <span className="badge">
+                    {t(f.wordCount === 1 ? 'libraries.word' : 'libraries.words', { count: f.wordCount })}
+                  </span>
+                </div>
+                {f.description && <p className="muted">{f.description}</p>}
+                {f.sampleWords.length > 0 && (
+                  <ul className="teaser-words">
+                    {f.sampleWords.map((w, i) => (
+                      <li key={i}>{w}</li>
+                    ))}
+                  </ul>
+                )}
+                <div className="card-actions">
+                  <button type="button" className="btn btn-primary" onClick={() => onAddFeatured(f.name)}>
+                    {t('featured.add')}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {pendingDelete && (
         <ConfirmModal

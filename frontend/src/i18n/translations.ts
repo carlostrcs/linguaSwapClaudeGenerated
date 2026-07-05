@@ -15,6 +15,7 @@ type Dictionary = Record<string, string>;
 
 const en: Dictionary = {
   'nav.libraries': 'Libraries',
+  'nav.featured': 'Featured',
   'nav.stats': 'Stats',
   'nav.account': 'Account',
   'nav.signOut': 'Sign out',
@@ -88,6 +89,7 @@ const en: Dictionary = {
   'libraries.renameTitle': 'Rename library',
   'libraries.renameFailed': 'Could not rename the library.',
   'libraries.deleteTitle': 'Delete library',
+  'libraries.deleteAria': 'Delete "{name}"',
   'libraries.deleteConfirm': 'Delete "{name}" and all its words? This cannot be undone.',
   'libraries.import': 'Import',
   'libraries.importSuccess': 'Imported {count} words into "{name}".',
@@ -97,6 +99,14 @@ const en: Dictionary = {
   'libraries.importFormat': 'Expected file format',
   'libraries.importHelp': 'Upload a .json file: an array of entries, each with a "translations" object (language code → word) and optional "notes".',
   'libraries.downloadExample': 'Download example',
+
+  'featured.title': 'Featured libraries',
+  'featured.pageTitle': 'Featured libraries',
+  'featured.subtitle': 'Curated word sets to jump-start your learning — add one and start practising.',
+  'featured.empty': 'You’ve added every featured library — nice! Check back later for more.',
+  'featured.add': 'Add to my libraries',
+  'featured.locked': 'Premium — upgrade to unlock',
+  'featured.addFailed': 'Could not add this library.',
 
   'import.title': 'Import from a file',
   'import.target': 'Import into',
@@ -318,6 +328,7 @@ const en: Dictionary = {
 
 const es: Dictionary = {
   'nav.libraries': 'Bibliotecas',
+  'nav.featured': 'Destacadas',
   'nav.stats': 'Estadísticas',
   'nav.account': 'Cuenta',
   'nav.signOut': 'Cerrar sesión',
@@ -391,6 +402,7 @@ const es: Dictionary = {
   'libraries.renameTitle': 'Renombrar biblioteca',
   'libraries.renameFailed': 'No se pudo renombrar la biblioteca.',
   'libraries.deleteTitle': 'Eliminar biblioteca',
+  'libraries.deleteAria': 'Eliminar "{name}"',
   'libraries.deleteConfirm': '¿Eliminar "{name}" y todas sus palabras? No se puede deshacer.',
   'libraries.import': 'Importar',
   'libraries.importSuccess': 'Se importaron {count} palabras en "{name}".',
@@ -400,6 +412,14 @@ const es: Dictionary = {
   'libraries.importFormat': 'Formato de archivo esperado',
   'libraries.importHelp': 'Sube un archivo .json: una lista de entradas, cada una con un objeto "translations" (código de idioma → palabra) y "notes" opcional.',
   'libraries.downloadExample': 'Descargar ejemplo',
+
+  'featured.title': 'Bibliotecas destacadas',
+  'featured.pageTitle': 'Bibliotecas destacadas',
+  'featured.subtitle': 'Conjuntos de palabras listos para usar: añade uno y empieza a practicar.',
+  'featured.empty': 'Ya has añadido todas las bibliotecas destacadas. ¡Vuelve pronto para ver más!',
+  'featured.add': 'Añadir a mis bibliotecas',
+  'featured.locked': 'Premium: mejora tu plan para desbloquear',
+  'featured.addFailed': 'No se pudo añadir esta biblioteca.',
 
   'import.title': 'Importar desde un archivo',
   'import.target': 'Importar en',
