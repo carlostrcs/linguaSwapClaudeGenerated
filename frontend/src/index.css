@@ -208,6 +208,10 @@ input:focus, select:focus { outline: 2px solid var(--primary); outline-offset: 0
 .alert-info { background: var(--accent-soft); color: var(--primary-dark); border: 1px solid var(--primary-dark); }
 .trial-banner { background: var(--primary); color: #fff; padding: 0.55rem 1rem; text-align: center; font-size: 0.9rem; }
 .trial-banner a { color: #fff; font-weight: 700; text-decoration: underline; }
+/* Banner buttons (e.g. confirm-email Resend/Dismiss) are white-on-primary like the links —
+   without this they inherit .btn-link's primary colour and vanish into the banner background. */
+.trial-banner .btn-link { color: #fff; font-weight: 700; text-decoration: underline; margin-left: 0.85rem; }
+.trial-banner .btn-link:disabled { opacity: 0.7; cursor: default; text-decoration: none; }
 .muted { color: var(--muted); }
 .small { font-size: 0.82rem; }
 
