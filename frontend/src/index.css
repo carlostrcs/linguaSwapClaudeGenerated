@@ -251,6 +251,36 @@ input:focus, select:focus { outline: 2px solid var(--primary); outline-offset: 0
 .premium-badge { display: inline-block; background: var(--primary); color: #fff; border-radius: 999px; padding: 0.1rem 0.6rem; font-size: 0.74rem; font-weight: 700; letter-spacing: 0.02em; white-space: nowrap; vertical-align: middle; }
 .card-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: auto; }
 
+/* Icon-only trash button, pushed to the bottom-right corner of the card's action row.
+   Default shows the danger palette so it reads clearly as delete; hover fills solid red. */
+.library-delete {
+  margin-left: auto;
+  align-self: flex-end;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.4rem;
+  background: var(--danger-soft);
+  border: 1px solid var(--danger-border);
+  border-radius: 8px;
+  color: var(--danger);
+  cursor: pointer;
+}
+.library-delete:hover:not(:disabled) { background: var(--danger); border-color: var(--danger); color: #fff; }
+.library-delete:focus-visible { outline: 2px solid var(--danger); outline-offset: 2px; }
+.library-delete:disabled { opacity: 0.6; cursor: default; }
+
+/* ---------- Featured (curated default) libraries ---------- */
+.featured-section { margin-top: 2rem; }
+.featured-head { display: flex; align-items: center; gap: 0.5rem; }
+.featured-head h2 { margin: 0; }
+.featured-card { border: 1px solid var(--accent-soft); }
+.teaser-words { list-style: none; padding: 0; margin: 0.1rem 0 0.25rem; display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.teaser-words li { background: var(--accent-soft); color: var(--primary-dark); border-radius: 6px; padding: 0.1rem 0.5rem; font-size: 0.8rem; }
+/* Locked cards blur the teaser so free users can see there's content without reading it. */
+.teaser-words.locked { filter: blur(4px); user-select: none; pointer-events: none; }
+.featured-lock { display: inline-flex; align-items: center; gap: 0.2rem; }
+
 /* ---------- Entry editor ---------- */
 .section-head { display: flex; align-items: center; justify-content: space-between; }
 .entry-form { border: 1px dashed var(--border); border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }

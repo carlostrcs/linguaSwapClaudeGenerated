@@ -21,4 +21,11 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="10.2.3" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Curated default-library content, read at runtime by DbSeeder from the output directory.
+         The Web SDK already includes these .json files as Content, so Update (not Include) just adds
+         the copy-to-output metadata and avoids a duplicate-item error. -->
+    <Content Update="Data\DefaultLibraries\*.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

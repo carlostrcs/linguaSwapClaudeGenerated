@@ -225,6 +225,50 @@ sample-imports/  example .json files for testing import (not used by the app at 
 - **Import is a premium feature** — both endpoints return `403` for free users and the UI is
   replaced with an upgrade prompt. See _Premium & billing_ below.
 
+### Default (featured) libraries
+
+Curated ready-made libraries (Travel, Food, Dating, Work, Small Talk, Shopping, Health, Slang) shown
+on a **dedicated "Featured libraries" page** (`/featured`, in the nav), as a premium enticement: free
+users **see the cards** (name, word count, and a few **blurred teaser words**) but can't access
+anything; premium users **Add** one and practise it.
+
+- **Copy-on-add model (no shared-library refactor).** The curated masters are ordinary `Library`
+  rows marked `IsDefault = true`, owned by a hidden **system account** (`system@linguaswap.app`,
+  `IsPremium = false`, random unusable password — never logs in). Because every read path is
+  owner-scoped via `PremiumService.VisibleLibraries`, masters are unreachable by normal users. A
+  premium **Add** deep-clones the master's entries+translations into a **user-owned copy**
+  (`Library.SourceDefaultId` = master id, **no** learning states), so from then on it's a normal
+  library — practice / stats / journey / editing all work **unchanged**. This deliberately avoids
+  touching `LearningState` (which has no `UserId`); progress stays attributed via `Library.UserId`.
+- **Schema:** `Library.IsDefault` (bool) + `Library.SourceDefaultId` (int?, soft ref, no FK) —
+  `AddDefaultLibraries` migration (two additive columns).
+- **Endpoints** (`LibrariesController`): `GET /api/libraries/featured` → `FeaturedLibrarySummary`
+  (`WordCount` + `SampleWords` teaser) for every master **minus** ones the user already added (dedup
+  by `SourceDefaultId`, so a deleted copy re-appears on the shelf) — available to free **and**
+  premium. `POST /api/libraries/featured/{id}/add` → **premium-only (`403`)**, **idempotent**
+  (returns the existing copy if already added), else clones and returns the new `LibrarySummary`.
+- **Content is file-based (`Data/DefaultLibraries/*.json`)** — one JSON per topic in the import
+  format plus a header (`{ name, description, entries: [{ translations, notes? }] }`), shipped via a
+  csproj `<Content ... CopyToOutputDirectory>` and read from `AppContext.BaseDirectory`. **These
+  files are the single source of curated content** — add/grow them here (target ≤~1000 words each).
+- **Seeding:** `Data/DbSeeder.cs` `SeedDefaultLibrariesAsync` runs **unconditionally on every
+  startup** (separate from the empty-DB demo seed). It loads each file, validates/dedups via
+  `EntryImport.BuildEntries`/`Deduplicate`, and per library (matched by name) **creates it if
+  missing or appends only the new entries** (deduped by `EntryImport.Signature`). So growing a file
+  tops up its master; **existing user copies are snapshots and never change**. Malformed files are
+  logged and skipped, never fatal.
+- **Frontend:** the shelf is its own page `pages/FeaturedPage.tsx` (`['featured']` query; premium →
+  **Add** button that navigates to the new copy; free → blurred `.teaser-words` + 🔒 + Upgrade),
+  routed at `/featured` with a `nav.featured` link in `Layout.tsx`. Types/wrappers in `api/types.ts`
+  + `api/libraries.ts`; styles `.featured-*` / `.teaser-words` in `index.css`; `featured.*` i18n
+  keys (en/es). **Deleting a library** in `LibrariesPage.tsx` invalidates `['featured']` so a
+  removed copy reappears on the shelf.
+- **Mirror discipline:** the no-account demo mirrors the shelf **inline** on `DemoLibrariesPage.tsx`
+  (its `DemoLayout` has no nav) as an **unlocked showcase** — `lib/demo/demoData.ts` (`DEMO_FEATURED`,
+  a **lightweight taster**, not the full content) + `demoStore.ts`
+  (`listDemoFeatured`/`addDemoFeatured`, whose `teaser()` mirrors `LibrariesController.Teaser`). The
+  demo is intentionally a small taster — it does **not** bundle the full JSON content.
+
 ### Premium & billing (Stripe)
 
 - Two tiers via `ApplicationUser.IsPremium` (+ `StripeCustomerId`, `StripeSubscriptionId`).

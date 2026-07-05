@@ -81,6 +81,90 @@ public class LibrariesController(AppDbContext db, PremiumService premium) : Cont
         return CreatedAtAction(nameof(Get), new { id = lib.Id }, dto);
     }
 
+    /// <summary>How many sample words to show on a featured card's teaser.</summary>
+    private const int SampleWordCount = 4;
+
+    /// <summary>The curated "default" libraries a user can add, minus any they've already added.
+    /// Visible to free and premium users alike — the card is an upsell for free users.</summary>
+    [HttpGet("featured")]
+    public async Task<IActionResult> Featured()
+    {
+        var userId = User.GetUserId();
+        // Sets the user has already copied into their account are dropped from the shelf.
+        var addedSourceIds = await db.Libraries
+            .Where(l => l.UserId == userId && l.SourceDefaultId != null)
+            .Select(l => l.SourceDefaultId!.Value)
+            .ToListAsync();
+
+        var masters = await premium.DefaultLibraries()
+            .Where(l => !addedSourceIds.Contains(l.Id))
+            .OrderBy(l => l.Id)
+            .Include(l => l.Entries).ThenInclude(e => e.Translations)
+            .ToListAsync();
+
+        var items = masters.Select(l => new FeaturedLibrarySummary(
+            l.Id, l.Name, l.Description, l.Entries.Count,
+            l.Entries.OrderBy(e => e.Id).Take(SampleWordCount).Select(Teaser).ToList())).ToList();
+        return Ok(items);
+    }
+
+    /// <summary>Add a curated default library to the current user's account by cloning it. Premium
+    /// only; idempotent (returns the existing copy if the set was already added).</summary>
+    [HttpPost("featured/{id:int}/add")]
+    public async Task<IActionResult> AddFeatured(int id)
+    {
+        var userId = User.GetUserId();
+        if (!await premium.IsPremiumAsync(userId))
+            return StatusCode(StatusCodes.Status403Forbidden, new
+            {
+                message = "Featured libraries are a premium feature. Upgrade to add them to your account."
+            });
+
+        var master = await premium.DefaultLibraries()
+            .Where(l => l.Id == id)
+            .Include(l => l.Entries).ThenInclude(e => e.Translations)
+            .FirstOrDefaultAsync();
+        if (master is null) return NotFound();
+
+        // Idempotent: if the user already added this set, hand back their existing copy.
+        var existing = await db.Libraries
+            .Where(l => l.UserId == userId && l.SourceDefaultId == id)
+            .Select(l => new { l.Id, l.Name, l.Description, l.CreatedAt, Total = l.Entries.Count })
+            .FirstOrDefaultAsync();
+        if (existing is not null)
+            return Ok(ToSummary(existing.Id, existing.Name, existing.Description, existing.CreatedAt, existing.Total, true));
+
+        // Deep-clone entries + translations into a fresh user-owned library (no learning states, so
+        // the user starts from scratch). From here it behaves like any other library.
+        var copy = new Library
+        {
+            UserId = userId,
+            Name = master.Name,
+            Description = master.Description,
+            SourceDefaultId = master.Id,
+            Entries = master.Entries.Select(e => new Entry
+            {
+                Notes = e.Notes,
+                Translations = e.Translations
+                    .Select(t => new Translation { LanguageCode = t.LanguageCode, Text = t.Text })
+                    .ToList(),
+            }).ToList(),
+        };
+        db.Libraries.Add(copy);
+        await db.SaveChangesAsync();
+
+        var dto = new LibrarySummary(copy.Id, copy.Name, copy.Description, copy.CreatedAt, copy.Entries.Count, 0);
+        return CreatedAtAction(nameof(Get), new { id = copy.Id }, dto);
+    }
+
+    /// <summary>A short "en · es"-style teaser for one entry: up to two translations, English first
+    /// as a recognisable anchor.</summary>
+    private static string Teaser(Entry e) => string.Join(" · ", e.Translations
+        .OrderBy(t => t.LanguageCode == "en" ? 0 : 1)
+        .ThenBy(t => t.LanguageCode)
+        .Take(2)
+        .Select(t => t.Text));
+
     /// <summary>Create a new library and import the file's entries into it in one transaction.</summary>
     [HttpPost("import")]
     public async Task<IActionResult> Import(CreateLibraryImportRequest req)

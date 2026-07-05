@@ -60,6 +60,10 @@ public class PremiumService(AppDbContext db)
         return isPremium ? q : q.OrderBy(e => e.Id).Take(FreeWordsPerLibrary);
     }
 
+    /// <summary>The curated "default" libraries (owned by the system account). Shown on the featured
+    /// shelf to everyone; only premium users may add a copy.</summary>
+    public IQueryable<Library> DefaultLibraries() => db.Libraries.Where(l => l.IsDefault);
+
     /// <summary>How many of the user's libraries are currently hidden by the free-tier cap.</summary>
     public async Task<int> HiddenLibraryCountAsync(string userId, bool isPremium) =>
         isPremium

@@ -39,6 +39,18 @@ export interface LibrarySummary {
   hiddenEntryCount: number;
 }
 
+/** A curated "default" library shown on the featured shelf. Premium users can add it (a copy is
+ *  cloned into their account); free users only see the card with a blurred teaser. */
+export interface FeaturedLibrarySummary {
+  id: number;
+  name: string;
+  description?: string | null;
+  /** Full size of the set (never capped — it's a preview, not owned content). */
+  wordCount: number;
+  /** A few sample words as a teaser (blurred/greyed for free users). */
+  sampleWords: string[];
+}
+
 export interface TranslationDto {
   languageCode: string;
   text: string;
