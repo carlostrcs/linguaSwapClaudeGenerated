@@ -12,9 +12,12 @@ using Microsoft.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Database: EF Core over SQLite (single local file).
+// Database: EF Core over PostgreSQL (Supabase in prod, local Docker in dev).
+// EnableRetryOnFailure adds resiliency against transient cloud-network drops.
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("Default")));
+    options.UseNpgsql(
+        builder.Configuration.GetConnectionString("Default"),
+        npgsql => npgsql.EnableRetryOnFailure()));
 
 // Identity: user accounts + password hashing, stored via EF Core.
 builder.Services

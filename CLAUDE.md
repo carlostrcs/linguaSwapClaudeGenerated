@@ -8,16 +8,28 @@ learning statistics. Multi-user with accounts.
 ## Stack
 
 - **Backend:** ASP.NET Core Web API, **.NET 10** (`backend/LinguaSwap.Api`). Controllers-based.
-  EF Core + **SQLite**. ASP.NET Core Identity + **JWT** auth. Swagger UI in Development.
+  EF Core + **PostgreSQL** (Npgsql) — **Supabase** in production, **local Docker Postgres** in dev.
+  ASP.NET Core Identity + **JWT** auth. Swagger UI in Development.
 - **Frontend:** **React + TypeScript + Vite** (`frontend`). React Router + TanStack Query.
 - **Solution file:** `backend/LinguaSwap.slnx` (new XML solution format).
 
 ## How to run (development)
 
-Backend (from repo root):
+Start the local database first (from repo root), then the API:
 ```
+docker compose up -d               # local Postgres (postgres:17) on host port 5433
 dotnet run --project backend/LinguaSwap.Api
 ```
+- The DB is a Docker container (`docker-compose.yml`). `docker compose down` stops it (data
+  persists in a named volume); `docker compose down -v` also wipes it. Host port is **5433**
+  (not the default 5432) to stay clear of any other local Postgres — the connection string in
+  `appsettings.json` (`ConnectionStrings:Default`) already points there. In **production** that
+  connection string is overridden by the env var `ConnectionStrings__Default` (the Supabase
+  session-pooler string; **never commit it** — same pattern as the Stripe/Email secrets).
+- Schema is created automatically: `Program.cs` runs `db.Database.Migrate()` on startup, then
+  `DbSeeder` seeds the demo user + featured libraries. To manage migrations by hand:
+  `dotnet ef migrations add <Name> --project backend/LinguaSwap.Api` /
+  `dotnet ef database update --project backend/LinguaSwap.Api`.
 - API base: `http://localhost:5299`
 - Swagger UI: `http://localhost:5299/swagger`
 - Health check: `http://localhost:5299/api/health`
@@ -335,6 +347,28 @@ anything; premium users **Add** one and practise it.
     Libraries page / library editor / Account page. An active trial shows a top banner + countdown.
   - **No backfill needed:** existing free users were already capped at creation, so none can be
     over-limit; only premium/trial users can exceed limits.
+
+#### Database (dev Docker Postgres → Supabase)
+
+> The app runs on **PostgreSQL** everywhere (Npgsql). Dev uses a local Docker Postgres
+> (`docker-compose.yml`, host port 5433); production uses **Supabase**. Switching is
+> **config-only, no code change** — the provider and migrations are already Postgres.
+
+1. **Create the Supabase project** (Dashboard → New project). Note the region and DB password.
+2. **Get the connection string** → Project → **Connect** → use the **Session pooler** (port
+   `5432`, host `aws-0-<region>.pooler.supabase.com`, user `postgres.<project-ref>`). Prefer the
+   pooler over the direct `db.<ref>.supabase.co` host: it's **IPv4-reachable** and supports
+   prepared statements (needed for `dotnet ef` and most hosts). Add `SSL Mode=Require;Trust
+   Server Certificate=true`.
+3. **Set it as an env var** (never commit): `ConnectionStrings__Default` = that Npgsql string.
+   In dev it's read from `appsettings.json`; in prod the env var overrides it.
+4. **Migrations apply automatically** on first startup (`db.Database.Migrate()` in `Program.cs`),
+   and `DbSeeder` seeds the demo user + featured libraries. (To pre-apply from your machine:
+   `ConnectionStrings__Default=<supabase-string> dotnet ef database update --project
+   backend/LinguaSwap.Api`.) Requires the DB user to have DDL rights — Supabase's `postgres`
+   user does. *If you ever scale past one instance, move `Migrate()` out of startup into a
+   deploy step to avoid concurrent-migration races.*
+5. **Data note** → no test data migrates; the local Docker DB is disposable dev/seed data.
 
 #### Going live (Stripe test → production)
 
