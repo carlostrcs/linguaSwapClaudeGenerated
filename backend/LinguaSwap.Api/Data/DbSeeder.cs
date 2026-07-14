@@ -29,27 +29,24 @@ public static class DbSeeder
     {
         var db = services.GetRequiredService<AppDbContext>();
         var users = services.GetRequiredService<UserManager<ApplicationUser>>();
+        var env = services.GetRequiredService<IHostEnvironment>();
         var logger = services.GetRequiredService<ILoggerFactory>().CreateLogger("DbSeeder");
 
-        await SeedDemoUserAsync(db, users);
+        // The demo account has a password that is published in the repo and the README, so it must
+        // never exist in a real deployment — a fresh production database is empty, which is exactly
+        // the condition the old "seed if no users" check treated as "please seed the demo user".
+        if (env.IsDevelopment())
+            await SeedDemoUserAsync(db, users);
+
+        // The curated featured libraries are wanted in every environment.
         await SeedDefaultLibrariesAsync(db, users, logger);
     }
 
+    /// <summary>Development only (gated in <see cref="SeedAsync"/>). Idempotent: creates the demo
+    /// account and its sample library if the account isn't there yet.</summary>
     private static async Task SeedDemoUserAsync(AppDbContext db, UserManager<ApplicationUser> users)
     {
-        // Only do the full demo seed when there are no users yet. On an existing database
-        // (e.g. created before premium existed) just make sure the demo account is premium
-        // so every feature stays testable without paying.
-        if (await db.Users.AnyAsync())
-        {
-            var existingDemo = await users.FindByEmailAsync(DemoEmail);
-            if (existingDemo is not null && !existingDemo.IsPremium)
-            {
-                existingDemo.IsPremium = true;
-                await users.UpdateAsync(existingDemo);
-            }
-            return;
-        }
+        if (await users.FindByEmailAsync(DemoEmail) is not null) return;
 
         var demo = new ApplicationUser
         {

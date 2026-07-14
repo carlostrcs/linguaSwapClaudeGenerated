@@ -1,4 +1,6 @@
-const BASE = 'http://localhost:5299/api';
+// Where the API lives. Vite inlines VITE_API_URL at build time, so the deployed bundle points at
+// the real API; with nothing set we fall back to the local dev server.
+const BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:5299/api';
 const TOKEN_KEY = 'linguaswap.token';
 const REFRESH_KEY = 'linguaswap.refreshToken';
 

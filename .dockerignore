@@ -1,0 +1,21 @@
+# Keep the build context small and — critically — keep secrets out of the image.
+**/bin/
+**/obj/
+**/node_modules/
+**/dist/
+
+# Never bake local secrets into the image. Real config comes from environment variables.
+**/appsettings.Development.json
+**/appsettings.Production.json
+**/.env
+**/.env.*
+!**/.env.example
+
+.git/
+.github/
+.vs/
+.idea/
+frontend/
+sample-imports/
+docker-compose.yml
+*.md
