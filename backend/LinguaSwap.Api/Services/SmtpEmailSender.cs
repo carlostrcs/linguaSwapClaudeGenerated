@@ -11,6 +11,9 @@ namespace LinguaSwap.Api.Services;
 /// </summary>
 public class SmtpEmailSender(IConfiguration config, ILogger<SmtpEmailSender> logger) : IEmailSender
 {
+    /// <summary>Milliseconds. A blocked SMTP port must fail in seconds, not minutes.</summary>
+    private const int SmtpTimeout = 15_000;
+
     public async Task SendAsync(string toEmail, string subject, string htmlBody, CancellationToken ct = default)
     {
         var email = config.GetSection("Email");
@@ -42,10 +45,16 @@ public class SmtpEmailSender(IConfiguration config, ILogger<SmtpEmailSender> log
         var useStartTls = !bool.TryParse(smtp["UseStartTls"], out var s) || s; // default true
         var secure = useStartTls ? SecureSocketOptions.StartTls : SecureSocketOptions.SslOnConnect;
 
-        using var client = new SmtpClient();
-        await client.ConnectAsync(host, port, secure, ct);
-        await client.AuthenticateAsync(user, password ?? string.Empty, ct);
-        await client.SendAsync(message, ct);
-        await client.DisconnectAsync(true, ct);
+        // Bound the whole exchange. Many hosts (Render included) blackhole outbound SMTP, and
+        // MailKit's default 2-minute timeout would otherwise tie up a background worker for
+        // minutes per message. Fail fast and let the caller log it.
+        using var client = new SmtpClient { Timeout = SmtpTimeout };
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        cts.CancelAfter(TimeSpan.FromMilliseconds(SmtpTimeout));
+
+        await client.ConnectAsync(host, port, secure, cts.Token);
+        await client.AuthenticateAsync(user, password ?? string.Empty, cts.Token);
+        await client.SendAsync(message, cts.Token);
+        await client.DisconnectAsync(true, cts.Token);
     }
 }
