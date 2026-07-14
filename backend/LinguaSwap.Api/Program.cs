@@ -1,11 +1,14 @@
 using System.Text;
 using System.Text.Json.Serialization;
+using System.Threading.RateLimiting;
 using LinguaSwap.Api.Data;
 using LinguaSwap.Api.Models;
 using LinguaSwap.Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
@@ -31,12 +34,39 @@ builder.Services
         options.Password.RequireUppercase = true;
         options.Password.RequireLowercase = true;
         options.Password.RequireDigit = true;
+
+        // Brute-force protection: lock an account after repeated bad passwords. AuthController.Login
+        // drives this explicitly (AccessFailedAsync / IsLockedOutAsync) — UserManager.CheckPasswordAsync
+        // on its own does NOT touch the lockout counters.
+        options.Lockout.MaxFailedAccessAttempts = 5;
+        options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+        options.Lockout.AllowedForNewUsers = true;
     })
     .AddEntityFrameworkStores<AppDbContext>()
     .AddDefaultTokenProviders();
 
 // JWT bearer authentication.
 var jwt = builder.Configuration.GetSection("Jwt");
+
+// The signing key is the whole ballgame: anyone who knows it can mint a token for any user.
+// appsettings.json ships a *committed* dev placeholder, so in Production we refuse to boot unless
+// a real key was supplied (via the Jwt__Key env var). Crashing on deploy is far better than
+// silently running a forgeable auth system.
+const string DevJwtKey = "dev-only-secret-key-change-me-please-at-least-32-bytes!";
+var jwtKey = jwt["Key"];
+if (string.IsNullOrWhiteSpace(jwtKey))
+    throw new InvalidOperationException("Jwt:Key is not configured.");
+if (!builder.Environment.IsDevelopment())
+{
+    if (jwtKey == DevJwtKey)
+        throw new InvalidOperationException(
+            "Jwt:Key is still the committed development placeholder. Set a unique secret via the " +
+            "Jwt__Key environment variable before running outside Development.");
+    if (Encoding.UTF8.GetByteCount(jwtKey) < 32)
+        throw new InvalidOperationException(
+            "Jwt:Key must be at least 32 bytes. Generate one with: openssl rand -base64 48");
+}
+
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -48,7 +78,7 @@ builder.Services
             ValidateAudience = true,
             ValidAudience = jwt["Audience"],
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt["Key"]!)),
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
             ValidateLifetime = true,
             ClockSkew = TimeSpan.FromSeconds(30)
         };
@@ -82,14 +112,49 @@ builder.Services.AddSingleton<IPracticeSelector, WeakSelector>();
 builder.Services.AddSingleton<IPracticeSelector, JourneySelector>();
 builder.Services.AddSingleton<PracticeSelectorResolver>();
 
-// CORS: allow the Vite dev server (frontend) to call this API during development.
+// CORS: config-driven so the deployed frontend can call the API. Set the production origin with
+// Cors__AllowedOrigins__0=https://<your-domain>; with nothing configured we fall back to the Vite
+// dev server. A hardcoded origin here would block every real browser in production.
 const string FrontendCors = "frontend";
+var corsOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
+if (corsOrigins is null || corsOrigins.Length == 0)
+    corsOrigins = ["http://localhost:5173"];
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(FrontendCors, policy =>
-        policy.WithOrigins("http://localhost:5173")
+        policy.WithOrigins(corsOrigins)
               .AllowAnyHeader()
               .AllowAnyMethod());
+});
+
+// Rate limiting on the auth endpoints: throttles password guessing, registration spam, and the
+// (otherwise unbounded) confirmation-email send path. Applied via [EnableRateLimiting] on AuthController.
+const string AuthRateLimit = "auth";
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddFixedWindowLimiter(AuthRateLimit, o =>
+    {
+        o.PermitLimit = 10;
+        o.Window = TimeSpan.FromMinutes(1);
+        o.QueueLimit = 0;
+    });
+});
+
+// Health checks. /health/ready actually opens a DB connection, so the host can restart an instance
+// whose database is unreachable — the old static "ok" reported healthy while Postgres was down.
+builder.Services.AddHealthChecks().AddDbContextCheck<AppDbContext>();
+
+// Consistent RFC-7807 error bodies (with a trace id) instead of an opaque empty 500.
+builder.Services.AddProblemDetails();
+
+// Behind Render's TLS-terminating proxy the app sees plain HTTP; these headers carry the real
+// scheme and client IP. The proxy's IP isn't known ahead of time, hence the cleared allow-lists.
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
 });
 
 builder.Services
@@ -146,17 +211,39 @@ using (var scope = app.Services.CreateScope())
 }
 
 // Configure the HTTP request pipeline.
+
+// Must run before anything that reads the scheme or client IP.
+app.UseForwardedHeaders();
+
+// Turns an unhandled exception into a ProblemDetails body with a trace id, rather than a bare 500.
+app.UseExceptionHandler();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+else
+{
+    // Tell browsers to stick to HTTPS. We deliberately do NOT call UseHttpsRedirection(): the host
+    // (Render) already terminates TLS and redirects http->https at its edge, and an in-app redirect
+    // would 307 the platform's *internal* HTTP health probe — failing the check and restart-looping
+    // the service.
+    app.UseHsts();
+}
 
 app.UseCors(FrontendCors);
+
+app.UseRateLimiter();
 
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Liveness: process is up. Readiness: process is up AND the database answers (point the host's
+// health check at /health/ready).
+app.MapHealthChecks("/health/live", new() { Predicate = _ => false });
+app.MapHealthChecks("/health/ready");
 
 app.Run();

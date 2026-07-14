@@ -348,6 +348,46 @@ anything; premium users **Add** one and practise it.
   - **No backfill needed:** existing free users were already capped at creation, so none can be
     over-limit; only premium/trial users can exceed limits.
 
+### Deployment (API → Render, frontend → Vercel)
+
+The API ships as a **Docker container** (`Dockerfile` at the repo root, built from the **repo root**
+context; `render.yaml` is the Render blueprint). The frontend is a **static Vite build** on Vercel
+(`frontend/vercel.json`). Nothing environment-specific is committed — it all comes from env vars.
+
+- **Frontend → Vercel.** Set the Vercel project's **Root Directory** to `frontend`. Set
+  **`VITE_API_URL=https://<render-app>.onrender.com/api`** (see `frontend/.env.example`). Vite
+  **inlines this at build time**, so changing it needs a *rebuild*, not a restart. `vercel.json`
+  rewrites every path to `/index.html` — **required**, or the externally-entered routes
+  `/billing/success` (Stripe's redirect) and `/confirm-email` (emailed link) would 404.
+- **API → Render.** Set these env vars (all `sync: false` in `render.yaml`, none committed):
+  `ConnectionStrings__Default` (prod Supabase session-pooler string), **`Jwt__Key`**,
+  `FrontendBaseUrl`, `Cors__AllowedOrigins__0` (the Vercel origin), `Stripe__*`, `Email__*`.
+  `ASPNETCORE_ENVIRONMENT=Production` is baked into the image.
+- **Health checks:** `/health/ready` opens a real DB connection (Render's `healthCheckPath` — this
+  is what makes auto-restart meaningful); `/health/live` is a plain liveness ping. The old
+  `/api/health` still returns a static `ok`.
+- **TLS:** Render terminates TLS at its edge, so the app runs HTTP behind a proxy. `Program.cs`
+  calls `UseForwardedHeaders()` **first** (to see the real scheme/IP) and `UseHsts()` in
+  non-Development. It deliberately does **not** call `UseHttpsRedirection()` — that would 307
+  Render's *internal* HTTP health probe and restart-loop the service.
+
+#### Production safety rails (these will fail your deploy on purpose)
+
+- **`Jwt:Key` fail-fast.** `appsettings.json` ships a *committed dev placeholder*. Outside
+  Development the app **throws at startup** if `Jwt:Key` is missing, is still that placeholder, or
+  is <32 bytes. Supply a real one: `openssl rand -base64 48` → `Jwt__Key`. A crash on boot beats a
+  forgeable auth system.
+- **The demo user is Development-only.** `DbSeeder.SeedAsync` gates `SeedDemoUserAsync` behind
+  `IsDevelopment()`. It used to seed whenever the users table was *empty* — which is exactly what a
+  fresh production database is — creating `demo@linguaswap.app` / `Demo123!` **as premium** with a
+  password published in this repo. The featured-library seeding still runs in every environment.
+- **Brute-force protection.** Identity lockout (5 attempts → 15 min) is configured *and*
+  `AuthController.Login` drives it explicitly (`IsLockedOutAsync` / `AccessFailedAsync` /
+  `ResetAccessFailedCountAsync`) — `UserManager.CheckPasswordAsync` alone does **not** touch the
+  lockout counters. `/api/auth/*` is also rate-limited (10 req/min, `[EnableRateLimiting("auth")]`).
+- **CORS is config-driven** (`Cors:AllowedOrigins`), defaulting to the Vite dev origin. It used to
+  be hardcoded to `localhost:5173`, which silently blocks every real browser in production.
+
 #### Database (dev Docker Postgres → Supabase)
 
 > The app runs on **PostgreSQL** everywhere (Npgsql). Dev uses a local Docker Postgres

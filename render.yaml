@@ -1,0 +1,49 @@
+# Render blueprint for the LinguaSwap API.
+# Render builds the Dockerfile at the repo root, terminates TLS at its edge, load-balances across
+# instances, and restarts any instance whose health check fails — which is why healthCheckPath
+# points at /health/ready (it opens a real DB connection) rather than a static "ok".
+#
+# Every value marked `sync: false` must be set in the Render dashboard. NONE of them are committed.
+services:
+  - type: web
+    name: linguaswap-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: free
+    healthCheckPath: /health/ready
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+
+      # Supabase (production project), session pooler. Never commit this.
+      #   Host=aws-0-<region>.pooler.supabase.com;Port=5432;Database=postgres;
+      #   Username=postgres.<ref>;Password=<pw>;SSL Mode=Require;Trust Server Certificate=true
+      - key: ConnectionStrings__Default
+        sync: false
+
+      # 32+ random bytes: `openssl rand -base64 48`. The app REFUSES TO BOOT outside Development
+      # if this is missing, too short, or still the committed dev placeholder.
+      - key: Jwt__Key
+        sync: false
+
+      # Public URL of the frontend. Drives Stripe success/cancel URLs and the email-confirmation
+      # link, and is the origin allowed through CORS.
+      - key: FrontendBaseUrl
+        sync: false
+      - key: Cors__AllowedOrigins__0
+        sync: false
+
+      - key: Stripe__SecretKey
+        sync: false
+      - key: Stripe__WebhookSecret
+        sync: false
+      - key: Stripe__PriceId
+        sync: false
+
+      - key: Email__FromAddress
+        sync: false
+      - key: Email__Smtp__User
+        sync: false
+      - key: Email__Smtp__Password
+        sync: false

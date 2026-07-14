@@ -4,11 +4,13 @@ using LinguaSwap.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace LinguaSwap.Api.Controllers;
 
 [ApiController]
 [Route("api/auth")]
+[EnableRateLimiting("auth")]
 public class AuthController(
     UserManager<ApplicationUser> users,
     TokenService tokens,
@@ -51,9 +53,21 @@ public class AuthController(
     public async Task<IActionResult> Login(LoginRequest req)
     {
         var user = await users.FindByEmailAsync(req.Email);
-        if (user is null || !await users.CheckPasswordAsync(user, req.Password))
+        if (user is null)
             return Unauthorized(new { message = "Invalid email or password." });
 
+        // Identity's lockout counters are only maintained if we drive them ourselves —
+        // CheckPasswordAsync does not. Without this, password guessing is unlimited.
+        if (await users.IsLockedOutAsync(user))
+            return Unauthorized(new { message = "Too many failed attempts. Try again later." });
+
+        if (!await users.CheckPasswordAsync(user, req.Password))
+        {
+            await users.AccessFailedAsync(user);
+            return Unauthorized(new { message = "Invalid email or password." });
+        }
+
+        await users.ResetAccessFailedCountAsync(user);
         return Ok(await BuildAuthResponseAsync(user));
     }
 
