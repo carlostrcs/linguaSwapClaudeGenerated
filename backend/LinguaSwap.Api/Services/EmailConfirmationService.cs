@@ -11,13 +11,16 @@ namespace LinguaSwap.Api.Services;
 /// </summary>
 public class EmailConfirmationService(
     UserManager<ApplicationUser> users,
-    IEmailSender email,
+    EmailQueue email,
     IConfiguration config,
     ILogger<EmailConfirmationService> logger)
 {
     private string FrontendBaseUrl => config["FrontendBaseUrl"] ?? "http://localhost:5173";
 
-    /// <summary>Generate a confirmation token and email the user a link to confirm their address.</summary>
+    /// <summary>Generate a confirmation token and <b>queue</b> the confirmation link for delivery.
+    /// The token comes from the DB (fast), but the mail itself is handed to <see cref="EmailQueue"/>
+    /// and sent on a background worker — awaiting SMTP here once hung registration for two minutes
+    /// when the host blocked outbound mail.</summary>
     public async Task SendConfirmationEmailAsync(ApplicationUser user)
     {
         try
@@ -40,12 +43,13 @@ public class EmailConfirmationService(
                  <p>If you didn't create a LinguaSwap account, you can safely ignore this email.</p>
                  """;
 
-            await email.SendAsync(user.Email!, "Confirm your LinguaSwap email", html);
+            if (!email.TryEnqueue(new OutboundEmail(user.Email!, "Confirm your LinguaSwap email", html)))
+                logger.LogWarning("Email queue full — dropped confirmation email for {Email}", user.Email);
         }
         catch (Exception ex)
         {
             // Non-fatal by design — never let a mail hiccup fail the caller (register/resend).
-            logger.LogError(ex, "Failed to send confirmation email to {Email}", user.Email);
+            logger.LogError(ex, "Failed to queue confirmation email to {Email}", user.Email);
         }
     }
 

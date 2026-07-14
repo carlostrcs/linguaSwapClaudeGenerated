@@ -91,7 +91,11 @@ builder.Services.AddScoped<PremiumService>();
 
 // Email: transactional mail (account confirmation) over SMTP. Real credentials come from
 // user-secrets / env vars; with none configured the sender logs the message instead.
+// Mail is QUEUED and sent on a background worker — never awaited inside a request, because an
+// SMTP round-trip to a third party has no business blocking a user's HTTP response.
 builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
+builder.Services.AddSingleton<EmailQueue>();
+builder.Services.AddHostedService<EmailBackgroundSender>();
 builder.Services.AddScoped<EmailConfirmationService>();
 
 // Stripe (premium subscriptions). The secret key is global SDK config; real values come
