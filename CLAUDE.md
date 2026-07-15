@@ -108,12 +108,23 @@ address is real.
   (session-scoped dismiss) with a **Resend** button until confirmed; the emailed link lands on the
   public `pages/ConfirmEmailPage.tsx` (modeled on `BillingSuccessPage`). The seeded demo user is
   `EmailConfirmed = true`, so it never sees the banner.
-- **Config:** `Email:FromAddress`, `Email:FromName`, `Email:Smtp:{Host,Port,User,Password,UseStartTls}`
-  in `appsettings.json` — Gmail defaults (`smtp.gmail.com:587`, STARTTLS) with **empty** secret
-  placeholders. Supply real values via **user-secrets** (`Email:Smtp:User` = the Gmail address,
-  `Email:Smtp:Password` = a 16-char **App Password**, which requires 2FA on the account;
-  `Email:FromAddress`). Env-var form for prod: `Email__Smtp__User`, `Email__Smtp__Password`,
-  `Email__FromAddress`. **Never commit real values.**
+- **Transport is pluggable (`Email:Provider`).** `IEmailSender` has two implementations, chosen in
+  `Program.cs` by config:
+  - **`Smtp`** (default) → `SmtpEmailSender` (MailKit). Good for local dev / Gmail. **Do not use in
+    production on Render** — Render blocks outbound SMTP, so sends silently fail (the send is queued
+    so it never hangs a request, but the mail never arrives).
+  - **`Resend`** → `ResendEmailSender`, which POSTs to Resend's HTTPS API. **Use this in production**
+    — HTTPS isn't blocked. Set `Email__Provider=Resend`, `Email__Resend__ApiKey=re_…`, and
+    `Email__FromAddress` to an address on a **domain verified in the Resend dashboard** (add its DNS
+    records). Any other provider (SendGrid/Postmark) is a similar small `IEmailSender`.
+  - Both share the queue/worker: sending is always off the request path; a bad key/unverified domain
+    is logged by the worker (with Resend's error message) and dropped, never surfaced to the user.
+- **Config:** `Email:Provider`, `Email:FromAddress`, `Email:FromName`, `Email:Resend:ApiKey`, and
+  `Email:Smtp:{Host,Port,User,Password,UseStartTls}` in `appsettings.json` — Gmail SMTP defaults with
+  **empty** secret placeholders. Supply real values via **user-secrets** in dev (`Email:Smtp:User` =
+  the Gmail address, `Email:Smtp:Password` = a 16-char **App Password**, which requires 2FA). Env-var
+  form for prod: `Email__Provider`, `Email__Resend__ApiKey`, `Email__FromAddress` (or the
+  `Email__Smtp__*` set). **Never commit real values.**
 
 #### Password reset (forgot password)
 

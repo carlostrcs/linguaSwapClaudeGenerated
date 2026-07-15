@@ -41,9 +41,12 @@ services:
       - key: Stripe__PriceId
         sync: false
 
+      # Email: use Resend in production (HTTPS API — Render blocks outbound SMTP, so the Gmail/SMTP
+      # transport silently never delivers here). Set Provider=Resend, the re_… key, and a From
+      # address on a domain verified in the Resend dashboard.
+      - key: Email__Provider
+        value: Resend
+      - key: Email__Resend__ApiKey
+        sync: false
       - key: Email__FromAddress
-        sync: false
-      - key: Email__Smtp__User
-        sync: false
-      - key: Email__Smtp__Password
         sync: false
