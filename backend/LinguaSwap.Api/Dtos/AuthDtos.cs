@@ -24,6 +24,17 @@ public record ConfirmEmailRequest(
     [Required] string UserId,
     [Required] string Token);
 
+public record ForgotPasswordRequest(
+    [Required(ErrorMessage = "Email is required.")]
+    [EmailAddress(ErrorMessage = "Enter a valid email address.")] string Email);
+
+public record ResetPasswordRequest(
+    [Required] string UserId,
+    [Required] string Token,
+    // Complexity is enforced by Identity's ResetPasswordAsync (same options as registration),
+    // so here we only guarantee a value is present.
+    [Required(ErrorMessage = "Password is required.")] string NewPassword);
+
 public record AuthResponse(
     string Token,
     DateTime ExpiresAt,

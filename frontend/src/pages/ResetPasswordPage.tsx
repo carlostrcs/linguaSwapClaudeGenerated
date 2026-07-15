@@ -1,37 +1,49 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { register } from '../api/auth';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { resetPassword } from '../api/auth';
 import { ApiError } from '../api/client';
-import { useAuth } from '../auth/AuthContext';
 import { useI18n } from '../i18n/I18nProvider';
-import { isValidEmail, passwordIssueKey, PASSWORD_MIN_LENGTH } from '../lib/validation';
+import { passwordIssueKey, PASSWORD_MIN_LENGTH } from '../lib/validation';
 import PasswordInput from '../components/PasswordInput';
 
-export default function RegisterPage() {
-  const { signIn } = useAuth();
+/** Target of the emailed reset link (public — opened logged-out). Reads userId+token from the query,
+ *  collects a new password, and posts it. Password rules mirror registration via lib/validation. */
+export default function ResetPasswordPage() {
+  const [params] = useSearchParams();
+  const userId = params.get('userId');
+  const token = params.get('token');
   const { t } = useI18n();
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
-  const [displayName, setDisplayName] = useState('');
+
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(false);
 
-  // Live match indicator: only shown once the user has started typing the confirmation.
   const passwordsMatch = password === confirmPassword;
   const showMatchState = confirmPassword.length > 0;
+
+  // A link missing either param is malformed — tell the user rather than fail on submit.
+  if (!userId || !token) {
+    return (
+      <div className="auth-page">
+        <div className="card auth-card">
+          <h2>{t('auth.resetPassword.title')}</h2>
+          <p className="alert alert-error">{t('auth.resetPassword.invalidLink')}</p>
+          <Link className="btn btn-primary" to="/forgot-password">
+            {t('auth.resetPassword.requestNew')}
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    // Validate locally first so the user gets immediate feedback; the API re-checks regardless.
-    if (!isValidEmail(email)) {
-      setError(t('auth.invalidEmail'));
-      return;
-    }
     const pwIssue = passwordIssueKey(password);
     if (pwIssue) {
       setError(t(pwIssue, { min: PASSWORD_MIN_LENGTH }));
@@ -44,35 +56,37 @@ export default function RegisterPage() {
 
     setBusy(true);
     try {
-      signIn(await register(email, password, displayName || undefined));
-      navigate('/libraries');
+      await resetPassword(userId, token, password);
+      setDone(true);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : t('auth.registerFailed'));
+      setError(err instanceof ApiError ? err.message : t('auth.resetPassword.failed'));
     } finally {
       setBusy(false);
     }
   };
 
+  if (done) {
+    return (
+      <div className="auth-page">
+        <div className="card auth-card">
+          <h2>{t('auth.resetPassword.doneTitle')}</h2>
+          <p>{t('auth.resetPassword.doneBody')}</p>
+          <button type="button" className="btn btn-primary" onClick={() => navigate('/login')}>
+            {t('auth.signIn')}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="auth-page">
-      <p>
-        <Link to="/" className="btn btn-link">
-          {t('auth.backHome')}
-        </Link>
-      </p>
       <form className="card auth-card" onSubmit={onSubmit}>
-        <h2>{t('auth.createAccount')}</h2>
+        <h2>{t('auth.resetPassword.title')}</h2>
+        <p className="muted">{t('auth.resetPassword.subtitle')}</p>
         {error && <p className="alert alert-error">{error}</p>}
         <label>
-          {t('auth.displayNameOptional')}
-          <input value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
-        </label>
-        <label>
-          {t('common.email')}
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-        </label>
-        <label>
-          {t('auth.passwordHint')}
+          {t('auth.resetPassword.newPassword')}
           <PasswordInput value={password} onChange={setPassword} minLength={PASSWORD_MIN_LENGTH} />
           <small className="muted">{t('auth.passwordRequirements', { min: PASSWORD_MIN_LENGTH })}</small>
         </label>
@@ -91,11 +105,8 @@ export default function RegisterPage() {
           )}
         </label>
         <button type="submit" className="btn btn-primary" disabled={busy}>
-          {busy ? t('auth.creating') : t('auth.createAccountBtn')}
+          {busy ? t('auth.resetPassword.saving') : t('auth.resetPassword.save')}
         </button>
-        <p className="muted">
-          {t('auth.haveAccount')} <Link to="/login">{t('auth.signIn')}</Link>
-        </p>
       </form>
     </div>
   );

@@ -35,3 +35,19 @@ export function confirmEmail(userId: string, token: string) {
 export function resendConfirmation() {
   return api<void>('/auth/resend-confirmation', { method: 'POST' });
 }
+
+// Request a password-reset link. Always resolves (204) whether or not the email is registered.
+export function forgotPassword(email: string) {
+  return api<void>('/auth/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  });
+}
+
+// Set a new password using the token from the reset email.
+export function resetPassword(userId: string, token: string, newPassword: string) {
+  return api<void>('/auth/reset-password', {
+    method: 'POST',
+    body: JSON.stringify({ userId, token, newPassword }),
+  });
+}

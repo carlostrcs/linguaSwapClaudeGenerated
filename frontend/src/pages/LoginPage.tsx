@@ -63,6 +63,9 @@ export default function LoginPage() {
           {busy ? t('auth.signingIn') : t('auth.signIn')}
         </button>
         <p className="muted">
+          <Link to="/forgot-password">{t('auth.forgotPasswordLink')}</Link>
+        </p>
+        <p className="muted">
           {t('auth.noAccount')} <Link to="/register">{t('auth.createOne')}</Link>
         </p>
         {import.meta.env.DEV && <p className="muted small">{t('auth.demoHint')}</p>}

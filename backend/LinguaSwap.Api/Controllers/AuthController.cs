@@ -15,7 +15,8 @@ public class AuthController(
     UserManager<ApplicationUser> users,
     TokenService tokens,
     RefreshTokenService refreshTokens,
-    EmailConfirmationService confirmations) : ControllerBase
+    EmailConfirmationService confirmations,
+    PasswordResetService passwordResets) : ControllerBase
 {
     [HttpPost("register")]
     public async Task<IActionResult> Register(RegisterRequest req)
@@ -103,6 +104,31 @@ public class AuthController(
             return Ok(new { confirmed = true });
 
         return BadRequest(new { message = "This confirmation link is invalid or has expired." });
+    }
+
+    /// <summary>Start a password reset: email a reset link if the address maps to an account.
+    /// Always returns 204 regardless of whether the account exists — replying differently would let
+    /// an attacker enumerate which emails are registered.</summary>
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword(ForgotPasswordRequest req)
+    {
+        var user = await users.FindByEmailAsync(req.Email);
+        if (user is not null)
+            await passwordResets.SendResetEmailAsync(user);
+
+        return NoContent();
+    }
+
+    /// <summary>Finish a password reset using the token from the emailed link.</summary>
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword(ResetPasswordRequest req)
+    {
+        var result = await passwordResets.ResetAsync(req.UserId, req.Token, req.NewPassword);
+        if (result.Succeeded)
+            return NoContent();
+
+        var errors = result.Errors.Select(e => e.Description).ToArray();
+        return BadRequest(new { message = string.Join(" ", errors), errors });
     }
 
     /// <summary>Re-send the confirmation email to the signed-in user (from the in-app banner).</summary>

@@ -97,6 +97,7 @@ builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
 builder.Services.AddSingleton<EmailQueue>();
 builder.Services.AddHostedService<EmailBackgroundSender>();
 builder.Services.AddScoped<EmailConfirmationService>();
+builder.Services.AddScoped<PasswordResetService>();
 
 // Stripe (premium subscriptions). The secret key is global SDK config; real values come
 // from user-secrets / env vars (appsettings ships empty placeholders).
