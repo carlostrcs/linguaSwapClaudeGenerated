@@ -31,7 +31,16 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 function loadUser(): AuthUser | null {
   const raw = localStorage.getItem(USER_KEY);
-  return raw ? (JSON.parse(raw) as AuthUser) : null;
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as AuthUser;
+  } catch {
+    // Corrupt/truncated localStorage would otherwise throw here — inside a useState initializer,
+    // that crashes AuthProvider on every load and white-screens the whole app. Drop the bad value
+    // and fall back to logged-out; the user can just sign in again.
+    localStorage.removeItem(USER_KEY);
+    return null;
+  }
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
