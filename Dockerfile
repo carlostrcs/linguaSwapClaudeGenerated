@@ -23,6 +23,15 @@ COPY --from=build /app/publish .
 # Render (and most container hosts) inject the port to listen on via $PORT; default to 8080 locally.
 ENV ASPNETCORE_ENVIRONMENT=Production
 ENV PORT=8080
+
+# Disable config-file hot-reload. By default WebApplication.CreateBuilder loads appsettings*.json
+# with reloadOnChange:true, which opens an inotify file watcher per file. Render's containers have a
+# low, shared inotify instance limit (128), so watcher creation throws at startup:
+#   "The configured user limit (128) on the number of inotify instances has been reached"
+# and the process exits 139 before any of our code runs. Config comes from env vars here and never
+# changes at runtime, so watching the files buys nothing — turn it off.
+ENV DOTNET_hostBuilder__reloadConfigOnChange=false
+
 EXPOSE 8080
 
 # `exec` matters: it makes dotnet PID 1 so the host's SIGTERM reaches ASP.NET, which then drains
