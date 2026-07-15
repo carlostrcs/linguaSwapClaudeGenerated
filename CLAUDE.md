@@ -115,6 +115,28 @@ address is real.
   `Email:FromAddress`). Env-var form for prod: `Email__Smtp__User`, `Email__Smtp__Password`,
   `Email__FromAddress`. **Never commit real values.**
 
+#### Password reset (forgot password)
+
+Self-service recovery, modelled on the email-confirmation flow:
+
+- **Request:** `POST /api/auth/forgot-password` (`{ email }`, anonymous) → **always `204`**, whether
+  or not the email exists (replying differently would let an attacker enumerate accounts). If it
+  matches a user, `Services/PasswordResetService.SendResetEmailAsync` generates an Identity reset
+  token (`GeneratePasswordResetTokenAsync`) and **queues** a link `{FrontendBaseUrl}/reset-password?
+  userId=…&token=…` via the same `EmailQueue` (never awaited on the request).
+- **Reset:** `POST /api/auth/reset-password` (`{ userId, token, newPassword }`, anonymous) →
+  `ResetPasswordAsync`; `204` on success, `400 { message, errors }` on a bad/expired token or a
+  password that fails the Identity complexity rules. A successful reset also **clears any lockout**
+  (`SetLockoutEndDateAsync(null)` + `ResetAccessFailedCountAsync`) so a user who reset *because* they
+  were locked out can log in. Tokens are **one-time** (the security stamp rotates).
+- **Frontend:** `pages/ForgotPasswordPage.tsx` (`/forgot-password`, neutral "check your email"
+  confirmation) and the public `pages/ResetPasswordPage.tsx` (`/reset-password`, target of the
+  emailed link). A "Forgot your password?" link sits on the login page. Password rules reuse
+  `lib/validation.ts`; the show/hide field is the shared `components/PasswordInput.tsx` (extracted
+  from `RegisterPage`). Both routes need the SPA rewrite (`vercel.json`), like `/confirm-email`.
+- **Delivery caveat:** like confirmation email, this only *delivers* once a working email transport
+  is configured — SMTP is blocked on Render, so switch to an HTTPS email API (Resend/SendGrid).
+
 ## Common commands
 
 - Build backend: `dotnet build backend/LinguaSwap.slnx`

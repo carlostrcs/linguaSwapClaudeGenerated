@@ -10,6 +10,8 @@ import DemoPracticePage from './pages/DemoPracticePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ConfirmEmailPage from './pages/ConfirmEmailPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 import LibrariesPage from './pages/LibrariesPage';
 import FeaturedPage from './pages/FeaturedPage';
 import LibraryEditorPage from './pages/LibraryEditorPage';
@@ -30,8 +32,10 @@ export default function App() {
       <Route element={<AuthLayout />}>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
-        {/* Public: the emailed confirmation link is usually opened while logged out. */}
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        {/* Public: the emailed confirmation + reset links are usually opened while logged out. */}
         <Route path="/confirm-email" element={<ConfirmEmailPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
       </Route>
       <Route element={<ProtectedRoute />}>
         <Route element={<Layout />}>
