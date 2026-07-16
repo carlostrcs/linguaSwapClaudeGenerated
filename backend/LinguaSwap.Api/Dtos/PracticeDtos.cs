@@ -10,14 +10,17 @@ public record StartSessionRequest(
     Difficulty Difficulty,
     PracticeMode Mode = PracticeMode.SmartReview);
 
-/// <summary>One word to practise. ExpectedAnswer is only populated for Easy difficulty
-/// (so the UI can colour the input live); it stays null for Medium/Hard.</summary>
+/// <summary>One word to practise. AcceptedAnswer is the full expected text (comma-separated
+/// alternatives included) — the client grades against it so feedback is instant; the server still
+/// re-checks in Answer and owns the durable Attempt/Leitner record. BoxLevel is the Leitner box at
+/// session start (0 = never seen in this direction), so the client can show the mastered badge.</summary>
 public record PracticeWordDto(
     int EntryId,
     string Prompt,
     string Hint,
     int AnswerLength,
-    string? ExpectedAnswer,
+    string AcceptedAnswer,
+    int BoxLevel,
     string? Notes);
 
 public record StartSessionResponse(
