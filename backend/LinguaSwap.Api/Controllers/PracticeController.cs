@@ -85,11 +85,12 @@ public class PracticeController(
             var primary = AnswerChecker.PrimaryAnswer(c.Answer);
             var hint = hintService.BuildHint(primary, req.Difficulty);
             var length = req.Difficulty == Difficulty.Hard ? 0 : primary.Length;
-            // Easy sends the answer for the live green/red border; Learn New also sends it (at every
-            // difficulty) so its up-front preview pass can show each word's translation. Both are
-            // fine to expose — Learn New's preview reveals the answer anyway. Checking stays server-side.
-            var expectedForClient = req.Difficulty == Difficulty.Easy || req.Mode == PracticeMode.LearnNew ? primary : null;
-            return new PracticeWordDto(c.Entry.Id, c.Prompt, hint, length, expectedForClient, c.Entry.Notes);
+            // The full answer ships at every difficulty so the client can grade instantly (a
+            // per-word round trip made practice too slow to drill against). This exposes nothing new:
+            // GET /api/entries already sends every translation to the same page for the same user, and
+            // the practice screen cannot even render its language picker without them. The server still
+            // re-checks in Answer — it stays the authority for the Attempt/Leitner record.
+            return new PracticeWordDto(c.Entry.Id, c.Prompt, hint, length, c.Answer, c.State?.BoxLevel ?? 0, c.Entry.Notes);
         }).ToList();
 
         // Journey mode resumes where the user left off: hand back the saved state (if any).
