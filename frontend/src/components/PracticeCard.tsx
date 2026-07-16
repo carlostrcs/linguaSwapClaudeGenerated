@@ -3,7 +3,7 @@ import type { FormEvent, KeyboardEvent } from 'react';
 import type { Difficulty, PracticeWord } from '../api/types';
 import HintGuide from './HintGuide';
 import SpeakButton from './SpeakButton';
-import { normalize } from '../lib/demo/demoEngine';
+import { normalize, primaryAnswer } from '../lib/demo/demoEngine';
 import { isCaseSensitiveLang, langLabel, specialCharsFor } from '../lib/languages';
 import { useI18n } from '../i18n/I18nProvider';
 
@@ -109,8 +109,11 @@ export default function PracticeCard({
   let inputStatus = '';
   if (result) {
     inputStatus = result.isCorrect ? 'input-good' : 'input-bad';
-  } else if (difficulty === 'Easy' && word.expectedAnswer && answer.length > 0) {
-    inputStatus = normalize(word.expectedAnswer, caseSensitive).startsWith(normalize(answer, caseSensitive))
+  } else if (difficulty === 'Easy' && answer.length > 0) {
+    // The live border tracks the primary answer only — prefix-matching the raw comma-separated
+    // list would go red the moment the user's typing passes the first alternative.
+    const primary = primaryAnswer(word.acceptedAnswer);
+    inputStatus = normalize(primary, caseSensitive).startsWith(normalize(answer, caseSensitive))
       ? 'input-good'
       : 'input-bad';
   }

@@ -4,6 +4,7 @@ import type { Difficulty, PracticeWord } from '../api/types';
 import PracticeCard from './PracticeCard';
 import type { CheckResult } from './PracticeCard';
 import SpeakButton from './SpeakButton';
+import { primaryAnswer } from '../lib/demo/demoEngine';
 import { learnedCount, nextRound, recordStat, type WordStat } from '../lib/journeyEngine';
 import { langLabel } from '../lib/languages';
 import { useI18n } from '../i18n/I18nProvider';
@@ -66,7 +67,7 @@ export default function LearnNewRunner({
   if (phase === 'preview') {
     const word = words[previewPos];
     if (!word) return null;
-    const answer = word.expectedAnswer ?? '';
+    const answer = primaryAnswer(word.acceptedAnswer);
     const last = previewPos + 1 >= words.length;
     const startDrilling = () => setPhase('drill');
 

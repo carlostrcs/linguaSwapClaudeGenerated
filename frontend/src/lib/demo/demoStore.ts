@@ -5,7 +5,6 @@
 // until they create a real account.
 import type { EntryDto, JourneyState, LibrarySummary, TranslationDto } from '../../api/types';
 import { DEMO_FEATURED, EXAMPLE_ENTRIES, EXAMPLE_LIBRARY_DESCRIPTION, EXAMPLE_LIBRARY_NAME } from './demoData';
-import { applyLeitner, isMastered } from './demoEngine';
 
 const STORAGE_KEY = 'linguaswap.demo.v2';
 
@@ -203,18 +202,12 @@ export function listDemoBoxes(libraryId: number, source: string, target: string)
   return out;
 }
 
-export function recordAnswer(
-  libraryId: number,
-  entryId: number,
-  source: string,
-  target: string,
-  correct: boolean,
-): { box: number; mastered: boolean } {
+// Persist a word's box after an answer — the demo's analogue of the background POST that real
+// practice makes. The box itself comes from lib/practiceCheck, so what the card shows and what the
+// store keeps can never disagree.
+export function saveDemoBox(libraryId: number, entryId: number, source: string, target: string, box: number) {
   const state = load();
-  const key = boxKey(libraryId, entryId, source, target);
-  const box = applyLeitner(state.boxes[key] ?? 1, correct);
-  save({ ...state, boxes: { ...state.boxes, [key]: box } });
-  return { box, mastered: isMastered(box) };
+  save({ ...state, boxes: { ...state.boxes, [boxKey(libraryId, entryId, source, target)]: box } });
 }
 
 // ---------- Journey progress ----------

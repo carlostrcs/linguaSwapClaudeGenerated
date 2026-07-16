@@ -89,7 +89,10 @@ export interface PracticeWord {
   prompt: string;
   hint: string;
   answerLength: number;
-  expectedAnswer?: string | null;
+  /** The full expected text, comma-separated alternatives included — grade with lib/practiceCheck. */
+  acceptedAnswer: string;
+  /** Leitner box at session start (0 = never seen in this direction). */
+  boxLevel: number;
   notes?: string | null;
 }
 

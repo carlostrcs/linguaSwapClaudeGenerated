@@ -8,9 +8,11 @@ import type { Difficulty, EntryDto, PracticeMode, PracticeWord } from '../../api
 
 // Mirror of AnswerChecker.Normalize: trim + accent-SENSITIVE (NFC). Case-insensitive by default,
 // but case-significant when `caseSensitive` is set (capitalization languages — see lib/languages).
+// Step order matches the backend exactly (trim -> lowercase -> NFC); this now grades real answers,
+// so a divergence would show the user "Correct!" while the server records a miss.
 export function normalize(value: string, caseSensitive = false): string {
-  const nfc = value.normalize('NFC').trim();
-  return caseSensitive ? nfc : nfc.toLowerCase();
+  const trimmed = value.trim();
+  return (caseSensitive ? trimmed : trimmed.toLowerCase()).normalize('NFC');
 }
 
 // Mirror of AnswerChecker.SplitAcceptable: expected text may hold comma-separated answers.
@@ -124,9 +126,10 @@ export function buildDemoWords(
       prompt: c.prompt,
       hint: buildHint(primary, difficulty),
       answerLength: difficulty === 'Hard' ? 0 : primary.length,
-      // Easy sends the answer for the live border; Learn New also sends it (all difficulties) so its
-      // preview pass can show each translation. Mirrors PracticeController.Start.
-      expectedAnswer: difficulty === 'Easy' || mode === 'LearnNew' ? primary : null,
+      // The full answer rides along at every difficulty so the card can grade locally — mirrors
+      // PracticeController.Start. Callers derive the display form with primaryAnswer().
+      acceptedAnswer: c.answer,
+      boxLevel: c.box ?? 0,
       notes: c.entry.notes ?? null,
     };
   });
