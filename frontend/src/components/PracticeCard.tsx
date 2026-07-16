@@ -14,6 +14,8 @@ export interface CheckResult {
 }
 
 interface Props {
+  /** Changes when the parent moves to the next card — that resets the input, hint and feedback. */
+  cardId: number | string;
   word: PracticeWord;
   difficulty: Difficulty;
   sourceLanguage: string;
@@ -31,10 +33,15 @@ interface Props {
 /**
  * Presents a single practice word: the prompt, hint, answer input (with the diacritic keypad and
  * caret handling), and the check → feedback → advance flow. Owns only this one card's transient
- * state; the parent controls which word is shown and what happens on advance. Remount the card
- * (via a changing `key`) to move to the next word — that resets the input cleanly.
+ * state; the parent controls which word is shown and what happens on advance. Pass a new `cardId`
+ * to move to the next word — that resets the input cleanly.
+ *
+ * Do **not** remount this via a changing `key`: the input has to survive from one word to the next
+ * or mobile browsers close the on-screen keyboard (a fresh element can only be focused back into by
+ * a real tap). Same reason the input is never `readOnly` — see the submit handler.
  */
 export default function PracticeCard({
+  cardId,
   word,
   difficulty,
   sourceLanguage,
@@ -50,6 +57,16 @@ export default function PracticeCard({
   const [checking, setChecking] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const pendingCaret = useRef<number | null>(null);
+
+  // Start the next word from scratch. This is what remounting used to do, done as a state reset so
+  // the input element itself lives on (see the component doc).
+  const [shownCard, setShownCard] = useState(cardId);
+  if (shownCard !== cardId) {
+    setShownCard(cardId);
+    setAnswer('');
+    setResult(null);
+    setChecking(false);
+  }
 
   const specialChars = specialCharsFor(targetLanguage);
   const caseSensitive = isCaseSensitiveLang(targetLanguage);
@@ -102,6 +119,10 @@ export default function PracticeCard({
 
   const onSubmitForm = (e: FormEvent) => {
     e.preventDefault();
+    // Refocus inside the tap/Enter itself, while the gesture still counts: mobile browsers blur the
+    // field on an implicit form submit (and on tapping the button), and a focus() from the effect
+    // below lands too late to re-open the keyboard. Focused already? Then this is a no-op.
+    inputRef.current?.focus();
     if (result) onAdvance(result);
     else void onCheck();
   };
@@ -136,13 +157,15 @@ export default function PracticeCard({
           ref={inputRef}
           className={`answer-input ${inputStatus}`}
           value={answer}
-          onChange={(e) => setAnswer(e.target.value)}
+          // Locked once checked, but by ignoring edits rather than with `readOnly` — that attribute
+          // closes the on-screen keyboard, and the user needs it to press Enter for the next word.
+          onChange={(e) => !result && setAnswer(e.target.value)}
           onKeyDown={onInputKeyDown}
           placeholder={t('practice.answerPlaceholder')}
           autoComplete="off"
           autoCapitalize="off"
           spellCheck={false}
-          readOnly={!!result}
+          enterKeyHint={result ? 'next' : 'go'}
         />
 
         {specialChars.length > 0 && !result && (

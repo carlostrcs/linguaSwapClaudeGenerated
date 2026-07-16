@@ -66,7 +66,7 @@ export default function JourneyRunner({
   const [iteration, setIteration] = useState<PracticeWord[]>(firstRound.iteration);
   const [pos, setPos] = useState(0);
   const [round, setRound] = useState(1);
-  const [step, setStep] = useState(0); // monotonic card key so each card mounts fresh
+  const [step, setStep] = useState(0); // monotonic card id: a word can repeat, an id must not
   const [banner, setBanner] = useState<Banner>(firstRound.banner);
 
   const activeSet = words.slice(0, activeCount);
@@ -117,7 +117,7 @@ export default function JourneyRunner({
       )}
 
       <PracticeCard
-        key={step}
+        cardId={step}
         word={current}
         difficulty={difficulty}
         sourceLanguage={sourceLanguage}

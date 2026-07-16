@@ -52,7 +52,7 @@ export default function LearnNewRunner({
   const [iteration, setIteration] = useState<PracticeWord[]>(firstRound.iteration);
   const [pos, setPos] = useState(0);
   const [round, setRound] = useState(1);
-  const [step, setStep] = useState(0); // monotonic card key so each card mounts fresh
+  const [step, setStep] = useState(0); // monotonic card id: a word can repeat, an id must not
   const [complete, setComplete] = useState(firstRound.banner === 'complete');
 
   const back = (
@@ -158,7 +158,7 @@ export default function LearnNewRunner({
       )}
 
       <PracticeCard
-        key={step}
+        cardId={step}
         word={current}
         difficulty={difficulty}
         sourceLanguage={sourceLanguage}
