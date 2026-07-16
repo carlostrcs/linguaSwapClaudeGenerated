@@ -230,14 +230,35 @@ sample-imports/  example .json files for testing import (not used by the app at 
   - **Mirror discipline**: `frontend/src/lib/practiceModes.ts` (premium/reinforcing/reschedules/
     journey flags) and `lib/demo/demoEngine.ts` (`buildDemoWords` per-mode) mirror the backend
     selectors — keep them in sync, same as `AnswerChecker` ⇄ `demoEngine`. The no-account demo shows
-    all modes unlocked as a showcase (Journey runs fully client-side there too).
+    all modes unlocked as a showcase (Journey runs fully client-side there too). Real practice and
+    the demo now grade through the **same** `lib/practiceCheck.ts` — they differ only in where the
+    answer is recorded (background POST vs `demoStore` localStorage).
 - **Answer checking** (`AnswerChecker`): trim + **accent-sensitive** (`camion` ≠ `camión`);
   normalised to Unicode FormC. Case-insensitive **except for capitalization-required languages**
   (German): `Services/LanguageRules.IsCaseSensitive(targetLang)` is the authoritative gate, threaded
   into `AnswerChecker.IsCorrect(expected, actual, caseSensitive)` from `PracticeController`, so
   `haus` ≠ `Haus` for German but case stays ignored elsewhere. Expected text may hold comma-separated
-  acceptable answers. The frontend's Easy-mode live border + the no-account demo mirror these rules
-  (`PracticeRunner`, `lib/demo/demoEngine`).
+  acceptable answers.
+- **Grading is client-side; the server is still the record of truth.** Awaiting the API for every
+  word made practice too slow to drill against (a Render→Supabase round trip per card), so
+  `Start` ships each word's **full** expected text as `PracticeWordDto.AcceptedAnswer` (every
+  difficulty and mode) plus its `BoxLevel`, and `frontend/src/lib/practiceCheck.ts` (`checkLocally`)
+  computes the verdict + mastered badge instantly. The answer is still POSTed to
+  `/practice/sessions/{id}/answer` in the **background**, where the server re-checks it
+  independently and owns the durable `Attempt`/`LearningState` row — we never trust a client-sent
+  verdict. Sending the answer exposes nothing new: `GET /api/entries` already ships every
+  translation to the same page for the same user.
+  - Background writes are **serialized** on a promise chain in `PracticePage` and `endSession` is
+    chained onto it — `Answer` returns `400` once `EndedAt` is set, so ending the session without
+    draining would silently drop every session's **last** answer. Failures are swallowed
+    (best-effort, like `saveJourneyState`); a lost write costs one row of stats.
+  - **This makes the `AnswerChecker` ⇄ `demoEngine` mirror load-bearing for real users**, not just
+    the demo — a divergence shows "Correct!" while the server records a miss. `normalize` step order
+    matches the backend deliberately. Known accepted divergences: Greek final sigma (JS
+    `toLowerCase()` maps `Σ`→`ς`, C# `ToLowerInvariant` doesn't) and U+FEFF (JS `trim()` strips it,
+    C# `Trim()` doesn't). There is **no frontend test runner yet** — the highest-value follow-up is a
+    shared `answer-cases.json` fixture asserted by both the xUnit `AnswerChecker` theory and a
+    vitest `demoEngine` test, so the two can't drift.
 - **Special-character keypad** (`PracticeRunner`): the practice card shows a diacritic keypad for the
   target language (clickable; each button bound to a number key **1–9** that inserts the char while
   typing). The per-language character sets **and** the case-sensitivity mirror live in
@@ -479,6 +500,20 @@ return path and the signature-verified `/billing/webhook`.
 
 ## Dev gotchas (Windows / this environment)
 
+- **Check where dev actually points before writing data.** `appsettings.Development.json` is
+  **gitignored**, so it is invisible in the repo — and it overrides `ConnectionStrings:Default`
+  from `appsettings.json`. It has pointed at a **remote Supabase project** before, so a plain
+  `dotnet run` read and wrote a hosted DB while looking exactly like local dev, and the documented
+  docker-compose workflow above silently did not apply. Verify before practising/importing against
+  a local API:
+  `docker exec linguaswap-claude-db psql -U postgres -d linguaswap -c 'SELECT COUNT(*) FROM "Attempts";'`
+  — if your local activity doesn't land there, you are on a remote DB. An env var
+  (`ConnectionStrings__Default=...`) beats the file if you need to force local.
+  - Related sharp edge: the demo-user rail below gates `SeedDemoUserAsync` on `IsDevelopment()`,
+    **not** on which database it's connected to. Any config pairing `Development` with a remote
+    connection string will seed `demo@linguaswap.app` / `Demo123!` **as premium** into that remote
+    DB. The Render deploy is safe (it runs `Production`), but the guard does not protect a remote DB
+    reached from a dev machine.
 - **Stop the running API before `dotnet build`/`dotnet test`** — a running `LinguaSwap.Api`
   locks `bin/...exe` and the build fails with MSB3027/MSB3021. Free port 5299 first
   (e.g. `npx kill-port 5299`) or stop the process.

@@ -14,12 +14,12 @@ import {
   getDemoLibrary,
   listDemoBoxes,
   listDemoEntries,
-  recordAnswer,
+  saveDemoBox,
   saveDemoJourney,
 } from '../lib/demo/demoStore';
-import { availableLanguages, buildDemoWords, isCorrect, isMastered, primaryAnswer } from '../lib/demo/demoEngine';
+import { availableLanguages, buildDemoWords } from '../lib/demo/demoEngine';
 import { isJourneyMode, isLearnNewMode, modeReschedules } from '../lib/practiceModes';
-import { isCaseSensitiveLang } from '../lib/languages';
+import { checkLocally } from '../lib/practiceCheck';
 
 /**
  * The demo's practice page — mirrors PracticePage using the shared PracticeSetup/PracticeRunner,
@@ -65,16 +65,15 @@ export default function DemoPracticePage() {
     setWords(built);
   };
 
-  // Validate locally (mirrors the API). Rescheduling modes record a box level so progress persists;
+  // Grade through the same helper real practice uses, then persist the box to the demo store
+  // (its stand-in for the background POST). Rescheduling modes move the box so progress persists;
   // Cram is practice-only, so it leaves the box untouched and just reflects the current mastery.
   const checkAnswer = async (word: PracticeWord, answer: string) => {
-    const entry = entries.find((e) => e.id === word.entryId);
-    const expectedFull = entry?.translations.find((tr) => tr.languageCode === target)?.text ?? '';
-    const correct = isCorrect(expectedFull, answer, isCaseSensitiveLang(target));
-    const mastered = modeReschedules(mode)
-      ? recordAnswer(libraryId, word.entryId, source, target, correct).mastered
-      : isMastered(listDemoBoxes(libraryId, source, target)[word.entryId] ?? 0);
-    return { isCorrect: correct, expectedAnswer: primaryAnswer(expectedFull), mastered };
+    const reschedules = modeReschedules(mode);
+    const currentBox = listDemoBoxes(libraryId, source, target)[word.entryId] ?? 0;
+    const res = checkLocally(word.acceptedAnswer, answer, target, currentBox, reschedules);
+    if (reschedules) saveDemoBox(libraryId, word.entryId, source, target, res.nextBox);
+    return res;
   };
 
   const closeModal = () => {
