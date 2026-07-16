@@ -118,7 +118,7 @@ export default function PracticeRunner({
         {t('practice.progress', { current: index + 1, total: queue.length, score: correctCount })}
       </div>
       <PracticeCard
-        key={index}
+        cardId={index}
         word={current}
         difficulty={difficulty}
         sourceLanguage={sourceLanguage}
