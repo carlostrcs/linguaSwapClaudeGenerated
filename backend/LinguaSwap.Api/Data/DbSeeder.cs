@@ -104,82 +104,101 @@ public static class DbSeeder
             if (!created.Succeeded) return;
         }
 
-        var changed = false;
         foreach (var file in LoadDefaultLibraryFiles(logger))
         {
-            var (built, errors) = EntryImport.BuildEntries(file.Entries);
-            if (errors.Count > 0)
+            // Saved per library, not once at the end. The curated set is thousands of
+            // entries (each with six translations); batching them all into a single
+            // transaction over a pooled remote connection is slow enough to time out,
+            // and because this runs during startup a throw here means the app never
+            // boots. Per-library saves keep each transaction small and make progress
+            // durable — a failure keeps what already landed and the next boot resumes.
+            var changed = false;
+            try
             {
-                logger.LogWarning(
-                    "Default library '{Name}' has {Count} invalid entries; skipping the file.",
-                    file.Name, errors.Count);
-                continue;
-            }
-
-            var master = await db.Libraries
-                .Include(l => l.Entries).ThenInclude(e => e.Translations)
-                .FirstOrDefaultAsync(l => l.IsDefault && l.UserId == system.Id && l.Name == file.Name);
-
-            if (master is null)
-            {
-                var (kept, _) = EntryImport.Deduplicate(built, new HashSet<string>());
-                db.Libraries.Add(new Library
+                var (built, errors) = EntryImport.BuildEntries(file.Entries);
+                if (errors.Count > 0)
                 {
-                    UserId = system.Id,
-                    Name = file.Name,
-                    Description = file.Description,
-                    IsDefault = true,
-                    Entries = kept,
-                });
-                changed = true;
-                logger.LogInformation("Seeding default library '{Name}' with {Count} words.", file.Name, kept.Count);
-            }
-            else
-            {
-                // Reconcile the master to the file, rather than only appending. Append-only
-                // meant a CORRECTION could never land: fixing "change (money back)" to
-                // "change" in the JSON added the fixed row and left the broken one in place,
-                // so every already-seeded database (including production) kept serving a word
-                // whose annotation the learner had to type to be graded correct.
-                var (deduped, _) = EntryImport.Deduplicate(built, new HashSet<string>());
-                var wanted = deduped.ToDictionary(
-                    e => EntryImport.Signature(e.Translations.Select(t => (t.LanguageCode, t.Text))));
-
-                var removed = 0;
-                foreach (var entry in master.Entries.ToList())
-                {
-                    var signature = EntryImport.Signature(
-                        entry.Translations.Select(t => (t.LanguageCode, t.Text)));
-                    if (wanted.Remove(signature, out var match))
-                    {
-                        // Already present — keep the row (and its learning history) and just
-                        // sync the note, which is the only field that can change in place.
-                        if (entry.Notes != match.Notes)
-                        {
-                            entry.Notes = match.Notes;
-                            changed = true;
-                        }
-                    }
-                    else
-                    {
-                        // No longer in the file: a corrected or retired word.
-                        master.Entries.Remove(entry);
-                        removed++;
-                    }
+                    logger.LogWarning(
+                        "Default library '{Name}' has {Count} invalid entries; skipping the file.",
+                        file.Name, errors.Count);
+                    continue;
                 }
 
-                foreach (var entry in wanted.Values) master.Entries.Add(entry);
+                var master = await db.Libraries
+                    .Include(l => l.Entries).ThenInclude(e => e.Translations)
+                    .FirstOrDefaultAsync(l => l.IsDefault && l.UserId == system.Id && l.Name == file.Name);
 
-                var descChanged = master.Description != file.Description;
-                if (descChanged) master.Description = file.Description;
-                if (wanted.Count > 0 || removed > 0 || descChanged) changed = true;
-                if (wanted.Count > 0 || removed > 0)
-                    logger.LogInformation(
-                        "Reconciled default library '{Name}': +{Added} / -{Removed} words.",
-                        file.Name, wanted.Count, removed);
+                if (master is null)
+                {
+                    var (kept, _) = EntryImport.Deduplicate(built, new HashSet<string>());
+                    db.Libraries.Add(new Library
+                    {
+                        UserId = system.Id,
+                        Name = file.Name,
+                        Description = file.Description,
+                        IsDefault = true,
+                        Entries = kept,
+                    });
+                    changed = true;
+                    logger.LogInformation("Seeding default library '{Name}' with {Count} words.", file.Name, kept.Count);
+                }
+                else
+                {
+                    // Reconcile the master to the file, rather than only appending. Append-only
+                    // meant a CORRECTION could never land: fixing "change (money back)" to
+                    // "change" in the JSON added the fixed row and left the broken one in place,
+                    // so every already-seeded database (including production) kept serving a word
+                    // whose annotation the learner had to type to be graded correct.
+                    var (deduped, _) = EntryImport.Deduplicate(built, new HashSet<string>());
+                    var wanted = deduped.ToDictionary(
+                        e => EntryImport.Signature(e.Translations.Select(t => (t.LanguageCode, t.Text))));
+
+                    var removed = 0;
+                    foreach (var entry in master.Entries.ToList())
+                    {
+                        var signature = EntryImport.Signature(
+                            entry.Translations.Select(t => (t.LanguageCode, t.Text)));
+                        if (wanted.Remove(signature, out var match))
+                        {
+                            // Already present — keep the row (and its learning history) and just
+                            // sync the note, which is the only field that can change in place.
+                            if (entry.Notes != match.Notes)
+                            {
+                                entry.Notes = match.Notes;
+                                changed = true;
+                            }
+                        }
+                        else
+                        {
+                            // No longer in the file: a corrected or retired word.
+                            master.Entries.Remove(entry);
+                            removed++;
+                        }
+                    }
+
+                    foreach (var entry in wanted.Values) master.Entries.Add(entry);
+
+                    var descChanged = master.Description != file.Description;
+                    if (descChanged) master.Description = file.Description;
+                    if (wanted.Count > 0 || removed > 0 || descChanged) changed = true;
+                    if (wanted.Count > 0 || removed > 0)
+                        logger.LogInformation(
+                            "Reconciled default library '{Name}': +{Added} / -{Removed} words.",
+                            file.Name, wanted.Count, removed);
+                    }
+
+                if (changed) await db.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                // Curated content is not worth failing a boot over: the API is fully
+                // usable with a stale shelf, but useless if it will not start. Log it,
+                // drop the tracked changes so the next file starts clean, and continue.
+                logger.LogError(ex, "Failed to seed default library '{Name}'; skipping.", file.Name);
+                foreach (var entry in db.ChangeTracker.Entries().ToList())
+                    entry.State = EntityState.Detached;
             }
         }
-        if (changed) await db.SaveChangesAsync();
     }
 
     /// <summary>Read and deserialize the curated default-library JSON files shipped alongside the app
