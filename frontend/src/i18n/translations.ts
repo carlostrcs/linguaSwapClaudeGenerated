@@ -103,6 +103,8 @@ const en: Dictionary = {
   'libraries.empty': 'No libraries yet — create your first one above.',
   'libraries.word': '{count} word',
   'libraries.words': '{count} words',
+  // Featured shelf only: the real count rounded down (169 -> "160+ words").
+  'libraries.wordsApprox': '{count}+ words',
   'libraries.edit': 'Edit',
   'libraries.practise': 'Practise',
   'libraries.rename': 'Rename',
@@ -436,6 +438,8 @@ const es: Dictionary = {
   'libraries.empty': 'Aún no hay bibliotecas: crea la primera arriba.',
   'libraries.word': '{count} palabra',
   'libraries.words': '{count} palabras',
+  // El "+" va delante en español: "+160 palabras".
+  'libraries.wordsApprox': '+{count} palabras',
   'libraries.edit': 'Editar',
   'libraries.practise': 'Practicar',
   'libraries.rename': 'Renombrar',

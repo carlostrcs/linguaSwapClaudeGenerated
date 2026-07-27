@@ -5,6 +5,7 @@ import { addFeaturedLibrary, listFeaturedLibraries } from '../api/libraries';
 import { ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import { useI18n } from '../i18n/I18nProvider';
+import { featuredWordCount } from '../lib/wordCount';
 
 /**
  * The "Featured libraries" shelf — curated default sets offered as a premium enticement. Visible to
@@ -52,9 +53,7 @@ export default function FeaturedPage() {
           <div className="card library-card featured-card" key={lib.id}>
             <div className="library-card-head">
               <span className="library-title">{lib.name}</span>
-              <span className="badge">
-                {t(lib.wordCount === 1 ? 'libraries.word' : 'libraries.words', { count: lib.wordCount })}
-              </span>
+              <span className="badge">{featuredWordCount(t, lib.wordCount)}</span>
             </div>
             {lib.description && <p className="muted">{lib.description}</p>}
             {lib.sampleWords.length > 0 && (
