@@ -81,9 +81,10 @@ public static class DbSeeder
 
     /// <summary>Ensure the system account and the curated default libraries exist. Idempotent:
     /// loads each <c>Data/DefaultLibraries/*.json</c> file on every startup and, per library
-    /// (matched by name), creates it if missing or **appends only the new entries** (deduped by
-    /// translation signature) to an existing master. Growing a file therefore tops up its master;
-    /// existing user copies are untouched.</summary>
+    /// (matched by name), creates it if missing or **reconciles** an existing master to the file —
+    /// adding new entries, removing ones the file no longer contains, and syncing notes. The file
+    /// is the source of truth, so a corrected word replaces the broken one instead of sitting
+    /// alongside it. Existing user copies are snapshots and are not rewritten here.</summary>
     private static async Task SeedDefaultLibrariesAsync(
         AppDbContext db, UserManager<ApplicationUser> users, ILogger logger)
     {
@@ -135,17 +136,47 @@ public static class DbSeeder
             }
             else
             {
-                // Append only entries whose signature isn't already on the master.
-                var existing = new HashSet<string>(master.Entries
-                    .Select(e => EntryImport.Signature(e.Translations.Select(t => (t.LanguageCode, t.Text)))));
-                var (kept, _) = EntryImport.Deduplicate(built, existing);
-                foreach (var entry in kept) master.Entries.Add(entry);
+                // Reconcile the master to the file, rather than only appending. Append-only
+                // meant a CORRECTION could never land: fixing "change (money back)" to
+                // "change" in the JSON added the fixed row and left the broken one in place,
+                // so every already-seeded database (including production) kept serving a word
+                // whose annotation the learner had to type to be graded correct.
+                var (deduped, _) = EntryImport.Deduplicate(built, new HashSet<string>());
+                var wanted = deduped.ToDictionary(
+                    e => EntryImport.Signature(e.Translations.Select(t => (t.LanguageCode, t.Text))));
+
+                var removed = 0;
+                foreach (var entry in master.Entries.ToList())
+                {
+                    var signature = EntryImport.Signature(
+                        entry.Translations.Select(t => (t.LanguageCode, t.Text)));
+                    if (wanted.Remove(signature, out var match))
+                    {
+                        // Already present — keep the row (and its learning history) and just
+                        // sync the note, which is the only field that can change in place.
+                        if (entry.Notes != match.Notes)
+                        {
+                            entry.Notes = match.Notes;
+                            changed = true;
+                        }
+                    }
+                    else
+                    {
+                        // No longer in the file: a corrected or retired word.
+                        master.Entries.Remove(entry);
+                        removed++;
+                    }
+                }
+
+                foreach (var entry in wanted.Values) master.Entries.Add(entry);
 
                 var descChanged = master.Description != file.Description;
                 if (descChanged) master.Description = file.Description;
-                if (kept.Count > 0 || descChanged) changed = true;
-                if (kept.Count > 0)
-                    logger.LogInformation("Added {Count} new words to default library '{Name}'.", kept.Count, file.Name);
+                if (wanted.Count > 0 || removed > 0 || descChanged) changed = true;
+                if (wanted.Count > 0 || removed > 0)
+                    logger.LogInformation(
+                        "Reconciled default library '{Name}': +{Added} / -{Removed} words.",
+                        file.Name, wanted.Count, removed);
             }
         }
         if (changed) await db.SaveChangesAsync();

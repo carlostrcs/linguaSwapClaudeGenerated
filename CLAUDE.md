@@ -317,12 +317,29 @@ anything; premium users **Add** one and practise it.
   format plus a header (`{ name, description, entries: [{ translations, notes? }] }`), shipped via a
   csproj `<Content ... CopyToOutputDirectory>` and read from `AppContext.BaseDirectory`. **These
   files are the single source of curated content** — add/grow them here (target ≤~1000 words each).
+- **Those JSON files are generated, not hand-written** — `tools/gen-libraries/` (dev-only Python,
+  Claude API + `wordfreq`; see its README) builds and grows them: `gen.py` to add words, then the
+  cleaning passes `fix_annotations.py`, `naturalness.py`, `audit.py --notes`. Two invariants it
+  exists to protect, both learned the hard way: **a translation field must never contain `(...)`,
+  `/`, or any annotation** — the practice card grades the whole string, so `sweet (person)` forces
+  the learner to type `(person)`; disambiguation belongs in `notes`. And **no pass may rewrite a
+  translation on a single model's say-so** — that produced confident, well-formed, wrong words. Edit
+  a deck by hand only for one-off fixes; otherwise change `decks.yaml` and re-run (growth is
+  append-only, so shipped rows and the git diff stay stable).
 - **Seeding:** `Data/DbSeeder.cs` `SeedDefaultLibrariesAsync` runs **unconditionally on every
   startup** (separate from the empty-DB demo seed). It loads each file, validates/dedups via
   `EntryImport.BuildEntries`/`Deduplicate`, and per library (matched by name) **creates it if
-  missing or appends only the new entries** (deduped by `EntryImport.Signature`). So growing a file
-  tops up its master; **existing user copies are snapshots and never change**. Malformed files are
-  logged and skipped, never fatal.
+  missing or reconciles the master to the file** — adding new entries, **removing ones the file no
+  longer has**, and syncing `Notes` (matched by `EntryImport.Signature`). **The file is the source
+  of truth.** Malformed files are logged and skipped, never fatal.
+  - It used to **append only**, which silently made corrections impossible: fixing
+    `change (money back)` → `change` in the JSON added the fixed row and left the broken one in
+    place, so every already-seeded database (production included) kept serving a word whose
+    annotation the learner had to type to be graded correct. Reconciling means a deploy now heals
+    the masters by itself.
+  - **User copies are still snapshots and are not rewritten** — that is deliberate (a copy is the
+    user's library). A copy made *before* a fix therefore keeps the broken row; repair those with
+    `tools/gen-libraries/fix_db.py` (`--dsn` for a hosted DB).
 - **Frontend:** the shelf is its own page `pages/FeaturedPage.tsx` (`['featured']` query; premium →
   **Add** button that navigates to the new copy; free → blurred `.teaser-words` + 🔒 + Upgrade),
   routed at `/featured` with a `nav.featured` link in `Layout.tsx`. Types/wrappers in `api/types.ts`

@@ -10,6 +10,7 @@ import {
 } from '../lib/demo/demoStore';
 import ConfirmModal from '../components/ConfirmModal';
 import { useI18n } from '../i18n/I18nProvider';
+import { featuredWordCount } from '../lib/wordCount';
 
 // Feather "trash-2", inlined (mirrors LibrariesPage; no icon lib in this project, keeps it CSP-safe).
 function TrashIcon() {
@@ -145,9 +146,7 @@ export default function DemoLibrariesPage() {
               <div className="card library-card featured-card" key={f.name}>
                 <div className="library-card-head">
                   <span className="library-title">{f.name}</span>
-                  <span className="badge">
-                    {t(f.wordCount === 1 ? 'libraries.word' : 'libraries.words', { count: f.wordCount })}
-                  </span>
+                  <span className="badge">{featuredWordCount(t, f.wordCount)}</span>
                 </div>
                 {f.description && <p className="muted">{f.description}</p>}
                 {f.sampleWords.length > 0 && (

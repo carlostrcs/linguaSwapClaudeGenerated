@@ -1,0 +1,12 @@
+# Local secrets — the Anthropic API key. NEVER commit this.
+.env
+# Cached Claude responses — regenerable, and can be large.
+.cache/
+# Dropped-row reports from the correctness gate (diagnostic only).
+rejects/
+__pycache__/
+*.pyc
+# Naturalness review shortlists — diagnostics, regenerable.
+review/
+# Run logs from generation/cleaning passes — diagnostic, regenerable.
+*.log
