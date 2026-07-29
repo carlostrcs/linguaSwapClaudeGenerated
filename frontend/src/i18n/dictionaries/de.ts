@@ -376,6 +376,10 @@ const dict: Dictionary = {
   'seo.home.description':
     'Baue eigene Wortbibliotheken und übe sie mit verteilter Wiederholung. Trainiere jede Sprachrichtung — Deutsch, Englisch, Spanisch, Französisch, Italienisch oder Portugiesisch — und behalte im Blick, was schon sitzt.',
 
+
+  'landing.footerVocabulary': 'Vokabellisten',
+  'landing.footerGuides': 'So funktioniert verteilte Wiederholung',
+
 };
 
 export default dict;

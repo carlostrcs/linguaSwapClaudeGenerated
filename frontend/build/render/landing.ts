@@ -9,6 +9,7 @@
 
 import {
   LANDING_FEATURES,
+  LANDING_FOOTER,
   LANDING_KEYS,
   featureBodyKey,
   featureTitleKey,
@@ -31,9 +32,10 @@ function appHref(path: string, locale: string): string {
 /**
  * Crawlable links to the other locales.
  *
- * The React header renders a `<select>` here instead — a select is useless without JavaScript,
- * while real anchors also give crawlers a path between the translated homepages. Same languages,
- * same names; only the control differs.
+ * A human never sees these: React replaces this markup on mount with a `<select>` that navigates
+ * to the same URLs. They exist because a `<select>` is inert without JavaScript, so anchors are
+ * the only way a crawler can walk between the translated homepages. Same languages, same targets;
+ * only the control differs.
  */
 function localeLinks(current: string): string {
   const links = LOCALES.map((locale) => {
@@ -94,6 +96,12 @@ export function renderLanding(locale: string): string {
           <a class="btn btn-secondary btn-lg" href="${href('/demo')}">${e(LANDING_KEYS.actions.demo)}</a>
         </div>
       </section>
+
+      <footer class="landing-footer">
+        <nav class="doc-footer-links" aria-label="More">
+${LANDING_FOOTER.map((link) => `          <a href="${link.to}">${e(link.key)}</a>`).join('\n')}
+        </nav>
+      </footer>
     </div>
   `;
 }

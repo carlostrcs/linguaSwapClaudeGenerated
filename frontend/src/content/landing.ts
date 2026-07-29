@@ -45,6 +45,23 @@ export const LANDING_KEYS = {
   },
 } as const;
 
+/**
+ * Landing-page footer.
+ *
+ * Its real job is discoverability in both directions. Without it the generated `/learn/**` and
+ * `/guides/**` pages are reachable only from the sitemap and from each other — users never find
+ * them, and search engines crawl them far more slowly than pages linked from the homepage.
+ *
+ * The targets are English for now: wave 1 of the content layer is English-source. A localized
+ * homepage still links here rather than dead-ending, and localized equivalents replace these
+ * targets when the later waves land.
+ */
+export const LANDING_FOOTER: readonly { key: string; to: string }[] = [
+  { key: 'landing.footerVocabulary', to: '/learn' },
+  { key: 'landing.footerGuides', to: '/guides/spaced-repetition' },
+  { key: 'landing.tryDemo', to: '/demo' },
+];
+
 export function featureTitleKey(key: string): string {
   return `landing.feature.${key}.title`;
 }

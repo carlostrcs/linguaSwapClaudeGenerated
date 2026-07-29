@@ -26,3 +26,13 @@ export function absoluteUrl(base: string, path: string): string {
   const suffix = path.startsWith('/') ? path : `/${path}`;
   return `${siteUrl(base)}${suffix}`;
 }
+
+/**
+ * The homepage for a locale. English lives at the root and has no `/en` twin — one page, one URL.
+ * This is the only place the default locale is special-cased, and it is shared by the app (the
+ * language picker navigates here) and the generator (which emits these paths and their hreflang
+ * cluster), so a user and a crawler can never be sent to different URLs for the same language.
+ */
+export function localeHomePath(locale: string): string {
+  return locale === 'en' ? '/' : `/${locale}`;
+}

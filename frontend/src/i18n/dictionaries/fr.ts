@@ -374,6 +374,10 @@ const dict: Dictionary = {
   'seo.home.description':
     "Créez vos propres bibliothèques de mots et travaillez-les avec la répétition espacée. Entraînez-vous dans n'importe quel sens — français, anglais, espagnol, allemand, italien ou portugais — et suivez ce que vous maîtrisez.",
 
+
+  'landing.footerVocabulary': 'Listes de vocabulaire',
+  'landing.footerGuides': 'Comment fonctionne la répétition espacée',
+
 };
 
 export default dict;

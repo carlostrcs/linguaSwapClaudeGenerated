@@ -374,6 +374,10 @@ const dict: Dictionary = {
   'seo.home.description':
     'Crea le tue raccolte di parole ed esercitale con la ripetizione dilazionata. Allenati in qualsiasi direzione — italiano, inglese, spagnolo, francese, tedesco o portoghese — e tieni traccia di ciò che padroneggi.',
 
+
+  'landing.footerVocabulary': 'Liste di vocaboli',
+  'landing.footerGuides': 'Come funziona la ripetizione dilazionata',
+
 };
 
 export default dict;

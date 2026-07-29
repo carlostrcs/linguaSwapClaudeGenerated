@@ -6,7 +6,12 @@ import Seo from '../components/Seo';
 import { HOME_SEO_KEYS } from '../content/seo';
 // Shared with the build-time generator, which prerenders this same page into the served HTML so a
 // crawler that runs no JavaScript still sees the copy. See src/content/landing.ts.
-import { LANDING_FEATURES, featureBodyKey, featureTitleKey } from '../content/landing';
+import {
+  LANDING_FEATURES,
+  LANDING_FOOTER,
+  featureBodyKey,
+  featureTitleKey,
+} from '../content/landing';
 
 export default function LandingPage() {
   const { t } = useI18n();
@@ -21,7 +26,9 @@ export default function LandingPage() {
           LinguaSwap
         </Link>
         <div className="landing-header-actions">
-          <LanguagePicker />
+          {/* Navigates: each locale has its own indexable homepage, so switching language here
+              should change the URL rather than leave two URLs rendering the same language. */}
+          <LanguagePicker navigateToLocaleHome />
           {isAuthenticated ? (
             <Link className="btn btn-primary" to="/libraries">
               {t('landing.myLibraries')}
@@ -89,6 +96,18 @@ export default function LandingPage() {
           </div>
         </section>
       )}
+
+      {/* Without this the generated vocabulary pages and guides are reachable only from the
+          sitemap — invisible to users, and slow to be crawled. */}
+      <footer className="landing-footer">
+        <nav className="doc-footer-links" aria-label="More">
+          {LANDING_FOOTER.map((link) => (
+            <Link key={link.to} to={link.to}>
+              {t(link.key)}
+            </Link>
+          ))}
+        </nav>
+      </footer>
     </div>
   );
 }

@@ -4,16 +4,12 @@
 // so a path can never be spelled one way in a link and another way in the sitemap.
 
 import { LOCALES } from '../src/i18n/locales';
+import { localeHomePath } from '../src/content/site';
 
 export const LOCALE_IDS = LOCALES.map((l) => l.id);
 
-/**
- * Homepage for a locale. English lives at the root and has no `/en` twin — one page, one URL.
- * This is the only place the default locale is special-cased.
- */
-export function localeHome(locale: string): string {
-  return locale === 'en' ? '/' : `/${locale}`;
-}
+/** Re-exported from the shared module so app and generator agree on every locale URL. */
+export const localeHome = localeHomePath;
 
 export interface Alternate {
   hreflang: string;

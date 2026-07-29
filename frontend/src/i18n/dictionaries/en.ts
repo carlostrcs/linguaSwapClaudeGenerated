@@ -349,6 +349,10 @@ const dict: Dictionary = {
   'seo.home.description':
     'Build your own word libraries and practise them with spaced repetition. Drill any language direction — English, Spanish, French, German, Italian or Portuguese — and track what you have mastered.',
 
+
+  'landing.footerVocabulary': 'Vocabulary lists',
+  'landing.footerGuides': 'How spaced repetition works',
+
 };
 
 export default dict;

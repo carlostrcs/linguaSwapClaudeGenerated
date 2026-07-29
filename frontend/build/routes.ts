@@ -75,9 +75,10 @@ function homePages(): PageSpec[] {
       alternates,
       structuredData: siteStructuredData(),
       body: renderLanding(locale.id),
-      // English `/` is also the SPA entry point, so it keeps the scripts. The localized homepages
-      // are pure content: no bundle, no boot, nothing to hydrate.
-      spa: locale.id === 'en',
+      // Every locale homepage boots the SPA, not just `/`. They are the app's entry point in that
+      // language: the language picker navigates here, and a logged-in visitor must get the
+      // logged-in landing rather than the static logged-out snapshot baked in at build time.
+      spa: true,
       sitemapShard: locale.id,
     };
   });

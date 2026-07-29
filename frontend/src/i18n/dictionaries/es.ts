@@ -347,6 +347,10 @@ const dict: Dictionary = {
   'seo.home.description':
     'Crea tus propias bibliotecas de palabras y practícalas con repetición espaciada. Practica en cualquier dirección — español, inglés, francés, alemán, italiano o portugués — y sigue lo que ya dominas.',
 
+
+  'landing.footerVocabulary': 'Listas de vocabulario',
+  'landing.footerGuides': 'Cómo funciona la repetición espaciada',
+
 };
 
 export default dict;
