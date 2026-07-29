@@ -8,13 +8,13 @@ import { HOME_SEO_KEYS } from '../content/seo';
 // crawler that runs no JavaScript still sees the copy. See src/content/landing.ts.
 import {
   LANDING_FEATURES,
-  LANDING_FOOTER,
   featureBodyKey,
   featureTitleKey,
+  landingFooter,
 } from '../content/landing';
 
 export default function LandingPage() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const { isAuthenticated } = useAuth();
 
   return (
@@ -101,7 +101,7 @@ export default function LandingPage() {
           sitemap — invisible to users, and slow to be crawled. */}
       <footer className="landing-footer">
         <nav className="doc-footer-links" aria-label="More">
-          {LANDING_FOOTER.map((link) =>
+          {landingFooter(lang).map((link) =>
             // A plain anchor for the generated pages: they are real documents the server serves,
             // not React routes, so a <Link> would navigate on the client and land on the 404 page.
             link.staticPage ? (

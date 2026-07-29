@@ -9,10 +9,10 @@
 
 import {
   LANDING_FEATURES,
-  LANDING_FOOTER,
   LANDING_KEYS,
   featureBodyKey,
   featureTitleKey,
+  landingFooter,
 } from '../../src/content/landing';
 import { LOCALES } from '../../src/i18n/locales';
 import { translator } from '../../src/i18n/interpolate';
@@ -99,7 +99,9 @@ export function renderLanding(locale: string): string {
 
       <footer class="landing-footer">
         <nav class="doc-footer-links" aria-label="More">
-${LANDING_FOOTER.map((link) => `          <a href="${link.to}">${e(link.key)}</a>`).join('\n')}
+${landingFooter(locale)
+  .map((link) => `          <a href="${link.to}">${e(link.key)}</a>`)
+  .join('\n')}
         </nav>
       </footer>
     </div>

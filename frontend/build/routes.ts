@@ -10,7 +10,8 @@ import { translator } from '../src/i18n/interpolate';
 import type { LanguageId } from '../src/i18n/translations';
 import { siteStructuredData } from './head';
 import type { Deck, DeckSnapshot } from './decks';
-import { GUIDES, guidePath } from './content/guides';
+import { guidePath } from '../src/content/guides';
+import { guidesFor, verifyGuideCoverage } from './content/guides/index';
 import {
   MIN_DECK_ENTRIES,
   SAMPLE_ROWS,
@@ -36,7 +37,7 @@ import {
   topicHeading,
 } from './render/learn';
 import { APP_SHELL_FILE, NOT_FOUND_FILE, SITE_URL } from './site';
-import { homeAlternates, localeHome, outputFileFor } from './urls';
+import { alternatesFor, homeAlternates, localeHome, outputFileFor } from './urls';
 import type { Alternate } from './urls';
 
 export interface PageSpec {
@@ -215,21 +216,38 @@ function topicStructuredData(target: Target, deck: Deck, url: string): unknown {
   };
 }
 
+/**
+ * The hand-written guides, in every locale.
+ *
+ * This is pure translation rather than a content matrix: one article, six languages, six URLs.
+ * It is also what makes a non-English homepage coherent — before this, `/es` could only link to
+ * English articles, which is a worse experience than not linking at all.
+ */
 function guidePages(): PageSpec[] {
-  return GUIDES.map((guide) => {
-    const path = guidePath(guide.slug);
-    return {
-      path,
-      file: outputFileFor(path),
-      lang: 'en',
-      title: guide.title,
-      description: guide.description,
-      structuredData: guideStructuredData(guide, absoluteUrl(SITE_URL, path)),
-      body: renderGuide(guide),
-      spa: false,
-      sitemapShard: 'guides',
-    };
-  });
+  verifyGuideCoverage();
+
+  return LOCALES.flatMap((locale) =>
+    guidesFor(locale.id).map((guide) => {
+      const path = guidePath(locale.id, guide.key);
+      // One cluster per guide: the same article in six languages, each linking to all the others.
+      const alternates = alternatesFor(
+        new Map(LOCALES.map((l) => [l.id, guidePath(l.id, guide.key)])),
+      );
+
+      return {
+        path,
+        file: outputFileFor(path),
+        lang: locale.id,
+        title: guide.title,
+        description: guide.description,
+        alternates,
+        structuredData: guideStructuredData(guide, locale.id, absoluteUrl(SITE_URL, path)),
+        body: renderGuide(locale.id, guide),
+        spa: false,
+        sitemapShard: locale.id,
+      };
+    }),
+  );
 }
 
 export function buildPages(snapshot: DeckSnapshot): PageSpec[] {

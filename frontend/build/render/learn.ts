@@ -189,6 +189,7 @@ export function renderTopicPage(target: Target, deck: Deck, decks: Deck[]): stri
 
   return renderDoc({
     crumbs: topicCrumbs(target, deck),
+    locale: SOURCE,
     heading: `${topicHeading(target, deck)}: ${deck.entries.length} words`,
     lede:
       `${deck.description} This page lists ${shown} of them with their ${target.name} translations, ` +
@@ -198,6 +199,7 @@ export function renderTopicPage(target: Target, deck: Deck, decks: Deck[]): stri
       renderRemainder(target, deck),
       renderFacts(target, facts),
       renderCta(
+        SOURCE,
         `Practise ${target.name} ${TOPIC_NOUNS[deck.slug]} vocabulary`,
         'Words come back just before you would forget them, and every language direction is tracked separately.',
       ),
@@ -224,6 +226,7 @@ export function renderTargetHub(target: Target, decks: Deck[]): string {
 
   return renderDoc({
     crumbs: targetCrumbs(target),
+    locale: SOURCE,
     heading: `Learn ${target.name} vocabulary`,
     lede:
       `${totalWords} curated ${target.name} words across ${decks.length} topics, each one aligned with its ` +
@@ -237,6 +240,7 @@ ${cards.join('\n')}
         </ul>
       </section>`,
       renderCta(
+        SOURCE,
         `Start practising ${target.name}`,
         'Pick a topic, choose a direction, and drill. The free plan covers five libraries and 500 words each.',
       ),
@@ -272,6 +276,7 @@ export function renderLearnIndex(decks: Deck[]): string {
 
   return renderDoc({
     crumbs: learnCrumbs(),
+    locale: SOURCE,
     heading: 'Vocabulary lists for English speakers',
     lede:
       `${totalWords} curated words across ${decks.length} topics, each aligned across ` +
@@ -292,6 +297,7 @@ ${byTopic.join('\n')}
         </ul>
       </section>`,
       renderCta(
+        SOURCE,
         'Practise any of these free',
         'Create an account to save your progress, or open the demo and start drilling straight away.',
       ),

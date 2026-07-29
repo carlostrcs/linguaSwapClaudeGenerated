@@ -4,38 +4,42 @@
 // It follows the convention CLAUDE.md already sets out for the production safety rails: a crash
 // at build time beats a deploy that looks fine and is quietly broken.
 
-import { LANDING_FOOTER } from '../src/content/landing';
+import { landingFooter } from '../src/content/landing';
+import { LOCALES } from '../src/i18n/locales';
 import type { PageSpec } from './routes';
 
 /**
- * Paths owned by the generator rather than by React Router. A link to one of these from inside the
- * SPA must be a plain `<a href>`: a `<Link>` navigates on the client, never reaches the server,
- * matches no route and silently renders the 404 page instead of the real document.
+ * The landing footer is the one place the app links into the generated pages, and getting it wrong
+ * is invisible: a React Router `<Link>` to a generated page navigates on the client, never reaches
+ * the server, matches no route, and silently renders the 404 page instead of the real document.
+ *
+ * Checked against the pages this build actually emits rather than against a path prefix, because
+ * the guide URLs are localized (`/de/ratgeber/…`) and a prefix list would rot the moment a locale
+ * is added. `spa === false` is the exact property that requires a full page load.
  */
-const CONTENT_PREFIXES = ['/learn', '/guides'];
+function verifyLandingFooter(pages: PageSpec[]): void {
+  const emitted = new Map(pages.filter((p) => p.path).map((p) => [p.path, p]));
 
-export function isContentPath(path: string): boolean {
-  return CONTENT_PREFIXES.some((p) => path === p || path.startsWith(`${p}/`));
-}
-
-/**
- * The landing footer is the one place the app links into the generated pages, and it is
- * data-driven — so the invariant belongs here, on the data, rather than in a source scan for
- * `to="/learn"` (which would miss `to={link.to}`, i.e. exactly how this got broken the first time).
- */
-function verifyLandingFooter(): void {
-  for (const link of LANDING_FOOTER) {
-    if (isContentPath(link.to) && !link.staticPage) {
-      throw new Error(
-        `LANDING_FOOTER: "${link.to}" is a generated page but is not marked staticPage. ` +
-          'It would render as a React Router <Link> and land on the 404 page.',
-      );
-    }
-    if (!isContentPath(link.to) && link.staticPage) {
-      throw new Error(
-        `LANDING_FOOTER: "${link.to}" is marked staticPage but is a React route — ` +
-          'a full page reload here is a pointless bundle re-download.',
-      );
+  for (const locale of LOCALES) {
+    for (const link of landingFooter(locale.id)) {
+      const target = emitted.get(link.to);
+      if (!target) {
+        throw new Error(
+          `landingFooter("${locale.id}") links to "${link.to}", which this build does not emit.`,
+        );
+      }
+      if (!target.spa && !link.staticPage) {
+        throw new Error(
+          `landingFooter("${locale.id}"): "${link.to}" is a generated page but is not marked ` +
+            'staticPage. It would render as a React Router <Link> and land on the 404 page.',
+        );
+      }
+      if (target.spa && link.staticPage) {
+        throw new Error(
+          `landingFooter("${locale.id}"): "${link.to}" is marked staticPage but is a React route — ` +
+            'a full page reload here is a pointless bundle re-download.',
+        );
+      }
     }
   }
 }
@@ -72,7 +76,7 @@ function patternToRegExp(source: string): RegExp {
 }
 
 export function verifyPages(pages: PageSpec[]): void {
-  verifyLandingFooter();
+  verifyLandingFooter(pages);
 
   const byFile = new Map<string, PageSpec>();
 

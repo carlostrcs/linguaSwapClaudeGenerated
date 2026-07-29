@@ -4,7 +4,13 @@
 // point: they are the fastest pages on the site and the only ones a non-JS crawler can read in
 // full. Keeping the chrome in one place also keeps the internal link graph consistent, which is
 // what stops a set of generated pages from looking like an orphaned doorway farm.
+//
+// Labels come from the app's own dictionaries via `translator(locale)`, so a guide in French gets
+// French chrome without a second copy of those strings.
 
+import { guidePath } from '../../src/content/guides';
+import { translator } from '../../src/i18n/interpolate';
+import type { LanguageId } from '../../src/i18n/translations';
 import { LOCALES } from '../../src/i18n/locales';
 import { escapeHtml } from '../html';
 import { localeHome } from '../urls';
@@ -39,33 +45,39 @@ export function breadcrumbStructuredData(crumbs: Crumb[], siteUrl: string): unkn
   };
 }
 
-export function renderCta(heading: string, body: string): string {
+export function renderCta(locale: string, heading: string, body: string): string {
+  const t = translator(locale as LanguageId);
   return `
       <section class="doc-cta">
         <h2>${escapeHtml(heading)}</h2>
         <p>${escapeHtml(body)}</p>
         <p class="doc-cta-actions">
-          <a class="btn btn-primary btn-lg" href="/register">Create a free account</a>
-          <a class="btn btn-secondary btn-lg" href="/demo">Try the demo — no account</a>
+          <a class="btn btn-primary btn-lg" href="/register${locale === 'en' ? '' : `?lang=${locale}`}">${escapeHtml(t('landing.getStarted'))}</a>
+          <a class="btn btn-secondary btn-lg" href="/demo${locale === 'en' ? '' : `?lang=${locale}`}">${escapeHtml(t('landing.tryDemo'))}</a>
         </p>
       </section>`;
 }
 
-function renderFooter(): string {
-  const languages = LOCALES.map(
-    (locale) =>
-      `<a href="${localeHome(locale.id)}" hreflang="${locale.id}">${escapeHtml(locale.label)}</a>`,
+function renderFooter(locale: string): string {
+  const t = translator(locale as LanguageId);
+  const link = (href: string, label: string) => `<a href="${href}">${escapeHtml(label)}</a>`;
+
+  const links = [link(localeHome(locale), 'LinguaSwap')];
+  // The vocabulary pages are English-source only, so they are offered on English pages alone —
+  // sending a French reader to an English word list is worse than not offering the link.
+  if (locale === 'en') links.push(link('/learn', t('landing.footerVocabulary')));
+  links.push(link(guidePath(locale, 'spaced-repetition'), t('landing.footerGuides')));
+  links.push(link(`/demo${locale === 'en' ? '' : `?lang=${locale}`}`, t('landing.tryDemo')));
+
+  const languages = LOCALES.map((l) =>
+    l.id === locale
+      ? `<span>${escapeHtml(l.label)}</span>`
+      : `<a href="${localeHome(l.id)}" hreflang="${l.id}">${escapeHtml(l.label)}</a>`,
   ).join('');
 
   return `
       <footer class="doc-footer">
-        <nav class="doc-footer-links" aria-label="Site">
-          <a href="/">Home</a>
-          <a href="/learn">All vocabulary lists</a>
-          <a href="/guides/spaced-repetition">How spaced repetition works</a>
-          <a href="/demo">Demo</a>
-          <a href="/register">Create a free account</a>
-        </nav>
+        <nav class="doc-footer-links" aria-label="Site">${links.join('')}</nav>
         <nav class="doc-footer-langs" aria-label="Language">${languages}</nav>
       </footer>`;
 }
@@ -77,14 +89,17 @@ export interface DocOptions {
   lede: string;
   /** Pre-rendered HTML blocks, in order. */
   sections: string[];
+  /** Drives the chrome's language and the footer's links. */
+  locale: string;
 }
 
-export function renderDoc({ crumbs, heading, lede, sections }: DocOptions): string {
+export function renderDoc({ crumbs, heading, lede, sections, locale }: DocOptions): string {
+  const t = translator(locale as LanguageId);
   return `
     <div class="doc">
       <header class="doc-header">
-        <a class="brand" href="/">LinguaSwap</a>
-        <a class="btn btn-primary" href="/register">Create a free account</a>
+        <a class="brand" href="${localeHome(locale)}">LinguaSwap</a>
+        <a class="btn btn-primary" href="/register${locale === 'en' ? '' : `?lang=${locale}`}">${escapeHtml(t('landing.getStarted'))}</a>
       </header>
       ${renderBreadcrumbs(crumbs)}
       <main class="doc-main">
@@ -92,7 +107,7 @@ export function renderDoc({ crumbs, heading, lede, sections }: DocOptions): stri
         <p class="doc-lede">${escapeHtml(lede)}</p>
 ${sections.join('\n')}
       </main>
-${renderFooter()}
+${renderFooter(locale)}
     </div>
   `;
 }

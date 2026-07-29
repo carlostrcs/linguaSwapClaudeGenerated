@@ -10,6 +10,8 @@
 //
 // Pure data (no JSX, no ReactNode) because `build/` imports it under `tsconfig.node.json`.
 
+import { guidePath } from './guides';
+
 export interface LandingFeature {
   /** Suffix of the `landing.feature.<key>.{title,body}` i18n keys. */
   key: string;
@@ -56,14 +58,39 @@ export const LANDING_KEYS = {
  * homepage still links here rather than dead-ending, and localized equivalents replace these
  * targets when the later waves land.
  */
-export const LANDING_FOOTER: readonly { key: string; to: string; staticPage?: boolean }[] = [
-  // `staticPage` means the target is a generated document, NOT a React route. These must render as
-  // a plain `<a href>`: a React Router `<Link>` navigates on the client, never reaches the server,
-  // finds no matching route and renders the 404 page instead of the real page.
-  { key: 'landing.footerVocabulary', to: '/learn', staticPage: true },
-  { key: 'landing.footerGuides', to: '/guides/spaced-repetition', staticPage: true },
-  { key: 'landing.tryDemo', to: '/demo' },
-];
+export interface LandingFooterLink {
+  key: string;
+  to: string;
+  /**
+   * The target is a generated document, NOT a React route. These must render as a plain
+   * `<a href>`: a React Router `<Link>` navigates on the client, never reaches the server, finds
+   * no matching route, and renders the 404 page instead of the real page.
+   */
+  staticPage?: boolean;
+}
+
+/**
+ * Footer links for a locale.
+ *
+ * The guides exist in all six languages, so every locale links to its own. The vocabulary pages
+ * are English-source only — `/learn/spanish/travel` means "Spanish vocabulary *for an English
+ * speaker*" — so they are offered on the English homepage alone. Sending a French visitor to an
+ * English word list is worse than not offering the link; the fix is localized vocabulary pages,
+ * not a translated label on an English target.
+ */
+export function landingFooter(locale: string): LandingFooterLink[] {
+  const links: LandingFooterLink[] = [];
+  if (locale === 'en') {
+    links.push({ key: 'landing.footerVocabulary', to: '/learn', staticPage: true });
+  }
+  links.push({
+    key: 'landing.footerGuides',
+    to: guidePath(locale, 'spaced-repetition'),
+    staticPage: true,
+  });
+  links.push({ key: 'landing.tryDemo', to: '/demo' });
+  return links;
+}
 
 export function featureTitleKey(key: string): string {
   return `landing.feature.${key}.title`;

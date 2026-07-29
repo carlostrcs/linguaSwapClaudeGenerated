@@ -1,31 +1,15 @@
-// Hand-written evergreen guides.
-//
-// These are deliberately NOT generated. The topic pages are templated by necessity — one shape,
-// many language pairs — and a site made only of those reads as scaled content. These three are
-// written prose that the templated pages link up to, and they are also the pages most likely to be
-// quoted by an AI assistant answering "how does spaced repetition work?", which is a question the
-// product actually has a good answer to.
-//
-// Keep them factual. Every claim here is about how LinguaSwap genuinely behaves.
+// English guides. The other locales mirror this file's structure key for key.
+import type { Guide } from './types';
 
-export interface GuideSection {
-  heading: string;
-  paragraphs: string[];
-}
+const LINKS = {
+  'spaced-repetition': 'How spaced repetition works',
+  'leitner-boxes': 'The Leitner system, explained',
+  'how-many-words': 'How many words do you actually need?',
+};
 
-export interface Guide {
-  slug: string;
-  title: string;
-  description: string;
-  heading: string;
-  lede: string;
-  sections: GuideSection[];
-  faq: { q: string; a: string }[];
-}
-
-export const GUIDES: Guide[] = [
+const guides: Guide[] = [
   {
-    slug: 'spaced-repetition',
+    key: 'spaced-repetition',
     title: 'How spaced repetition works — and why re-reading does not | LinguaSwap',
     description:
       'Spaced repetition schedules each word for review just before you would forget it. Here is the mechanism, why re-reading feels productive but is not, and how to use it for vocabulary.',
@@ -37,7 +21,7 @@ export const GUIDES: Guide[] = [
         heading: 'The forgetting curve is the problem',
         paragraphs: [
           'Memory for an isolated fact decays quickly and predictably. Learn a word today and, without reinforcement, most of it is gone within days. Learn it and review it tomorrow, and the decay slows. Review it again a few days later, and it slows further. Each successful recall flattens the curve.',
-          'The practical consequence is that the *timing* of review matters more than the amount. Twenty minutes spread across five days beats a hundred minutes in one sitting, because each of the five sessions catches the memory at the point where retrieving it is effortful but still possible.',
+          'The practical consequence is that the timing of review matters more than the amount. Twenty minutes spread across five days beats a hundred minutes in one sitting, because each of the five sessions catches the memory at the point where retrieving it is effortful but still possible.',
         ],
       },
       {
@@ -52,7 +36,7 @@ export const GUIDES: Guide[] = [
         paragraphs: [
           'A spaced-repetition scheduler tracks, per word, how well you know it and when you should next see it. Answer correctly and the next interval grows. Answer wrongly and it collapses back to something short, because a failed recall means the memory was weaker than the schedule assumed.',
           'The effect over a few weeks is that your review queue quietly fills with the words you find hard, while the ones you have genuinely learned drop to occasional check-ins. You spend your time where it changes the outcome.',
-          'LinguaSwap uses a Leitner system — the simplest scheduler that works well, five boxes with one promotion rule. It is explained in detail in the Leitner guide.',
+          'LinguaSwap uses a Leitner system — the simplest scheduler that works well, five boxes with one promotion rule.',
         ],
       },
       {
@@ -82,12 +66,15 @@ export const GUIDES: Guide[] = [
         a: 'It works for anything that can be tested by recall, including set phrases and collocations. It is weakest for skills that need production in context, like conversation, which is why it is a supplement to speaking practice rather than a replacement.',
       },
     ],
+    faqHeading: "Common questions",
+    moreHeading: 'More guides',
+    linkLabels: LINKS,
   },
   {
-    slug: 'leitner-boxes',
+    key: 'leitner-boxes',
     title: 'The Leitner system explained: five boxes, one rule | LinguaSwap',
     description:
-      'The Leitner system is the simplest spaced-repetition scheduler that works. Five boxes, one promotion rule, and a review interval that doubles as a word gets easier.',
+      'The Leitner system is the simplest spaced-repetition scheduler that works. Five boxes, one promotion rule, and a review interval that grows as a word gets easier.',
     heading: 'The Leitner system, explained',
     lede:
       'The Leitner system is a spaced-repetition scheduler you could run with five shoeboxes and a stack of cards. It is simple enough to explain in a paragraph and good enough that software still uses it fifty years later.',
@@ -135,12 +122,15 @@ export const GUIDES: Guide[] = [
         a: 'LinguaSwap grades answers after trimming whitespace and normalising Unicode, and is case-insensitive except where capitalisation is grammatical, as in German. Accents are always significant, because an accent is part of the word.',
       },
     ],
+    faqHeading: "Common questions",
+    moreHeading: 'More guides',
+    linkLabels: LINKS,
   },
   {
-    slug: 'how-many-words',
+    key: 'how-many-words',
     title: 'How many words do you need to speak a language? | LinguaSwap',
     description:
-      'Roughly 300 words cover a surprising share of everyday speech, 1,000 gets you conversational, and 3,000 gets you comfortable. What those numbers really mean, and how to choose which words.',
+      'Roughly 300 words cover a surprising share of everyday speech, 1,000 gets you conversational, and 3,000 gets you comfortable. What those numbers mean, and how to choose which words.',
     heading: 'How many words do you actually need?',
     lede:
       'Word frequency is steep: a small number of words does a very large share of the work in everyday speech. That is the single most useful fact for anyone deciding what to study first.',
@@ -188,9 +178,10 @@ export const GUIDES: Guide[] = [
         a: 'For general comprehension, yes — frequency order gives the most understanding per word learned. If you have a specific near-term need, such as a trip, topic vocabulary is the better first investment.',
       },
     ],
+    faqHeading: "Common questions",
+    moreHeading: 'More guides',
+    linkLabels: LINKS,
   },
 ];
 
-export function guidePath(slug: string): string {
-  return `/guides/${slug}`;
-}
+export default guides;

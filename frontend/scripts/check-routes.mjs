@@ -107,6 +107,9 @@ const checks = [
   ['/learn/spanish/travel', 200, 'aeropuerto', 'topic page ships a real word table'],
   ['/learn/german/restaurant-food', 200, 'Capitalisation counts', 'German pages warn about case'],
   ['/guides/spaced-repetition', 200, 'forgetting curve', 'hand-written guide'],
+  ['/es/guias/repeticion-espaciada', 200, 'curva del olvido', 'guide in Spanish, localized slug'],
+  ['/de/ratgeber/verteilte-wiederholung', 200, 'Vergessenskurve', 'guide in German, localized slug'],
+  ['/pt/guias/quantas-palavras', 200, 'frequência das palavras', 'guide in Portuguese'],
 
   // Infrastructure that the old catch-all rewrite used to swallow.
   ['/robots.txt', 200, 'User-agent: GPTBot', 'robots.txt is a real robots file'],
@@ -146,6 +149,19 @@ for (const [path, expectStatus, expectText, label] of checks) {
   } else {
     console.log(`ok    ${path.padEnd(34)} ${label}`);
   }
+}
+
+// A non-English homepage must link to its OWN guides, never to the English-only vocabulary pages.
+// Sending a Spanish reader to an English word list is the thing this whole pass was fixing.
+const spanishHome = readFileSync(join(DIST, 'es', 'index.html'), 'utf8');
+if (spanishHome.includes('href="/learn"')) {
+  failed++;
+  console.error('FAIL  /es links to /learn, which is English-only content');
+} else if (!spanishHome.includes('href="/es/guias/repeticion-espaciada"')) {
+  failed++;
+  console.error('FAIL  /es does not link to its own Spanish guide');
+} else {
+  console.log(`ok    /es footer                          links to Spanish guides, not English lists`);
 }
 
 // A React Router <Link to="/learn"> looks right and is broken: it navigates on the client, never
@@ -212,4 +228,4 @@ if (failed) {
   console.error(`\n${failed} route check(s) failed.`);
   process.exit(1);
 }
-console.log(`\nAll ${checks.length + 4} route checks passed.`);
+console.log(`\nAll ${checks.length + 5} route checks passed.`);
