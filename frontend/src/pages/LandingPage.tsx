@@ -101,11 +101,19 @@ export default function LandingPage() {
           sitemap — invisible to users, and slow to be crawled. */}
       <footer className="landing-footer">
         <nav className="doc-footer-links" aria-label="More">
-          {LANDING_FOOTER.map((link) => (
-            <Link key={link.to} to={link.to}>
-              {t(link.key)}
-            </Link>
-          ))}
+          {LANDING_FOOTER.map((link) =>
+            // A plain anchor for the generated pages: they are real documents the server serves,
+            // not React routes, so a <Link> would navigate on the client and land on the 404 page.
+            link.staticPage ? (
+              <a key={link.to} href={link.to}>
+                {t(link.key)}
+              </a>
+            ) : (
+              <Link key={link.to} to={link.to}>
+                {t(link.key)}
+              </Link>
+            ),
+          )}
         </nav>
       </footer>
     </div>

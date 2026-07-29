@@ -56,9 +56,12 @@ export const LANDING_KEYS = {
  * homepage still links here rather than dead-ending, and localized equivalents replace these
  * targets when the later waves land.
  */
-export const LANDING_FOOTER: readonly { key: string; to: string }[] = [
-  { key: 'landing.footerVocabulary', to: '/learn' },
-  { key: 'landing.footerGuides', to: '/guides/spaced-repetition' },
+export const LANDING_FOOTER: readonly { key: string; to: string; staticPage?: boolean }[] = [
+  // `staticPage` means the target is a generated document, NOT a React route. These must render as
+  // a plain `<a href>`: a React Router `<Link>` navigates on the client, never reaches the server,
+  // finds no matching route and renders the 404 page instead of the real page.
+  { key: 'landing.footerVocabulary', to: '/learn', staticPage: true },
+  { key: 'landing.footerGuides', to: '/guides/spaced-repetition', staticPage: true },
   { key: 'landing.tryDemo', to: '/demo' },
 ];
 

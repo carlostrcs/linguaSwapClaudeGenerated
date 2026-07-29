@@ -13,7 +13,7 @@
 // Run with `npm run routes:check` after `npm run build`.
 
 import { createServer } from 'node:http';
-import { existsSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { extname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
@@ -148,6 +148,38 @@ for (const [path, expectStatus, expectText, label] of checks) {
   }
 }
 
+// A React Router <Link to="/learn"> looks right and is broken: it navigates on the client, never
+// reaches the server, matches no route and renders the 404 page. The generated pages are real
+// documents, so links to them from inside the SPA must be plain <a href>. This is invisible in
+// review and only shows up by clicking, so it is worth a check.
+const CONTENT_PREFIXES = ['/learn', '/guides'];
+
+function sourceFiles(dir) {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) return sourceFiles(full);
+    return /\.tsx?$/.test(entry.name) ? [full] : [];
+  });
+}
+
+const badLinks = [];
+for (const file of sourceFiles(join(ROOT, 'src'))) {
+  const text = readFileSync(file, 'utf8');
+  for (const match of text.matchAll(/<Link\b[^>]*\bto=["'`]([^"'`]+)/g)) {
+    if (CONTENT_PREFIXES.some((p) => match[1] === p || match[1].startsWith(`${p}/`))) {
+      badLinks.push(`${file.slice(ROOT.length + 1)} -> ${match[1]}`);
+    }
+  }
+}
+if (badLinks.length) {
+  failed++;
+  console.error(
+    `FAIL  React Router <Link> pointing at a generated page (use <a href> instead):\n      ${badLinks.join('\n      ')}`,
+  );
+} else {
+  console.log(`ok    SPA -> content links                use <a href>, not <Link>`);
+}
+
 // hreflang and JSON-LD must NOT carry the prerender marker: `<Seo/>` strips marked tags on mount,
 // and React re-renders neither of these — so marking them would delete the structured data and the
 // hreflang cluster for every crawler that runs JavaScript, Googlebot included.
@@ -180,4 +212,4 @@ if (failed) {
   console.error(`\n${failed} route check(s) failed.`);
   process.exit(1);
 }
-console.log(`\nAll ${checks.length + 3} route checks passed.`);
+console.log(`\nAll ${checks.length + 4} route checks passed.`);
