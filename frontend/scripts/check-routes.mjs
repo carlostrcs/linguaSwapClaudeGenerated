@@ -102,10 +102,20 @@ const checks = [
   ['/', 200, 'Learn vocabulary that sticks', 'landing copy is in the served HTML'],
   ['/es', 200, 'Aprende vocabulario que se queda', 'Spanish homepage is its own URL'],
   ['/de', 200, 'Vokabeln lernen, die hängen bleiben', 'German homepage is its own URL'],
-  ['/learn', 200, 'Vocabulary lists for English speakers', 'vocabulary index'],
+  ['/learn', 200, 'Vocabulary lists', 'vocabulary index'],
   ['/learn/spanish', 200, 'Learn Spanish vocabulary', 'language hub'],
   ['/learn/spanish/travel', 200, 'aeropuerto', 'topic page ships a real word table'],
   ['/learn/german/restaurant-food', 200, 'Capitalisation counts', 'German pages warn about case'],
+
+  // The same content from the other side: written in the reader's language, with the columns the
+  // other way round. This is what "translate /learn" actually means for a non-English reader.
+  ['/es/aprender', 200, 'Listas de vocabulario', 'vocabulary index in Spanish'],
+  ['/es/aprender/ingles', 200, 'Aprende vocabulario de inglés', 'learn-English hub in Spanish'],
+  ['/es/aprender/ingles/viajes', 200, 'aeropuerto', 'Spanish-to-English travel words'],
+  ['/fr/apprendre/espagnol/voyage', 200, 'aéroport', 'French-to-Spanish travel words'],
+  ['/de/lernen/englisch/reisen', 200, 'Flughafen', 'German-to-English travel words'],
+  ['/it/imparare/tedesco/viaggi', 200, 'Capitalisation counts|Le maiuscole contano', 'Italian pages warn about German case'],
+  ['/pt/aprender/frances/viagem', 200, 'aeroporto', 'Portuguese-to-French travel words'],
   ['/guides/spaced-repetition', 200, 'forgetting curve', 'hand-written guide'],
   ['/es/guias/repeticion-espaciada', 200, 'curva del olvido', 'guide in Spanish, localized slug'],
   ['/de/ratgeber/verteilte-wiederholung', 200, 'Vergessenskurve', 'guide in German, localized slug'],
@@ -139,12 +149,14 @@ let failed = 0;
 for (const [path, expectStatus, expectText, label] of checks) {
   const res = await fetch(`${base}${path}`, { redirect: 'follow' });
   const body = await res.text();
-  const ok = res.status === expectStatus && body.includes(expectText);
+  // `a|b` means either is acceptable — used where a string differs between locales.
+  const matched = expectText.split('|').some((option) => body.includes(option));
+  const ok = res.status === expectStatus && matched;
   if (!ok) {
     failed++;
     console.error(
       `FAIL  ${path}\n      ${label}\n      status ${res.status} (want ${expectStatus})` +
-        `${body.includes(expectText) ? '' : `\n      missing text: ${JSON.stringify(expectText)}`}`,
+        `${matched ? '' : `\n      missing text: ${JSON.stringify(expectText)}`}`,
     );
   } else {
     console.log(`ok    ${path.padEnd(34)} ${label}`);
@@ -156,14 +168,14 @@ for (const [path, expectStatus, expectText, label] of checks) {
 // signalling, not by hiding the content.
 const spanishHome = readFileSync(join(DIST, 'es', 'index.html'), 'utf8');
 const spanishFooterChecks = [
-  [/href="\/learn" hreflang="en"/, 'marks the English vocabulary lists with hreflang'],
-  [/Listas de vocabulario \(en inglés\)/, 'labels them "(en inglés)" before the click'],
+  [/href="\/es\/aprender"/, 'links to its own Spanish vocabulary index'],
   [/href="\/es\/guias\/repeticion-espaciada"/, 'links to its own Spanish guide'],
+  [/href="\/learn"/, 'does NOT link to the English index', true],
 ];
-for (const [pattern, label] of spanishFooterChecks) {
-  if (!pattern.test(spanishHome)) {
+for (const [pattern, label, negate] of spanishFooterChecks) {
+  if (pattern.test(spanishHome) === Boolean(negate)) {
     failed++;
-    console.error(`FAIL  /es footer ${label} — not found`);
+    console.error(`FAIL  /es footer ${label}`);
   } else {
     console.log(`ok    /es footer                        ${label}`);
   }
@@ -234,3 +246,4 @@ if (failed) {
   process.exit(1);
 }
 console.log(`\nAll ${checks.length + 7} route checks passed.`);
+console.log(`(${checks.length} URL checks + footer, link-style and metadata assertions)`);

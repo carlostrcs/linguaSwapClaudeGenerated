@@ -9,6 +9,7 @@
 // French chrome without a second copy of those strings.
 
 import { guidePath } from '../../src/content/guides';
+import { learnIndexPath } from '../../src/content/learn';
 import { translator } from '../../src/i18n/interpolate';
 import type { LanguageId } from '../../src/i18n/translations';
 import { LOCALES } from '../../src/i18n/locales';
@@ -62,18 +63,14 @@ function renderFooter(locale: string): string {
   const t = translator(locale as LanguageId);
   const link = (href: string, label: string) => `<a href="${href}">${escapeHtml(label)}</a>`;
 
-  const links = [link(localeHome(locale), 'LinguaSwap')];
-  // The vocabulary pages are English-source, but the tables are bilingual and read fine in either
-  // direction — so they are offered everywhere, marked, rather than hidden from five locales.
-  links.push(
-    locale === 'en'
-      ? link('/learn', t('landing.footerVocabulary'))
-      : `<a href="/learn" hreflang="en">${escapeHtml(
-          `${t('landing.footerVocabulary')} (${t('landing.footerInEnglish')})`,
-        )}</a>`,
-  );
-  links.push(link(guidePath(locale, 'spaced-repetition'), t('landing.footerGuides')));
-  links.push(link(`/demo${locale === 'en' ? '' : `?lang=${locale}`}`, t('landing.tryDemo')));
+  // Every link stays inside the reader's own language: the vocabulary pages and the guides now
+  // exist in all six.
+  const links = [
+    link(localeHome(locale), 'LinguaSwap'),
+    link(learnIndexPath(locale), t('landing.footerVocabulary')),
+    link(guidePath(locale, 'spaced-repetition'), t('landing.footerGuides')),
+    link(`/demo${locale === 'en' ? '' : `?lang=${locale}`}`, t('landing.tryDemo')),
+  ];
 
   const languages = LOCALES.map((l) =>
     l.id === locale

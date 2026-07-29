@@ -381,7 +381,6 @@ const dict: Dictionary = {
   'landing.footerGuides': 'So funktioniert verteilte Wiederholung',
 
 
-  'landing.footerInEnglish': 'auf Englisch',
 
 };
 

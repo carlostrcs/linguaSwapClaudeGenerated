@@ -12,17 +12,10 @@ import { siteStructuredData } from './head';
 import type { Deck, DeckSnapshot } from './decks';
 import { guidePath } from '../src/content/guides';
 import { guidesFor, verifyGuideCoverage } from './content/guides/index';
-import {
-  MIN_DECK_ENTRIES,
-  SAMPLE_ROWS,
-  TARGETS,
-  TOPIC_NOUNS,
-  learnIndexPath,
-  publishableDecks,
-  targetPath,
-  topicPath,
-} from './content/topics';
-import type { Target } from './content/topics';
+import { MIN_DECK_ENTRIES, SAMPLE_ROWS, publishableDecks } from './content/topics';
+import { learnIndexPath, learnTargetPath, learnTopicPath } from '../src/content/learn';
+import { learnStrings, verifyLearnCoverage } from './content/learn-strings/index';
+import { interpolate } from '../src/i18n/interpolate';
 import { renderLanding } from './render/landing';
 import { renderDemoIntro } from './render/demo';
 import { breadcrumbStructuredData } from './render/doc';
@@ -33,8 +26,8 @@ import {
   renderTargetHub,
   renderTopicPage,
   targetCrumbs,
+  targetsFor,
   topicCrumbs,
-  topicHeading,
 } from './render/learn';
 import { APP_SHELL_FILE, NOT_FOUND_FILE, SITE_URL } from './site';
 import { alternatesFor, homeAlternates, localeHome, outputFileFor } from './urls';
@@ -134,60 +127,99 @@ function learnPages(snapshot: DeckSnapshot): PageSpec[] {
   if (skipped > 0) {
     // A warning, not an error: the backend must be able to add a deck without breaking this build.
     console.warn(
-      `linguaswap-seo: ${skipped} deck(s) skipped — no slug in TOPIC_SLUGS, or under ${MIN_DECK_ENTRIES} entries.`,
+      `linguaswap-seo: ${skipped} deck(s) skipped — no slug map entry, or under ${MIN_DECK_ENTRIES} entries.`,
     );
   }
 
-  const pages: PageSpec[] = [
-    {
-      path: learnIndexPath(),
-      file: outputFileFor(learnIndexPath()),
-      lang: 'en',
-      title: 'Vocabulary lists by language and topic | LinguaSwap',
-      description:
-        'Curated vocabulary lists for Spanish, French, German, Italian and Portuguese — travel, food, work, health, slang and the most common words, with spaced repetition to make them stick.',
-      structuredData: [breadcrumbStructuredData(learnCrumbs(), SITE_URL)],
-      body: renderLearnIndex(decks),
-      spa: false,
-      sitemapShard: 'learn',
-    },
-  ];
+  verifyLearnCoverage(decks.map((d) => d.slug));
 
-  for (const target of TARGETS) {
-    const words = decks.reduce((n, deck) => n + deck.entries.length, 0);
+  const locales = LOCALES.map((l) => l.id);
+  const pages: PageSpec[] = [];
+
+  for (const locale of locales) {
+    const s = learnStrings(locale);
+    const targets = targetsFor(locale, locales);
+    const totalWords = decks.reduce((n, deck) => n + deck.entries.length, 0);
+    const indexPath = learnIndexPath(locale);
+
     pages.push({
-      path: targetPath(target),
-      file: outputFileFor(targetPath(target)),
-      lang: 'en',
-      title: `Learn ${target.name} vocabulary — ${decks.length} curated word lists | LinguaSwap`,
-      description:
-        `${words} curated ${target.name} words across ${decks.length} topics, each paired with its English ` +
-        'equivalent and scheduled for review by a Leitner spaced-repetition system.',
-      structuredData: [breadcrumbStructuredData(targetCrumbs(target), SITE_URL)],
-      body: renderTargetHub(target, decks),
+      path: indexPath,
+      file: outputFileFor(indexPath),
+      lang: locale,
+      title: s.indexTitle,
+      description: interpolate(s.indexDescription, {
+        topics: decks.length,
+        languages: locales.length,
+      }),
+      // The index exists in every locale, so the whole set is one hreflang cluster.
+      alternates: alternatesFor(new Map(locales.map((l) => [l, learnIndexPath(l)]))),
+      structuredData: [breadcrumbStructuredData(learnCrumbs(locale), SITE_URL)],
+      body: renderLearnIndex(locale, decks, locales),
       spa: false,
-      sitemapShard: 'learn',
+      sitemapShard: locale,
     });
 
-    for (const deck of decks) {
-      const path = topicPath(target, deck);
+    for (const target of targets) {
+      const hubPath = learnTargetPath(locale, target);
+      // Cluster key is the TARGET language: "learn Spanish" exists for every reader whose own
+      // language is not Spanish, so the cluster has five members rather than six.
+      const hubCluster = new Map(
+        locales.filter((l) => l !== target).map((l) => [l, learnTargetPath(l, target)]),
+      );
+
       pages.push({
-        path,
-        file: outputFileFor(path),
-        lang: 'en',
-        title: `${topicHeading(target, deck)} — ${deck.entries.length} words | LinguaSwap`,
-        description:
-          `${Math.min(SAMPLE_ROWS, deck.entries.length)} ${target.name} ${TOPIC_NOUNS[deck.slug]} words with ` +
-          `their English translations, from a curated library of ${deck.entries.length}. Practise them in ` +
-          'either direction with spaced repetition.',
-        structuredData: [
-          breadcrumbStructuredData(topicCrumbs(target, deck), SITE_URL),
-          topicStructuredData(target, deck, absoluteUrl(SITE_URL, path)),
-        ],
-        body: renderTopicPage(target, deck, decks),
+        path: hubPath,
+        file: outputFileFor(hubPath),
+        lang: locale,
+        title: interpolate(s.hubTitle, {
+          language: s.languageNamesCap[target],
+          topics: decks.length,
+        }),
+        description: interpolate(s.hubDescription, {
+          words: totalWords,
+          language: s.languageNames[target],
+          topics: decks.length,
+        }),
+        alternates: alternatesFor(hubCluster),
+        structuredData: [breadcrumbStructuredData(targetCrumbs(locale, target), SITE_URL)],
+        body: renderTargetHub(locale, target, decks, locales),
         spa: false,
-        sitemapShard: 'learn',
+        sitemapShard: locale,
       });
+
+      for (const deck of decks) {
+        const path = learnTopicPath(locale, target, deck.slug);
+        const shown = Math.min(SAMPLE_ROWS, deck.entries.length);
+
+        pages.push({
+          path,
+          file: outputFileFor(path),
+          lang: locale,
+          title: interpolate(s.topicTitle, {
+            language: s.languageNamesCap[target],
+            topic: s.topicNouns[deck.slug],
+            count: deck.entries.length,
+          }),
+          description: interpolate(s.topicDescription, {
+            shown,
+            language: s.languageNames[target],
+            topic: s.topicNouns[deck.slug],
+            count: deck.entries.length,
+          }),
+          alternates: alternatesFor(
+            new Map(
+              locales.filter((l) => l !== target).map((l) => [l, learnTopicPath(l, target, deck.slug)]),
+            ),
+          ),
+          structuredData: [
+            breadcrumbStructuredData(topicCrumbs(locale, target, deck), SITE_URL),
+            topicStructuredData(locale, target, deck, absoluteUrl(SITE_URL, path)),
+          ],
+          body: renderTopicPage(locale, target, deck, decks, locales),
+          spa: false,
+          sitemapShard: locale,
+        });
+      }
     }
   }
 
@@ -199,19 +231,24 @@ function learnPages(snapshot: DeckSnapshot): PageSpec[] {
  * rich-result type, so it wins no snippet — but it is exactly the structure an LLM crawler can
  * read a word list out of, which is half the point of this work.
  */
-function topicStructuredData(target: Target, deck: Deck, url: string): unknown {
+function topicStructuredData(locale: string, target: string, deck: Deck, url: string): unknown {
+  const s = learnStrings(locale);
   return {
     '@context': 'https://schema.org',
     '@type': 'DefinedTermSet',
-    name: `${topicHeading(target, deck)}`,
+    name: interpolate(s.topicHeading, {
+      language: s.languageNames[target],
+      topic: s.topicNouns[deck.slug],
+      count: deck.entries.length,
+    }),
     description: deck.description,
     url,
-    inLanguage: 'en',
+    inLanguage: locale,
     hasDefinedTerm: deck.entries.slice(0, SAMPLE_ROWS).map((entry) => ({
       '@type': 'DefinedTerm',
-      name: entry.t[target.id],
+      name: entry.t[target],
       inDefinedTermSet: url,
-      description: entry.n ? `${entry.t.en} — ${entry.n}` : entry.t.en,
+      description: entry.t[locale],
     })),
   };
 }

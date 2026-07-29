@@ -379,7 +379,6 @@ const dict: Dictionary = {
   'landing.footerGuides': 'Comment fonctionne la répétition espacée',
 
 
-  'landing.footerInEnglish': 'en anglais',
 
 };
 

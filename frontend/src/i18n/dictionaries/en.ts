@@ -354,7 +354,6 @@ const dict: Dictionary = {
   'landing.footerGuides': 'How spaced repetition works',
 
 
-  'landing.footerInEnglish': 'in English',
 
 };
 

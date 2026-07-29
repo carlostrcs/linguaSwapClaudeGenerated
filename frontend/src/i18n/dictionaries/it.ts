@@ -379,7 +379,6 @@ const dict: Dictionary = {
   'landing.footerGuides': 'Come funziona la ripetizione dilazionata',
 
 
-  'landing.footerInEnglish': 'in inglese',
 
 };
 

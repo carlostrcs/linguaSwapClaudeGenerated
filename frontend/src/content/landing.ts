@@ -11,6 +11,7 @@
 // Pure data (no JSX, no ReactNode) because `build/` imports it under `tsconfig.node.json`.
 
 import { guidePath } from './guides';
+import { learnIndexPath } from './learn';
 
 export interface LandingFeature {
   /** Suffix of the `landing.feature.<key>.{title,body}` i18n keys. */
@@ -67,35 +68,16 @@ export interface LandingFooterLink {
    * no matching route, and renders the 404 page instead of the real page.
    */
   staticPage?: boolean;
-  /**
-   * Set when the target page is in a different language from the page linking to it. The label
-   * then carries a visible marker and the anchor gets `hreflang`.
-   */
-  inLanguage?: string;
 }
 
 /**
- * Footer links for a locale.
- *
- * The guides exist in all six languages, so every locale links to its own.
- *
- * The vocabulary pages are English-source: `/learn/spanish/travel` is framed as "Spanish
- * vocabulary for an English speaker". But the table itself is English–Spanish, which is just as
- * readable in the other direction, so they are genuinely useful to a Spanish speaker learning
- * English — only the surrounding prose is English-only. They are therefore offered in every
- * locale with an explicit "in English" marker: the problem to solve is the surprise of landing on
- * an unexpected language, and the fix for surprise is signalling, not hiding the site's best
- * content from five locales out of six. The marker disappears per locale as localized vocabulary
- * pages land.
+ * Footer links for a locale. Everything here now exists in all six languages, so every link stays
+ * inside the reader's own language: `/es` links to `/es/aprender` and `/es/guias/…`, never to an
+ * English page.
  */
 export function landingFooter(locale: string): LandingFooterLink[] {
   return [
-    {
-      key: 'landing.footerVocabulary',
-      to: '/learn',
-      staticPage: true,
-      ...(locale === 'en' ? {} : { inLanguage: 'en' }),
-    },
+    { key: 'landing.footerVocabulary', to: learnIndexPath(locale), staticPage: true },
     { key: 'landing.footerGuides', to: guidePath(locale, 'spaced-repetition'), staticPage: true },
     { key: 'landing.tryDemo', to: '/demo' },
   ];
