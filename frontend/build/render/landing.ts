@@ -100,7 +100,11 @@ export function renderLanding(locale: string): string {
       <footer class="landing-footer">
         <nav class="doc-footer-links" aria-label="More">
 ${landingFooter(locale)
-  .map((link) => `          <a href="${link.to}">${e(link.key)}</a>`)
+  .map((link) => {
+    const label = link.inLanguage ? `${e(link.key)} (${e('landing.footerInEnglish')})` : e(link.key);
+    const hreflang = link.inLanguage ? ` hreflang="${link.inLanguage}"` : '';
+    return `          <a href="${link.to}"${hreflang}>${label}</a>`;
+  })
   .join('\n')}
         </nav>
       </footer>

@@ -101,19 +101,25 @@ export default function LandingPage() {
           sitemap — invisible to users, and slow to be crawled. */}
       <footer className="landing-footer">
         <nav className="doc-footer-links" aria-label="More">
-          {landingFooter(lang).map((link) =>
+          {landingFooter(lang).map((link) => {
+            // The marker is the whole point: a reader who picked French should know before
+            // clicking that this particular page is still in English.
+            const label = link.inLanguage
+              ? `${t(link.key)} (${t('landing.footerInEnglish')})`
+              : t(link.key);
+
             // A plain anchor for the generated pages: they are real documents the server serves,
             // not React routes, so a <Link> would navigate on the client and land on the 404 page.
-            link.staticPage ? (
-              <a key={link.to} href={link.to}>
-                {t(link.key)}
+            return link.staticPage ? (
+              <a key={link.to} href={link.to} hrefLang={link.inLanguage}>
+                {label}
               </a>
             ) : (
               <Link key={link.to} to={link.to}>
-                {t(link.key)}
+                {label}
               </Link>
-            ),
-          )}
+            );
+          })}
         </nav>
       </footer>
     </div>

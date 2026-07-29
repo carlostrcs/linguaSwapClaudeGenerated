@@ -63,9 +63,15 @@ function renderFooter(locale: string): string {
   const link = (href: string, label: string) => `<a href="${href}">${escapeHtml(label)}</a>`;
 
   const links = [link(localeHome(locale), 'LinguaSwap')];
-  // The vocabulary pages are English-source only, so they are offered on English pages alone —
-  // sending a French reader to an English word list is worse than not offering the link.
-  if (locale === 'en') links.push(link('/learn', t('landing.footerVocabulary')));
+  // The vocabulary pages are English-source, but the tables are bilingual and read fine in either
+  // direction — so they are offered everywhere, marked, rather than hidden from five locales.
+  links.push(
+    locale === 'en'
+      ? link('/learn', t('landing.footerVocabulary'))
+      : `<a href="/learn" hreflang="en">${escapeHtml(
+          `${t('landing.footerVocabulary')} (${t('landing.footerInEnglish')})`,
+        )}</a>`,
+  );
   links.push(link(guidePath(locale, 'spaced-repetition'), t('landing.footerGuides')));
   links.push(link(`/demo${locale === 'en' ? '' : `?lang=${locale}`}`, t('landing.tryDemo')));
 

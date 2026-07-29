@@ -351,6 +351,9 @@ const dict: Dictionary = {
   'landing.footerVocabulary': 'Listas de vocabulario',
   'landing.footerGuides': 'Cómo funciona la repetición espaciada',
 
+
+  'landing.footerInEnglish': 'en inglés',
+
 };
 
 export default dict;

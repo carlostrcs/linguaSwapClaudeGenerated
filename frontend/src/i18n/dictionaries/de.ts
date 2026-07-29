@@ -380,6 +380,9 @@ const dict: Dictionary = {
   'landing.footerVocabulary': 'Vokabellisten',
   'landing.footerGuides': 'So funktioniert verteilte Wiederholung',
 
+
+  'landing.footerInEnglish': 'auf Englisch',
+
 };
 
 export default dict;

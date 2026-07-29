@@ -378,6 +378,9 @@ const dict: Dictionary = {
   'landing.footerVocabulary': 'Liste di vocaboli',
   'landing.footerGuides': 'Come funziona la ripetizione dilazionata',
 
+
+  'landing.footerInEnglish': 'in inglese',
+
 };
 
 export default dict;

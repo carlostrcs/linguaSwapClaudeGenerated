@@ -151,17 +151,22 @@ for (const [path, expectStatus, expectText, label] of checks) {
   }
 }
 
-// A non-English homepage must link to its OWN guides, never to the English-only vocabulary pages.
-// Sending a Spanish reader to an English word list is the thing this whole pass was fixing.
+// A non-English homepage links to its OWN guides, and to the English-only vocabulary pages with a
+// visible marker plus hreflang — the surprise of landing on an unexpected language is solved by
+// signalling, not by hiding the content.
 const spanishHome = readFileSync(join(DIST, 'es', 'index.html'), 'utf8');
-if (spanishHome.includes('href="/learn"')) {
-  failed++;
-  console.error('FAIL  /es links to /learn, which is English-only content');
-} else if (!spanishHome.includes('href="/es/guias/repeticion-espaciada"')) {
-  failed++;
-  console.error('FAIL  /es does not link to its own Spanish guide');
-} else {
-  console.log(`ok    /es footer                          links to Spanish guides, not English lists`);
+const spanishFooterChecks = [
+  [/href="\/learn" hreflang="en"/, 'marks the English vocabulary lists with hreflang'],
+  [/Listas de vocabulario \(en inglés\)/, 'labels them "(en inglés)" before the click'],
+  [/href="\/es\/guias\/repeticion-espaciada"/, 'links to its own Spanish guide'],
+];
+for (const [pattern, label] of spanishFooterChecks) {
+  if (!pattern.test(spanishHome)) {
+    failed++;
+    console.error(`FAIL  /es footer ${label} — not found`);
+  } else {
+    console.log(`ok    /es footer                        ${label}`);
+  }
 }
 
 // A React Router <Link to="/learn"> looks right and is broken: it navigates on the client, never
@@ -228,4 +233,4 @@ if (failed) {
   console.error(`\n${failed} route check(s) failed.`);
   process.exit(1);
 }
-console.log(`\nAll ${checks.length + 5} route checks passed.`);
+console.log(`\nAll ${checks.length + 7} route checks passed.`);
