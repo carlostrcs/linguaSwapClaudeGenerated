@@ -582,12 +582,22 @@ It runs in `writeBundle` (not `transformIndexHtml`) so it can read the finished 
 — already carrying the hashed asset tags — and write every page from one code path. `vite dev`
 therefore serves the plain SPA; **`npm run preview` is where you see generated output.**
 
-- **Two page classes.** *App pages* (`/`, `/login`, `/demo`, …) keep the SPA `<script>` and render
-  into `#root`; React's `createRoot().render()` clears that container on mount, so this is **not**
-  hydration — no reconciliation, no mismatch warnings. *Content pages* (`/learn/**`, `/guides/**`,
-  `/es`, …) have the **script stripped and the container renamed to `#doc`**. That rule is
-  load-bearing: if a content page loaded the SPA, React would clear the article, match no route
-  and redirect the crawler-visible page away.
+- **Two page classes.** *App pages* (`/`, the locale homepages `/es`, `/fr`, …, `/login`, `/demo`)
+  keep the SPA `<script>` and render into `#root`; React's `createRoot().render()` clears that
+  container on mount, so this is **not** hydration — no reconciliation, no mismatch warnings.
+  *Content pages* (`/learn/**`, `/guides/**`) have the **script stripped and the container renamed
+  to `#doc`**. That rule is load-bearing: if a content page loaded the SPA, React would clear the
+  article, match no route and redirect the crawler-visible page away.
+- **The locale homepages are app routes, not a parallel static site.** `App.tsx` has one route per
+  non-default locale, the language picker **navigates** to them (`navigateToLocaleHome`, only on
+  the landing page), and `localeHomePath` in `src/content/site.ts` is shared by the app and the
+  generator so the two can never disagree on a locale URL. They boot the SPA because a logged-in
+  visitor must get the logged-in landing rather than the logged-out snapshot baked in at build
+  time. The static render's `<a class="lang-link">` row exists purely so a crawler can walk between
+  translations — React replaces it with the `<select>` on mount.
+- **The landing page footer is what makes `/learn` and `/guides` reachable at all.** They were
+  originally linked only from the sitemap and from each other, which hides them from users and
+  slows crawling badly.
 - **`dist/app.html`** is the SPA fallback target, a bare `noindex` shell. It exists because once
   `index.html` is the real landing page, pointing the catch-all at it would serve full homepage
   copy at HTTP 200 for every junk URL. Together with `NotFoundPage` replacing the old
