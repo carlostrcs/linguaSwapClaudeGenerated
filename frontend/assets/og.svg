@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="LinguaSwap — learn vocabulary that sticks">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#312e81"/>
+      <stop offset="55%" stop-color="#4338ca"/>
+      <stop offset="100%" stop-color="#4f46e5"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- Leitner box ramp: the same red-to-green progression the stats page uses, so the card is
+       visually specific to this product rather than generic. -->
+  <g transform="translate(90 118)">
+    <rect x="0"   y="0" width="86" height="14" rx="7" fill="#ef4444"/>
+    <rect x="102" y="0" width="86" height="14" rx="7" fill="#f97316"/>
+    <rect x="204" y="0" width="86" height="14" rx="7" fill="#f59e0b"/>
+    <rect x="306" y="0" width="86" height="14" rx="7" fill="#84cc16"/>
+    <rect x="408" y="0" width="86" height="14" rx="7" fill="#22c55e"/>
+  </g>
+
+  <text x="90" y="252" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="92" font-weight="700" fill="#ffffff">LinguaSwap</text>
+
+  <text x="90" y="348" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="48" font-weight="600" fill="#c7d2fe">Learn vocabulary that sticks.</text>
+
+  <text x="90" y="424" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="30" fill="#a5b4fc">Build word libraries and drill them with spaced repetition,</text>
+  <text x="90" y="466" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="30" fill="#a5b4fc">in whichever language direction you choose.</text>
+
+  <text x="90" y="556" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="26" font-weight="600" fill="#818cf8">English · Espanol · Francais · Deutsch · Italiano · Portugues</text>
+</svg>

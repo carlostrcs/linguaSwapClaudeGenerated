@@ -2,8 +2,9 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import type { ReactNode } from 'react';
 import { DEFAULT_LANGUAGE, LANGUAGE_STORAGE_KEY, translations } from './translations';
 import type { LanguageId } from './translations';
-
-type Vars = Record<string, string | number>;
+// Shared with the build-time page generator, so prerendered copy interpolates identically.
+import { interpolate } from './interpolate';
+import type { Vars } from './interpolate';
 
 interface I18nContextValue {
   lang: LanguageId;
@@ -25,18 +26,24 @@ function browserLang(): LanguageId | null {
   return null;
 }
 
+/** The locale named by the URL, if any — either a `/es/…` path prefix or a `?lang=es` query. */
+function urlLang(): LanguageId | null {
+  const prefix = window.location.pathname.split('/')[1];
+  if (prefix && prefix in translations) return prefix as LanguageId;
+  const query = new URLSearchParams(window.location.search).get('lang');
+  if (query && query in translations) return query as LanguageId;
+  return null;
+}
+
 function initialLang(): LanguageId {
-  // An explicit stored choice (Account settings) wins; otherwise follow the browser; otherwise English.
+  // The URL wins: the generated marketing pages are locale-prefixed static HTML and link into the
+  // app with `?lang=`, so a visitor who arrived in French must not be dropped into English.
+  // Then an explicit stored choice (Account settings), then the browser, then English.
+  const fromUrl = urlLang();
+  if (fromUrl) return fromUrl;
   const stored = localStorage.getItem(LANGUAGE_STORAGE_KEY);
   if (stored && stored in translations) return stored as LanguageId;
   return browserLang() ?? DEFAULT_LANGUAGE;
-}
-
-function interpolate(template: string, vars?: Vars): string {
-  if (!vars) return template;
-  return template.replace(/\{(\w+)\}/g, (_, name: string) =>
-    name in vars ? String(vars[name]) : `{${name}}`,
-  );
 }
 
 export function I18nProvider({ children }: { children: ReactNode }) {
@@ -45,6 +52,13 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     document.documentElement.lang = lang;
   }, [lang]);
+
+  // A locale handed over in the URL becomes the stored preference, so it survives the next
+  // navigation (the `?lang=` is gone once the user clicks anywhere inside the app).
+  useEffect(() => {
+    const fromUrl = urlLang();
+    if (fromUrl) localStorage.setItem(LANGUAGE_STORAGE_KEY, fromUrl);
+  }, []);
 
   const setLang = useCallback((next: LanguageId) => {
     localStorage.setItem(LANGUAGE_STORAGE_KEY, next);

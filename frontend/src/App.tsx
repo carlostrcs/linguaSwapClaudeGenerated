@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Route, Routes } from 'react-router-dom';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import LandingPage from './pages/LandingPage';
@@ -19,6 +19,7 @@ import PracticePage from './pages/PracticePage';
 import StatsPage from './pages/StatsPage';
 import AccountPage from './pages/AccountPage';
 import BillingSuccessPage from './pages/BillingSuccessPage';
+import NotFoundPage from './pages/NotFoundPage';
 
 export default function App() {
   return (
@@ -36,6 +37,8 @@ export default function App() {
         {/* Public: the emailed confirmation + reset links are usually opened while logged out. */}
         <Route path="/confirm-email" element={<ConfirmEmailPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
+        {/* Unknown URLs render a real 404 page rather than redirecting to `/` — see NotFoundPage. */}
+        <Route path="*" element={<NotFoundPage />} />
       </Route>
       <Route element={<ProtectedRoute />}>
         <Route element={<Layout />}>
@@ -48,7 +51,6 @@ export default function App() {
           <Route path="/billing/success" element={<BillingSuccessPage />} />
         </Route>
       </Route>
-      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

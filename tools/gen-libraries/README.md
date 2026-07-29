@@ -194,6 +194,18 @@ master if missing, or appending only new rows.
 > **by name**; changing it creates a second master instead of topping up the existing one. Existing
 > user copies are snapshots and never change, by design.
 
+**One extra step now: re-sync the frontend snapshot and commit it.**
+
+```
+npm --prefix frontend run content:sync
+```
+
+The public SEO pages (`/learn/**`) are generated at build time from `frontend/content/decks.json`,
+a committed copy of these deck files. The frontend build deliberately never reads `../backend` —
+Vercel's Root Directory is `frontend` and it does not receive files outside it by default, so a
+cross-repo read would work locally and silently emit nothing in production. `content:check` fails
+if the snapshot has drifted; run it if you are unsure.
+
 ## Demo taster
 
 `frontend/src/lib/demo/demoData.ts` (`DEMO_FEATURED`) is intentionally a small taster, not the full

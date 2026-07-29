@@ -310,6 +310,14 @@ input:focus, select:focus { outline: 2px solid var(--primary); outline-offset: 0
 .direction-row .arrow { font-size: 1.3rem; color: var(--muted); padding-bottom: 0.5rem; }
 select { text-transform: uppercase; }
 .pref-select { text-transform: none; }
+/* Compact, unlabelled variant of .pref-select for the logged-out topbars (landing header, auth
+   pages, demo chrome), where language has to be reachable without an account. */
+.lang-picker {
+  width: auto;
+  margin: 0;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.85rem;
+}
 .difficulty-row { border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem 0.9rem; margin: 1rem 0 0.25rem; }
 .difficulty-row legend { padding: 0 0.3rem; color: var(--muted); font-size: 0.85rem; }
 .radio { display: inline-flex; align-items: center; gap: 0.35rem; margin: 0 1rem 0 0; color: var(--text); }
@@ -668,4 +676,81 @@ select { text-transform: uppercase; }
   .btn { padding: 0.6rem 1rem; }
   .special-char-btn { min-height: 44px; }
   .speak-btn { padding: 0.5rem; }
+}
+
+/* ============================================================
+   Generated content pages (/learn/**, /guides/**).
+
+   These pages are emitted as static HTML at build time and ship NO JavaScript — they exist so
+   that crawlers which do not execute JS (every AI crawler, and Googlebot on a tight budget) can
+   read the site. They reuse the tokens above and add only layout, so a new theme covers them for
+   free. See build/render/doc.ts.
+   ============================================================ */
+.doc { max-width: 860px; margin: 0 auto; padding: 1.5rem 1.25rem 3rem; }
+
+.doc-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-bottom: 1.25rem; border-bottom: 1px solid var(--border); }
+
+.doc-crumbs { margin: 1rem 0 1.5rem; font-size: 0.85rem; color: var(--muted); }
+.doc-crumbs ol { display: flex; flex-wrap: wrap; gap: 0.4rem; list-style: none; margin: 0; padding: 0; }
+.doc-crumbs li + li::before { content: '/'; margin-right: 0.4rem; color: var(--border); }
+.doc-crumbs a { color: var(--muted); }
+.doc-crumbs a:hover { color: var(--primary); }
+
+.doc-main h1 { font-size: 2rem; line-height: 1.2; margin: 0 0 0.75rem; }
+.doc-lede { font-size: 1.1rem; color: var(--muted); margin: 0 0 2rem; }
+.doc-section { margin: 0 0 2.25rem; }
+.doc-section h2 { font-size: 1.3rem; margin: 0 0 0.85rem; }
+.doc-section h3 { font-size: 1.05rem; margin: 0 0 0.35rem; }
+.doc-section p { margin: 0 0 0.9rem; line-height: 1.65; }
+
+/* Wide tables scroll inside their own box; the page itself never scrolls sideways. */
+.doc-table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+.doc-table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+.doc-table th, .doc-table td { text-align: left; padding: 0.55rem 0.9rem; border-bottom: 1px solid var(--border); }
+.doc-table thead th { background: var(--surface-2); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+.doc-table tbody tr:last-child td { border-bottom: none; }
+.doc-table td:nth-child(2) { font-weight: 600; }
+.doc-note { color: var(--muted); font-size: 0.85rem; }
+
+.doc-points { margin: 0; padding-left: 1.2rem; }
+.doc-points li { margin-bottom: 0.7rem; line-height: 1.6; }
+.doc-points code { background: var(--surface-2); border-radius: 4px; padding: 0.05rem 0.3rem; font-size: 0.9em; }
+
+.doc-more p { background: var(--accent-soft); border-radius: var(--radius); padding: 1rem 1.1rem; margin: 0; color: var(--primary-dark); }
+
+.doc-cta { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; text-align: center; box-shadow: var(--shadow); }
+.doc-cta h2 { margin-top: 0; }
+.doc-cta-actions { display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; margin: 1.1rem 0 0; }
+
+.doc-links { list-style: none; margin: 0 0 1.5rem; padding: 0; display: grid; gap: 0.45rem; }
+.doc-links a { color: var(--primary); }
+
+.doc-cards { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.85rem; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+.doc-cards li { display: grid; gap: 0.3rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.9rem 1rem; }
+.doc-cards-wide { grid-template-columns: 1fr; }
+.doc-card-meta { color: var(--muted); font-size: 0.8rem; }
+.doc-topic-langs { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.2rem; }
+.doc-topic-langs a { font-size: 0.85rem; color: var(--primary); }
+
+.doc-faq-item { border-top: 1px solid var(--border); padding-top: 0.9rem; margin-top: 0.9rem; }
+.doc-faq-item:first-of-type { border-top: none; padding-top: 0; margin-top: 0; }
+
+.doc-footer { margin-top: 2.5rem; padding-top: 1.25rem; border-top: 1px solid var(--border); display: grid; gap: 0.75rem; font-size: 0.9rem; }
+.doc-footer-links, .doc-footer-langs { display: flex; flex-wrap: wrap; gap: 0.9rem; }
+.doc-footer-langs { color: var(--muted); font-size: 0.85rem; }
+
+/* Locale switcher on the static landing pages: real links, because a <select> does nothing
+   without JavaScript and anchors also give crawlers a path between the translated homepages. */
+.lang-links { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; font-size: 0.85rem; }
+.lang-link { color: var(--muted); }
+.lang-link:hover { color: var(--primary); }
+.lang-link.is-current { color: var(--text); font-weight: 600; }
+
+@media (max-width: 640px) {
+  .doc { padding: 1.25rem 1rem 2.5rem; }
+  .doc-main h1 { font-size: 1.6rem; }
+  .doc-lede { font-size: 1rem; }
+  .doc-header { flex-wrap: wrap; }
+  .doc-table { min-width: 520px; }
+  .doc-cards { grid-template-columns: 1fr; }
 }
