@@ -577,7 +577,7 @@ render JavaScript; **AI crawlers cannot** — GPTBot, ClaudeBot and PerplexityBo
 once, take what is there and move on. Before this, every page of the site was blank to them, and
 `/robots.txt` returned the SPA shell because the `/(.*)` rewrite swallowed it.
 
-**`frontend/build/` is a Vite plugin that emits ~93 real HTML files into `dist/` after the build.**
+**`frontend/build/` is a Vite plugin that emits ~490 real HTML files into `dist/` after the build.**
 It runs in `writeBundle` (not `transformIndexHtml`) so it can read the finished `dist/index.html`
 — already carrying the hashed asset tags — and write every page from one code path. `vite dev`
 therefore serves the plain SPA; **`npm run preview` is where you see generated output.**
@@ -608,9 +608,11 @@ therefore serves the plain SPA; **`npm run preview` is where you see generated o
   neither emitted nor matched by a rewrite — narrowing that list is the one change that can
   hard-404 a working route.
 - **`npm --prefix frontend run routes:check`** serves `dist/` with Vercel's semantics and asserts
-  23 URLs (content present without JS, robots/sitemaps resolve, app routes still boot, junk URLs
-  return a real 404). `vite preview` has its own SPA fallback that swallows extensionless paths,
-  so it **cannot** tell you whether the generated pages will be served — this can.
+  ~37 assertions (content present without JS in each locale, robots/sitemaps resolve, app routes
+  still boot, junk URLs return a real 404, footers stay inside the reader's language, and no React
+  Router `<Link>` points at a generated page). `vite preview` has its own SPA fallback that
+  swallows extensionless paths, so it **cannot** tell you whether the generated pages will be
+  served — this can.
 - **`<Seo/>`** (`components/Seo.tsx`) uses React 19's native metadata hoisting — no helmet. React
   does *not* de-duplicate against tags already in the document, so the generator marks everything
   it injects `data-prerendered-seo` and `<Seo/>` removes those on mount. **hreflang and JSON-LD are
@@ -622,19 +624,34 @@ therefore serves the plain SPA; **`npm run preview` is where you see generated o
   files outside the root" toggle is off by default, so that would work locally and silently emit
   nothing in production. Same mirror discipline as `AnswerChecker` ⇄ `demoEngine`. Add one line to
   `tools/gen-libraries/README.md`'s workflow: re-run `content:sync` and commit.
-- **Generated pages** are English-source for now: `/learn`, `/learn/{language}`,
-  `/learn/{language}/{topic}` (5 languages × 14 decks), three hand-written guides under
-  `/guides/`, plus a localized homepage per locale (`/`, `/es`, `/fr`, `/de`, `/it`, `/pt`) with a
-  reciprocal hreflang cluster and `x-default`. Each topic page publishes a **40-row sample**
+- **Generated pages, in all six languages.** A page is a **language pair seen from one side**:
+  `/learn/spanish/travel` is Spanish travel words for an English reader,
+  `/es/aprender/ingles/viajes` is English travel words for a Spanish reader — the same deck rows
+  with the columns swapped and the prose in the reader's language, *not* translations of one page.
+  That yields 6 vocabulary indexes, 30 pair hubs (6 locales × 5 targets) and 420 topic pages, plus
+  18 guides (3 × 6) and a homepage per locale. Each topic page publishes a **40-row sample**
   (`SAMPLE_ROWS`) — the curated libraries are a paid feature, and it keeps pages ~18 KB instead of
   dumping 1,000 rows.
-- **Doorway-page risk is real and mitigated deliberately.** ~70 templated pages is the shape Google
-  penalises as scaled content. What defends them: the word tables are genuinely different per pair,
-  and `build/content/analysis.ts` computes **per-pair facts** (near-cognate counts, the diacritics
-  you must type, the German capitalisation warning) so the *prose* differs too. Adding a source
-  locale is a separate wave — it needs the page prose translated **and** the deck `notes`, which
-  are English glosses of the English headword and would be both wrong-language and wrong-word on,
-  say, an `es→fr` page.
+  - **URL segments** live in `src/content/learn.ts` and `src/content/guides.ts`, shared with the app
+    so the landing footer and the generator can never disagree on a path. Slugs are localized
+    (`/de/lernen/englisch/reisen`, `/es/guias/repeticion-espaciada`) and **frozen** — changing one
+    orphans a URL that may be indexed.
+  - **Page copy** lives in `build/content/learn-strings/*` and `build/content/guides/*`, out of the
+    client bundle. Unlike the app dictionaries these **fail the build** on a missing key: an
+    English sentence stranded in a French page is a visible defect, not a graceful fallback.
+  - **`hreflang` clusters key on the target language**, so "learn Spanish" has five members, not
+    six — a Spanish reader gets no learn-Spanish page.
+  - **Deck `notes` render only where English is one of the two columns.** They are English prose
+    glossing the English headword, so on an `es→fr` page they would be both the wrong language and
+    about a word that is not on the page.
+- **Doorway-page risk is real and only partly mitigated.** 420 templated topic pages is the shape
+  Google penalises as scaled content, and this is the single biggest open risk in the SEO work.
+  What defends them: every word table is genuinely different data, `build/content/analysis.ts`
+  computes **per-pair facts** (near-cognate counts, the diacritics you must type, the German
+  capitalisation warning) so the *prose* differs too, each page is in its reader's language, and
+  they are densely cross-linked. Watch the Search Console indexation ratio per locale — the
+  sitemap is sharded by locale precisely so that is answerable. Trimming pairs is a config change
+  in the `locales`/`targetsFor` wiring, not a URL change, so nothing gets orphaned.
 - **`VITE_SITE_URL`** is the single origin every canonical, hreflang, sitemap entry and `og:image`
   is built from (`src/content/site.ts`). It falls back to the `.vercel.app` host — set the real
   domain in Vercel **before** submitting the sitemap; indexing under one host and moving later
