@@ -87,6 +87,16 @@ const server = createServer((req, res) => {
 
   const rewrite = rewrites.find((r) => r.re.test(pathname));
   if (rewrite) {
+    // With cleanUrls, `/app.html` is a 308 to `/app` — so it is NOT a servable path, and a rewrite
+    // pointing at it resolves to nothing and falls through to a 404. This shipped to production
+    // once; modelling it here is what stops it shipping twice.
+    if (config.cleanUrls && /\.html$/.test(rewrite.destination)) {
+      throw new Error(
+        `vercel.json: rewrite destination "${rewrite.destination}" ends in .html while cleanUrls ` +
+          'is on. Vercel 308s that path, so the rewrite resolves to nothing and every route it ' +
+          `covers hard-404s. Use "${rewrite.destination.replace(/\.html$/, '')}".`,
+      );
+    }
     const target = resolveFile(rewrite.destination);
     if (target) return send(res, 200, target);
   }

@@ -6,14 +6,14 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "rewrites": [
-    { "source": "/demo", "destination": "/app.html" },
-    { "source": "/demo/:path*", "destination": "/app.html" },
-    { "source": "/libraries", "destination": "/app.html" },
-    { "source": "/libraries/:path*", "destination": "/app.html" },
-    { "source": "/practice/:path*", "destination": "/app.html" },
-    { "source": "/billing/:path*", "destination": "/app.html" },
-    { "source": "/featured", "destination": "/app.html" },
-    { "source": "/stats", "destination": "/app.html" },
-    { "source": "/account", "destination": "/app.html" }
+    { "source": "/demo", "destination": "/app" },
+    { "source": "/demo/:path*", "destination": "/app" },
+    { "source": "/libraries", "destination": "/app" },
+    { "source": "/libraries/:path*", "destination": "/app" },
+    { "source": "/practice/:path*", "destination": "/app" },
+    { "source": "/billing/:path*", "destination": "/app" },
+    { "source": "/featured", "destination": "/app" },
+    { "source": "/stats", "destination": "/app" },
+    { "source": "/account", "destination": "/app" }
   ]
 }

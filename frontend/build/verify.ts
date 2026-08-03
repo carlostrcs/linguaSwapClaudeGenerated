@@ -62,6 +62,7 @@ export const REWRITE_DEPENDENT_ROUTES = [
 ];
 
 interface VercelConfig {
+  cleanUrls?: boolean;
   rewrites?: { source: string; destination: string }[];
 }
 
@@ -148,6 +149,21 @@ function verifyAlternates(pages: PageSpec[]): void {
  * it, or a `vercel.json` rewrite sends it to the app shell.
  */
 export function verifyVercelCoverage(pages: PageSpec[], config: VercelConfig): void {
+  // `cleanUrls` makes Vercel 308 `/foo.html` to `/foo`, so a `.html` rewrite DESTINATION is not a
+  // servable path — the rewrite resolves to nothing and every route it covers hard-404s. This
+  // reached production once: /libraries, /account and the Stripe return path all 404'd.
+  if (config.cleanUrls) {
+    for (const rewrite of config.rewrites ?? []) {
+      if (/\.html$/.test(rewrite.destination)) {
+        throw new Error(
+          `vercel.json: rewrite destination "${rewrite.destination}" ends in .html while cleanUrls ` +
+            `is on. Vercel redirects that path, so this rewrite serves nothing. Use ` +
+            `"${rewrite.destination.replace(/\.html$/, '')}".`,
+        );
+      }
+    }
+  }
+
   const emitted = new Set(pages.filter((p) => p.path).map((p) => p.path));
   const rewrites = (config.rewrites ?? []).map((r) => ({ ...r, re: patternToRegExp(r.source) }));
 
