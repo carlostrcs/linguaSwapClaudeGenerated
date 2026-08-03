@@ -154,8 +154,12 @@ Self-service recovery, modelled on the email-confirmation flow:
 - Run backend tests: `dotnet test backend/LinguaSwap.slnx`
 - Add a migration: `dotnet ef migrations add <Name> --project backend/LinguaSwap.Api`
 - Apply migrations: `dotnet ef database update --project backend/LinguaSwap.Api`
-- Frontend build: `npm --prefix frontend run build`
+- Frontend build: `npm --prefix frontend run build` (also generates the prerendered SEO pages)
 - Frontend lint: `npm --prefix frontend run lint`
+- i18n key parity across the 6 locales: `npm --prefix frontend run i18n:check`
+- Deck snapshot (after changing a curated deck): `npm --prefix frontend run content:sync`,
+  verified by `content:check`
+- Routing / prerender checks (after a build): `npm --prefix frontend run routes:check`
 
 ## Project structure
 
@@ -545,9 +549,111 @@ return path and the signature-verified `/billing/webhook`.
   block in `index.css` that overrides those variables + an entry in `theme/themes.ts`.
   `ThemeProvider` sets `<html data-theme>` and persists to `localStorage`. To add a palette:
   add one CSS block + one list entry.
-- **Language:** UI strings live in `i18n/translations.ts` (one dictionary per language).
-  Components call `const { t } = useI18n()` and `t('some.key', { vars })`; missing keys fall
-  back to English. To add a language: add it to `LANGUAGES` + a dictionary. Keep new UI strings
-  out of JSX literals — add a key instead.
+- **Language:** the app ships **six UI locales — en, es, fr, de, it, pt** (exactly the languages
+  the curated decks carry, which is what lets the marketing pages be generated in all of them).
+  - `i18n/locales.ts` is the **registry** (id, endonym, English name, BCP-47, flag) and the one
+    place a new language starts. It is pure data — no DOM, no JSX — because `build/` imports it.
+  - One dictionary per locale under `i18n/dictionaries/`; `i18n/translations.ts` just aggregates
+    them. Components call `const { t } = useI18n()` and `t('some.key', { vars })`; missing keys
+    fall back to English. Keep new UI strings out of JSX literals — add a key instead.
+  - **`npm --prefix frontend run i18n:check` asserts every locale has exactly the same keys as
+    English.** A missing key falls back silently at runtime, which is right for a UI and useless
+    for spotting gaps — run this after touching any dictionary.
+  - `interpolate.ts` holds `interpolate` + a standalone `translator(lang)`, shared with the
+    build-time page generator so prerendered copy interpolates identically to the app.
+  - **Locale resolution** (`I18nProvider.initialLang`): URL path prefix → `?lang=` → `localStorage`
+    → `navigator.languages` → `en`. The URL wins because the generated marketing pages are
+    locale-prefixed static HTML and link into the app with `?lang=`, which is then persisted.
+  - The switcher is `components/LanguagePicker.tsx`, in the landing header, `AuthLayout` and
+    `DemoLayout` as well as the Account page — it used to be reachable **only** from `/account`,
+    behind auth, so a logged-out visitor could not change language at all.
 - Both preferences are per-browser (localStorage); the controls are on the Account page. If
   cross-device sync is ever needed, persist them on the user account instead.
+
+### SEO & AI-search discoverability (build-time prerendering)
+
+The app is a client-rendered SPA, so its served HTML is an empty `<div id="root">`. Google can
+render JavaScript; **AI crawlers cannot** — GPTBot, ClaudeBot and PerplexityBot fetch raw HTML
+once, take what is there and move on. Before this, every page of the site was blank to them, and
+`/robots.txt` returned the SPA shell because the `/(.*)` rewrite swallowed it.
+
+**`frontend/build/` is a Vite plugin that emits ~490 real HTML files into `dist/` after the build.**
+It runs in `writeBundle` (not `transformIndexHtml`) so it can read the finished `dist/index.html`
+— already carrying the hashed asset tags — and write every page from one code path. `vite dev`
+therefore serves the plain SPA; **`npm run preview` is where you see generated output.**
+
+- **Two page classes.** *App pages* (`/`, the locale homepages `/es`, `/fr`, …, `/login`, `/demo`)
+  keep the SPA `<script>` and render into `#root`; React's `createRoot().render()` clears that
+  container on mount, so this is **not** hydration — no reconciliation, no mismatch warnings.
+  *Content pages* (`/learn/**`, `/guides/**`) have the **script stripped and the container renamed
+  to `#doc`**. That rule is load-bearing: if a content page loaded the SPA, React would clear the
+  article, match no route and redirect the crawler-visible page away.
+- **The locale homepages are app routes, not a parallel static site.** `App.tsx` has one route per
+  non-default locale, the language picker **navigates** to them (`navigateToLocaleHome`, only on
+  the landing page), and `localeHomePath` in `src/content/site.ts` is shared by the app and the
+  generator so the two can never disagree on a locale URL. They boot the SPA because a logged-in
+  visitor must get the logged-in landing rather than the logged-out snapshot baked in at build
+  time. The static render's `<a class="lang-link">` row exists purely so a crawler can walk between
+  translations — React replaces it with the `<select>` on mount.
+- **The landing page footer is what makes `/learn` and `/guides` reachable at all.** They were
+  originally linked only from the sitemap and from each other, which hides them from users and
+  slows crawling badly.
+- **`dist/app.html`** is the SPA fallback target, a bare `noindex` shell. It exists because once
+  `index.html` is the real landing page, pointing the catch-all at it would serve full homepage
+  copy at HTTP 200 for every junk URL. Together with `NotFoundPage` replacing the old
+  `<Navigate to="/">` catch-all and a generated `dist/404.html`, that is the **soft-404 fix**.
+- **Vercel routing order is filesystem → rewrites**, which is why real files beat the SPA catch-all
+  with no special casing. `vercel.json` now sets `cleanUrls`/`trailingSlash` and lists **explicit**
+  rewrite prefixes instead of `/(.*)`. `build/verify.ts` fails the build if any client route is
+  neither emitted nor matched by a rewrite — narrowing that list is the one change that can
+  hard-404 a working route.
+- **`npm --prefix frontend run routes:check`** serves `dist/` with Vercel's semantics and asserts
+  ~37 assertions (content present without JS in each locale, robots/sitemaps resolve, app routes
+  still boot, junk URLs return a real 404, footers stay inside the reader's language, and no React
+  Router `<Link>` points at a generated page). `vite preview` has its own SPA fallback that
+  swallows extensionless paths, so it **cannot** tell you whether the generated pages will be
+  served — this can.
+- **`<Seo/>`** (`components/Seo.tsx`) uses React 19's native metadata hoisting — no helmet. React
+  does *not* de-duplicate against tags already in the document, so the generator marks everything
+  it injects `data-prerendered-seo` and `<Seo/>` removes those on mount. **hreflang and JSON-LD are
+  deliberately unmarked**: React never re-renders them, so marking them would delete the structured
+  data for Googlebot, which does run JavaScript. `routes:check` asserts this.
+- **Content is a committed snapshot.** `frontend/content/decks.json` is derived from
+  `backend/.../DefaultLibraries/*.json` by `npm run content:sync`; `content:check` fails on drift.
+  **The build never reads `../backend`** — Vercel's Root Directory is `frontend` and its "include
+  files outside the root" toggle is off by default, so that would work locally and silently emit
+  nothing in production. Same mirror discipline as `AnswerChecker` ⇄ `demoEngine`. Add one line to
+  `tools/gen-libraries/README.md`'s workflow: re-run `content:sync` and commit.
+- **Generated pages, in all six languages.** A page is a **language pair seen from one side**:
+  `/learn/spanish/travel` is Spanish travel words for an English reader,
+  `/es/aprender/ingles/viajes` is English travel words for a Spanish reader — the same deck rows
+  with the columns swapped and the prose in the reader's language, *not* translations of one page.
+  That yields 6 vocabulary indexes, 30 pair hubs (6 locales × 5 targets) and 420 topic pages, plus
+  18 guides (3 × 6) and a homepage per locale. Each topic page publishes a **40-row sample**
+  (`SAMPLE_ROWS`) — the curated libraries are a paid feature, and it keeps pages ~18 KB instead of
+  dumping 1,000 rows.
+  - **URL segments** live in `src/content/learn.ts` and `src/content/guides.ts`, shared with the app
+    so the landing footer and the generator can never disagree on a path. Slugs are localized
+    (`/de/lernen/englisch/reisen`, `/es/guias/repeticion-espaciada`) and **frozen** — changing one
+    orphans a URL that may be indexed.
+  - **Page copy** lives in `build/content/learn-strings/*` and `build/content/guides/*`, out of the
+    client bundle. Unlike the app dictionaries these **fail the build** on a missing key: an
+    English sentence stranded in a French page is a visible defect, not a graceful fallback.
+  - **`hreflang` clusters key on the target language**, so "learn Spanish" has five members, not
+    six — a Spanish reader gets no learn-Spanish page.
+  - **Deck `notes` render only where English is one of the two columns.** They are English prose
+    glossing the English headword, so on an `es→fr` page they would be both the wrong language and
+    about a word that is not on the page.
+- **Doorway-page risk is real and only partly mitigated.** 420 templated topic pages is the shape
+  Google penalises as scaled content, and this is the single biggest open risk in the SEO work.
+  What defends them: every word table is genuinely different data, `build/content/analysis.ts`
+  computes **per-pair facts** (near-cognate counts, the diacritics you must type, the German
+  capitalisation warning) so the *prose* differs too, each page is in its reader's language, and
+  they are densely cross-linked. Watch the Search Console indexation ratio per locale — the
+  sitemap is sharded by locale precisely so that is answerable. Trimming pairs is a config change
+  in the `locales`/`targetsFor` wiring, not a URL change, so nothing gets orphaned.
+- **`VITE_SITE_URL`** is the single origin every canonical, hreflang, sitemap entry and `og:image`
+  is built from (`src/content/site.ts`). It falls back to the `.vercel.app` host — set the real
+  domain in Vercel **before** submitting the sitemap; indexing under one host and moving later
+  costs a migration. `public/og.png` is committed, regenerated from `assets/og.svg` by
+  `npm run og:build` (needs the `sharp` devDependency; the deploy does not).

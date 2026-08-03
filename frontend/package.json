@@ -7,6 +7,11 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
+    "i18n:check": "node scripts/check-i18n.mjs",
+    "content:sync": "node scripts/sync-decks.mjs",
+    "content:check": "node scripts/check-decks.mjs",
+    "og:build": "node scripts/build-og.mjs",
+    "routes:check": "node scripts/check-routes.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -22,6 +27,7 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.2",
     "oxlint": "^1.69.0",
+    "sharp": "^0.35.3",
     "typescript": "~6.0.2",
     "vite": "^8.1.0"
   }

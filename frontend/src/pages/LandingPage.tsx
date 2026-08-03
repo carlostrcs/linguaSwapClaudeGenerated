@@ -1,25 +1,34 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { useI18n } from '../i18n/I18nProvider';
-
-const FEATURES = [
-  { key: 'libraries', icon: '📚' },
-  { key: 'direction', icon: '🔄' },
-  { key: 'srs', icon: '🧠' },
-  { key: 'stats', icon: '📈' },
-];
+import LanguagePicker from '../components/LanguagePicker';
+import Seo from '../components/Seo';
+import { HOME_SEO_KEYS } from '../content/seo';
+// Shared with the build-time generator, which prerenders this same page into the served HTML so a
+// crawler that runs no JavaScript still sees the copy. See src/content/landing.ts.
+import {
+  LANDING_FEATURES,
+  featureBodyKey,
+  featureTitleKey,
+  landingFooter,
+} from '../content/landing';
 
 export default function LandingPage() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const { isAuthenticated } = useAuth();
 
   return (
     <div className="landing">
+      {/* Localized: every locale has its own indexable homepage (`/`, `/es`, …). */}
+      <Seo title={t(HOME_SEO_KEYS.title)} description={t(HOME_SEO_KEYS.description)} />
       <header className="landing-header">
         <Link to="/" className="brand">
           LinguaSwap
         </Link>
         <div className="landing-header-actions">
+          {/* Navigates: each locale has its own indexable homepage, so switching language here
+              should change the URL rather than leave two URLs rendering the same language. */}
+          <LanguagePicker navigateToLocaleHome />
           {isAuthenticated ? (
             <Link className="btn btn-primary" to="/libraries">
               {t('landing.myLibraries')}
@@ -60,13 +69,13 @@ export default function LandingPage() {
       <section className="landing-features">
         <h2>{t('landing.featuresTitle')}</h2>
         <div className="feature-grid">
-          {FEATURES.map((f) => (
+          {LANDING_FEATURES.map((f) => (
             <div className="card feature-card" key={f.key}>
               <div className="feature-icon" aria-hidden="true">
                 {f.icon}
               </div>
-              <h3>{t(`landing.feature.${f.key}.title`)}</h3>
-              <p className="muted">{t(`landing.feature.${f.key}.body`)}</p>
+              <h3>{t(featureTitleKey(f.key))}</h3>
+              <p className="muted">{t(featureBodyKey(f.key))}</p>
             </div>
           ))}
         </div>
@@ -87,6 +96,26 @@ export default function LandingPage() {
           </div>
         </section>
       )}
+
+      {/* Without this the generated vocabulary pages and guides are reachable only from the
+          sitemap — invisible to users, and slow to be crawled. */}
+      <footer className="landing-footer">
+        <nav className="doc-footer-links" aria-label="More">
+          {landingFooter(lang).map((link) =>
+            // A plain anchor for the generated pages: they are real documents the server serves,
+            // not React routes, so a <Link> would navigate on the client and land on the 404 page.
+            link.staticPage ? (
+              <a key={link.to} href={link.to}>
+                {t(link.key)}
+              </a>
+            ) : (
+              <Link key={link.to} to={link.to}>
+                {t(link.key)}
+              </Link>
+            ),
+          )}
+        </nav>
+      </footer>
     </div>
   );
 }

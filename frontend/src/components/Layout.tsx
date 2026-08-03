@@ -6,6 +6,8 @@ import { useAuth } from '../auth/AuthContext';
 import { trialDaysLeft } from '../lib/premium';
 import { useI18n } from '../i18n/I18nProvider';
 import ConfirmEmailBanner from './ConfirmEmailBanner';
+import Seo from './Seo';
+import { APP_SEO } from '../content/seo';
 
 export default function Layout() {
   const { user, updateUser, signOut } = useAuth();
@@ -44,6 +46,9 @@ export default function Layout() {
 
   return (
     <div className="app">
+      {/* One `noindex` for every signed-in page: they render nothing to a logged-out crawler, so
+          there is no document to index and no reason to spend crawl budget on them. */}
+      <Seo {...APP_SEO} />
       <ConfirmEmailBanner />
       {onTrial && (
         <div className="trial-banner">

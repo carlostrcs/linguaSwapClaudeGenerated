@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Route, Routes } from 'react-router-dom';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import LandingPage from './pages/LandingPage';
@@ -19,11 +19,20 @@ import PracticePage from './pages/PracticePage';
 import StatsPage from './pages/StatsPage';
 import AccountPage from './pages/AccountPage';
 import BillingSuccessPage from './pages/BillingSuccessPage';
+import NotFoundPage from './pages/NotFoundPage';
+import { DEFAULT_LOCALE, LOCALE_IDS } from './i18n/locales';
 
 export default function App() {
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
+      {/* One indexable homepage per locale. These are prerendered in their own language and also
+          boot the SPA, so a logged-in visitor still gets the logged-in landing rather than a
+          static logged-out snapshot. `I18nProvider` reads the locale from the path prefix, so
+          `/es` renders in Spanish without a flash. English stays at `/` with no `/en` twin. */}
+      {LOCALE_IDS.filter((id) => id !== DEFAULT_LOCALE).map((id) => (
+        <Route key={id} path={`/${id}`} element={<LandingPage />} />
+      ))}
       <Route path="/demo" element={<DemoLayout />}>
         <Route index element={<DemoLibrariesPage />} />
         <Route path="libraries/:id" element={<DemoLibraryEditorPage />} />
@@ -36,6 +45,8 @@ export default function App() {
         {/* Public: the emailed confirmation + reset links are usually opened while logged out. */}
         <Route path="/confirm-email" element={<ConfirmEmailPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
+        {/* Unknown URLs render a real 404 page rather than redirecting to `/` — see NotFoundPage. */}
+        <Route path="*" element={<NotFoundPage />} />
       </Route>
       <Route element={<ProtectedRoute />}>
         <Route element={<Layout />}>
@@ -48,7 +59,6 @@ export default function App() {
           <Route path="/billing/success" element={<BillingSuccessPage />} />
         </Route>
       </Route>
-      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
