@@ -147,6 +147,77 @@ Canary a single deck first (`--decks verbs`); its `Spend:` line prices the full 
 `naturalness.py` fans its calls out over a thread pool (`WORKERS`), since a full sweep is ~285
 independent requests — about 15 minutes in parallel versus several hours sequentially.
 
+## Adding a language (a new deck column)
+
+The six original languages (`en es fr de it pt`) shipped together, so `gen.py` aligns them for every
+new row. Adding a **seventh** language (Polish, `pl`) to rows that already shipped is a separate,
+one-time pass — `gen.py` growth would only give the new language to *future* rows.
+
+Two steps:
+
+1. **Register it** so `emit`/`validate`/`dedup` know it exists and future growth includes it: add the
+   code to `config.LANGS` + `config.TARGET_LANGS`, add a field to `align.Row`, name it in
+   `ALIGN_SYSTEM`, and bump `align.PROMPT_VERSION` (already done for `pl`).
+2. **Backfill the existing rows** with `add_language.py`:
+
+   ```
+   python add_language.py --lang pl --deck verbs      # canary one deck to price the run
+   python add_language.py --lang pl                    # every deck
+   python add_language.py --lang pl --dry-run          # translate + validate, don't write
+   ```
+
+   For each row lacking the language it translates the English concept — **passing the row's existing
+   translations to the model as sense anchors** so the new word matches the intended meaning — then
+   applies the same `wordfreq` correctness gate `gen.py` uses (a hallucinated/misspelled word scores
+   0 and is rejected), re-queries failures once, and writes the word into the row's translations. It
+   is idempotent (a row that already has the language is skipped) and never changes the row count.
+   Rows it can't validate are logged to `rejects/<slug>.<lang>-missing.json`.
+
+   > **Every row must end up with the language before the UI locale is activated.** The SEO build
+   > calls `.normalize()` on the value, which throws on a missing one. After a run, re-check coverage;
+   > fill any stragglers by re-running, lowering `--zipf-floor`, or by hand.
+
+Then re-sync the frontend snapshot (`npm --prefix frontend run content:sync`) and commit.
+
+## Translated headers (featured title/description per UI language)
+
+A deck's `name`/`description` also ship translated, so the featured shelf and Libraries page show a
+curated library's title in the user's UI language (backend: `Library.NameI18nJson` /
+`DescriptionI18nJson`, resolved via `Services/Localized`). These live in the deck file header as
+`nameI18n` / `descriptionI18n` maps and are maintained **by hand** in `set_headers.py` — a name and a
+one-line description are short marketing strings, not graded content, so they don't go through the
+model pipeline:
+
+```
+python set_headers.py                 # write the maps into every deck header
+python set_headers.py --deck food
+```
+
+`emit.write_deck` **preserves these header maps automatically** through later `gen.py` / cleaning /
+`add_language.py` runs (it re-reads them off the file unless a caller passes replacements), so a
+re-emit never drops them. The frontend snapshot ignores header i18n (`scripts/lib/decks.mjs` reads
+only `name`/`description`/`entries`), so `content:sync` is **not** required after `set_headers.py` —
+`content:check` still passes.
+
+## Translated notes (a note in each UI language)
+
+A deck note is short English prose glossing the English headword. The app shows it in the user's UI
+language (backend: `Entry.NotesI18nJson`), so each noted entry carries a `notesI18n` map beside its
+English `notes`. `translate_notes.py` fills it:
+
+```
+python translate_notes.py --deck food     # canary
+python translate_notes.py                 # every deck
+python translate_notes.py --dry-run
+```
+
+Unlike deck words, **notes are never typed or graded**, so a single-model translation is acceptable
+here (the "no rewrite on one model's say-so" rule guards *graded* words — a wrong graded word marks a
+correct learner wrong; an awkward note does not). There is no `wordfreq` gate, and coverage need not
+be 100% — a missing locale falls back to the English note. `emit` round-trips the per-row `notesI18n`
+(reserved key `_notes_i18n`, ignored by the dedup signature) so later passes preserve it. Re-sync the
+frontend snapshot afterwards (`content:sync`) and commit.
+
 ## Pipeline
 
 1. **Source concepts** (`concepts.py`)

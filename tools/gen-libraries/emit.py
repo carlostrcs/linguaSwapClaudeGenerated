@@ -14,6 +14,11 @@ from config import LANGS
 # (which is LANGS-only) so a note can never leak into text the learner must type.
 NOTES_KEY = "_notes"
 
+# Reserved row key carrying translations of the note (a {lang: text} map), written as
+# the entry's `notesI18n` field. Reserved (leading underscore) so dedup's signature —
+# which skips `_`-prefixed keys — ignores it, exactly like NOTES_KEY.
+NOTES_I18N_KEY = "_notes_i18n"
+
 
 def _translations_literal(row: dict[str, str]) -> str:
     inner = ", ".join(
@@ -24,25 +29,50 @@ def _translations_literal(row: dict[str, str]) -> str:
     return "{ " + inner + " }"
 
 
-def render(name: str, description: str, rows: list[dict[str, str]]) -> str:
+def _i18n_literal(mapping: dict[str, str]) -> str:
+    """A one-line `{ "es": "…", "fr": "…" }` with keys sorted, so the diff is stable."""
+    inner = ", ".join(
+        f"{json.dumps(k)}: {json.dumps(mapping[k], ensure_ascii=False)}"
+        for k in sorted(mapping)
+        if str(mapping[k]).strip()
+    )
+    return "{ " + inner + " }"
+
+
+def render(
+    name: str,
+    description: str,
+    rows: list[dict[str, str]],
+    name_i18n: dict[str, str] | None = None,
+    description_i18n: dict[str, str] | None = None,
+) -> str:
     """Serialize a deck in the exact style of the existing curated files.
 
     A row's optional clarifying note travels under the reserved `NOTES_KEY` and is
     emitted as the entry's `notes` field, which the practice card shows at every
-    difficulty.
+    difficulty. `name_i18n` / `description_i18n` are optional translated-header maps
+    (`{"es": "…"}`) the seeder resolves to the user's UI language; omit them and the
+    header stays name+description only.
     """
     lines = [
         "{",
         f"  {json.dumps('name')}: {json.dumps(name, ensure_ascii=False)},",
         f"  {json.dumps('description')}: {json.dumps(description, ensure_ascii=False)},",
-        '  "entries": [',
     ]
+    if name_i18n:
+        lines.append(f"  {json.dumps('nameI18n')}: {_i18n_literal(name_i18n)},")
+    if description_i18n:
+        lines.append(f"  {json.dumps('descriptionI18n')}: {_i18n_literal(description_i18n)},")
+    lines.append('  "entries": [')
     for i, row in enumerate(rows):
         comma = "," if i < len(rows) - 1 else ""
         body = f'"translations": {_translations_literal(row)}'
         note = str(row.get(NOTES_KEY, "")).strip()
         if note:
             body += f", \"notes\": {json.dumps(note, ensure_ascii=False)}"
+        notes_i18n = row.get(NOTES_I18N_KEY)
+        if isinstance(notes_i18n, dict) and any(str(v).strip() for v in notes_i18n.values()):
+            body += f", \"notesI18n\": {_i18n_literal(notes_i18n)}"
         lines.append(f"    {{ {body} }}{comma}")
     lines.append("  ]")
     lines.append("}")
@@ -69,12 +99,19 @@ def read_existing(path: Path) -> tuple[str | None, str | None, list[dict[str, st
         note = str(entry.get("notes") or "").strip()
         if note:
             row[NOTES_KEY] = note
+        # Round-trip translated notes the same way, so a later pass (gen.py growth,
+        # add_language.py, cleaning) preserves them instead of dropping them.
+        notes_i18n = entry.get("notesI18n")
+        if isinstance(notes_i18n, dict) and notes_i18n:
+            row[NOTES_I18N_KEY] = {str(k): str(v) for k, v in notes_i18n.items() if str(v).strip()}
         rows.append(row)
     return data.get("name"), data.get("description"), rows
 
 
 def write_deck(path: Path, name: str, description: str, rows: list[dict[str, str]],
-               *, expect_rows: int | None = None) -> bool:
+               *, expect_rows: int | None = None,
+               name_i18n: dict[str, str] | None = None,
+               description_i18n: dict[str, str] | None = None) -> bool:
     """Write a deck. Returns True if written, False if refused as stale.
 
     Every cleaning pass here is a read-modify-write over a whole file, so two of them
@@ -88,13 +125,28 @@ def write_deck(path: Path, name: str, description: str, rows: list[dict[str, str
     rows in place should pass it; write_deck re-reads the file and refuses if the count
     no longer matches. Passes that legitimately change the count (gen.py growth) leave
     it None.
+
+    Translated header maps (`nameI18n`/`descriptionI18n`) are **preserved automatically**:
+    a pass that doesn't know about them (gen.py growth, add_language.py backfill, the
+    cleaning passes) leaves them None and write_deck re-reads them off the existing file,
+    so a re-emit never silently drops them. Pass them explicitly only to set/replace them.
     """
-    if expect_rows is not None and path.exists():
-        _, _, current = read_existing(path)
-        if len(current) != expect_rows:
-            return False
+    if path.exists():
+        try:
+            prev = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            prev = {}
+        if expect_rows is not None:
+            current = [e for e in prev.get("entries", []) if e.get("translations")]
+            if len(current) != expect_rows:
+                return False
+        # Carry existing header translations through unless the caller is replacing them.
+        if name_i18n is None:
+            name_i18n = prev.get("nameI18n")
+        if description_i18n is None:
+            description_i18n = prev.get("descriptionI18n")
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(render(name, description, rows), encoding="utf-8")
+    path.write_text(render(name, description, rows, name_i18n, description_i18n), encoding="utf-8")
     return True
 
 

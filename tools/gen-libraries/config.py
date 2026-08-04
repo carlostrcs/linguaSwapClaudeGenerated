@@ -8,11 +8,15 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-# The six concept-aligned languages. English is both the concept anchor and a
-# target; the model fills in TARGET_LANGS for each English concept. Matches the
-# languages used by the existing Data/DefaultLibraries/*.json files.
-LANGS: list[str] = ["en", "es", "fr", "de", "it", "pt"]
-TARGET_LANGS: list[str] = ["es", "fr", "de", "it", "pt"]
+# The concept-aligned languages. English is both the concept anchor and a target;
+# the model fills in TARGET_LANGS for each English concept. Matches the languages
+# used by the existing Data/DefaultLibraries/*.json files.
+#
+# Polish was added as a 7th deck language after the original six shipped. gen.py
+# growth now aligns pl for NEW rows; the ~5,260 rows that shipped without it are
+# filled in by the one-time `add_language.py --lang pl` backfill pass.
+LANGS: list[str] = ["en", "es", "fr", "de", "it", "pt", "pl"]
+TARGET_LANGS: list[str] = ["es", "fr", "de", "it", "pt", "pl"]
 
 # Mandated default per the claude-api skill (never downgrade for cost silently —
 # that is the user's call). Override with --model / GENLIB_MODEL for cheaper runs;

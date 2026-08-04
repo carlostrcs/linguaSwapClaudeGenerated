@@ -56,6 +56,7 @@ class Row(BaseModel):
     de: str = Field(description="German translation (nouns capitalized)")
     it: str = Field(description="Italian translation")
     pt: str = Field(description="European Portuguese translation")
+    pl: str = Field(description="Polish translation (lower-case unless a proper noun; correct diacritics)")
 
 
 class Batch(BaseModel):
@@ -69,7 +70,7 @@ class ConceptList(BaseModel):
 ALIGN_SYSTEM = """You are a lexicographer building vocabulary flashcards for language learners.
 
 For each English word given, FIRST decide which single sense of that word you are teaching, then \
-translate THAT SAME SENSE into Spanish, French, German, Italian and European Portuguese.
+translate THAT SAME SENSE into Spanish, French, German, Italian, European Portuguese and Polish.
 
 Sense consistency (most important rule):
 - All five translations MUST denote the SAME concept as each other and as the English word. \
@@ -85,6 +86,8 @@ Word form (citation form a learner would actually use):
 - Adjectives: the standalone form a learner would say, NOT a bare stem. German "letzte" and \
 "erste" are correct; "letzt" and "erst" are WRONG (bare stems, and "erst" means "not until").
 - Capitalize German nouns (Wasser, Haus); everything else lowercase unless a proper noun.
+- Polish: lower-case unless a proper noun, and use the correct diacritics (ą ć ę ł ń ó ś ź ż); \
+nouns in the nominative singular, verbs in the infinitive.
 
 General:
 - Give ONE translation per language. No alternatives, no slashes, no parentheses.
@@ -96,8 +99,8 @@ General:
 - Every word must be a real, current, commonly used word in that language. Never invent a word."""
 
 # Bumped whenever a prompt or schema above changes, so cached responses from an
-# older prompt are not silently reused.
-PROMPT_VERSION = "4"
+# older prompt are not silently reused. v5 added Polish to the aligned languages.
+PROMPT_VERSION = "5"
 
 CONCEPTS_SYSTEM = """You propose vocabulary for language-learning flashcard decks.
 
