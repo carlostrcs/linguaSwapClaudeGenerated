@@ -9,6 +9,14 @@ public class Library
     public string UserId { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
+
+    /// <summary>Translations of <see cref="Name"/> / <see cref="Description"/> keyed by language code,
+    /// as small JSON maps. Only the curated masters — and the copies cloned from them — carry these;
+    /// a user's own library leaves them null and shows its typed text. Cleared when the user renames
+    /// the library, so an explicit rename wins. Resolved via <see cref="Services.Localized"/>.</summary>
+    public string? NameI18nJson { get; set; }
+    public string? DescriptionI18nJson { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     /// <summary>True for curated "default" libraries owned by the system account and offered to

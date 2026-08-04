@@ -21,11 +21,12 @@ public class StatsController(AppDbContext db, PremiumService premium) : Controll
         var userId = User.GetUserId();
         var now = DateTime.UtcNow;
         var isPremium = await premium.IsPremiumAsync(userId);
+        var uiLang = Request.GetUiLanguage();
 
         // Hidden libraries are excluded from every stat; visible library word counts are capped.
         var libs = await premium.VisibleLibraries(userId, isPremium)
             .OrderByDescending(l => l.CreatedAt)
-            .Select(l => new { l.Id, l.Name, Total = l.Entries.Count })
+            .Select(l => new { l.Id, l.Name, l.NameI18nJson, Total = l.Entries.Count })
             .ToListAsync();
         var visibleLibIds = libs.Select(l => l.Id).ToList();
 
@@ -47,7 +48,9 @@ public class StatsController(AppDbContext db, PremiumService premium) : Controll
         // The per-library breakdown (incl. Leitner box distribution) is a premium feature.
         // Free users still get the top-line summary below.
         var perLibrary = isPremium
-            ? libs.Select(l => BuildLibraryStats(l.Id, l.Name, VisibleWords(l.Total), states, attempts, now)).ToList()
+            ? libs.Select(l => BuildLibraryStats(
+                l.Id, Localized.Resolve(l.Name, l.NameI18nJson, uiLang) ?? l.Name,
+                VisibleWords(l.Total), states, attempts, now)).ToList()
             : new List<LibraryStats>();
 
         var totalAttempts = attempts.Count;
@@ -84,10 +87,11 @@ public class StatsController(AppDbContext db, PremiumService premium) : Controll
                 new { message = "Detailed per-library statistics are a premium feature." });
 
         var now = DateTime.UtcNow;
+        var uiLang = Request.GetUiLanguage();
 
         var lib = await db.Libraries
             .Where(l => l.Id == id && l.UserId == userId)
-            .Select(l => new { l.Id, l.Name, Words = l.Entries.Count })
+            .Select(l => new { l.Id, l.Name, l.NameI18nJson, Words = l.Entries.Count })
             .FirstOrDefaultAsync();
         if (lib is null) return NotFound();
 
@@ -101,7 +105,9 @@ public class StatsController(AppDbContext db, PremiumService premium) : Controll
             .Select(a => new AttemptRow(a.Session!.LibraryId, a.IsCorrect, a.AnsweredAt))
             .ToListAsync();
 
-        return Ok(BuildLibraryStats(lib.Id, lib.Name, lib.Words, states, attempts, now));
+        return Ok(BuildLibraryStats(
+            lib.Id, Localized.Resolve(lib.Name, lib.NameI18nJson, uiLang) ?? lib.Name,
+            lib.Words, states, attempts, now));
     }
 
     private static LibraryStats BuildLibraryStats(

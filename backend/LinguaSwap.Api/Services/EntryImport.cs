@@ -44,6 +44,9 @@ public static class EntryImport
             entries.Add(new Entry
             {
                 Notes = items[i].Notes?.Trim(),
+                // Curated files carry translated notes; user imports leave this null (Localized.Serialize
+                // returns null for an absent/empty map), so their own note shows unchanged.
+                NotesI18nJson = Localized.Serialize(items[i].NotesI18n),
                 Translations = normalized.Select(t => new Translation { LanguageCode = t.Key, Text = t.Value }).ToList(),
             });
         }

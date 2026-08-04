@@ -22,12 +22,17 @@ public class EntriesController(AppDbContext db, PremiumService premium) : Contro
             return NotFound();
 
         // Free users only see the oldest FreeWordsPerLibrary words in the library.
-        var entries = await premium.VisibleEntries(libraryId, isPremium)
+        var uiLang = Request.GetUiLanguage();
+        var rows = await premium.VisibleEntries(libraryId, isPremium)
             .OrderBy(e => e.Id)
-            .Select(e => new EntryDto(
-                e.Id, e.Notes, e.CreatedAt,
-                e.Translations.Select(t => new TranslationDto(t.LanguageCode, t.Text)).ToList()))
+            .Select(e => new
+            {
+                e.Id, e.Notes, e.NotesI18nJson, e.CreatedAt,
+                Translations = e.Translations.Select(t => new TranslationDto(t.LanguageCode, t.Text)).ToList()
+            })
             .ToListAsync();
+        var entries = rows.Select(r => new EntryDto(
+            r.Id, Localized.Resolve(r.Notes, r.NotesI18nJson, uiLang), r.CreatedAt, r.Translations)).ToList();
         return Ok(entries);
     }
 
@@ -36,17 +41,21 @@ public class EntriesController(AppDbContext db, PremiumService premium) : Contro
     {
         var userId = User.GetUserId();
         var isPremium = await premium.IsPremiumAsync(userId);
-        var entry = await db.Entries
+        var uiLang = Request.GetUiLanguage();
+        var row = await db.Entries
             .Where(e => e.Id == id && e.Library!.UserId == userId)
-            .Select(e => new EntryDto(
-                e.Id, e.Notes, e.CreatedAt,
-                e.Translations.Select(t => new TranslationDto(t.LanguageCode, t.Text)).ToList()))
+            .Select(e => new
+            {
+                e.Id, e.Notes, e.NotesI18nJson, e.CreatedAt,
+                Translations = e.Translations.Select(t => new TranslationDto(t.LanguageCode, t.Text)).ToList()
+            })
             .FirstOrDefaultAsync();
-        if (entry is null) return NotFound();
+        if (row is null) return NotFound();
         // Hidden entries (in a hidden library) aren't reachable while free.
         if (!await premium.VisibleLibraries(userId, isPremium).AnyAsync(l => l.Entries.Any(e => e.Id == id)))
             return NotFound();
-        return Ok(entry);
+        return Ok(new EntryDto(
+            row.Id, Localized.Resolve(row.Notes, row.NotesI18nJson, uiLang), row.CreatedAt, row.Translations));
     }
 
     [HttpPost("libraries/{libraryId:int}/entries")]
@@ -98,6 +107,9 @@ public class EntriesController(AppDbContext db, PremiumService premium) : Contro
         if (translations is null) return BadRequest(new { message = "Each language can appear at most once." });
 
         entry.Notes = req.Notes?.Trim();
+        // A user editing the word owns its note now — drop any curated translations so their text
+        // isn't overridden by the localized map when it's read back in another UI language.
+        entry.NotesI18nJson = null;
 
         // Merge in place (update existing, remove absent, add new) so we never
         // delete-then-insert the same (EntryId, LanguageCode) in one SaveChanges.

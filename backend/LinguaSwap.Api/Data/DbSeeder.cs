@@ -136,6 +136,8 @@ public static class DbSeeder
                         UserId = system.Id,
                         Name = file.Name,
                         Description = file.Description,
+                        NameI18nJson = Localized.Serialize(file.NameI18n),
+                        DescriptionI18nJson = Localized.Serialize(file.DescriptionI18n),
                         IsDefault = true,
                         Entries = kept,
                     });
@@ -160,11 +162,16 @@ public static class DbSeeder
                             entry.Translations.Select(t => (t.LanguageCode, t.Text)));
                         if (wanted.Remove(signature, out var match))
                         {
-                            // Already present — keep the row (and its learning history) and just
-                            // sync the note, which is the only field that can change in place.
+                            // Already present — keep the row (and its learning history) and sync the
+                            // note and its translations, the fields that can change in place.
                             if (entry.Notes != match.Notes)
                             {
                                 entry.Notes = match.Notes;
+                                changed = true;
+                            }
+                            if (entry.NotesI18nJson != match.NotesI18nJson)
+                            {
+                                entry.NotesI18nJson = match.NotesI18nJson;
                                 changed = true;
                             }
                         }
@@ -180,6 +187,15 @@ public static class DbSeeder
 
                     var descChanged = master.Description != file.Description;
                     if (descChanged) master.Description = file.Description;
+
+                    // Sync the master's translated name/description too, so a corrected translation
+                    // in the file heals the shipped master on the next boot (user copies are
+                    // snapshots and keep theirs — see fix_db.py for repairing those).
+                    var nameI18n = Localized.Serialize(file.NameI18n);
+                    if (master.NameI18nJson != nameI18n) { master.NameI18nJson = nameI18n; changed = true; }
+                    var descriptionI18n = Localized.Serialize(file.DescriptionI18n);
+                    if (master.DescriptionI18nJson != descriptionI18n) { master.DescriptionI18nJson = descriptionI18n; changed = true; }
+
                     if (wanted.Count > 0 || removed > 0 || descChanged) changed = true;
                     if (wanted.Count > 0 || removed > 0)
                         logger.LogInformation(
@@ -236,7 +252,12 @@ public static class DbSeeder
 
     /// <summary>Shape of a <c>Data/DefaultLibraries/*.json</c> file: a library header plus entries in
     /// the same format as an import file (<see cref="ImportEntryDto"/>).</summary>
-    private record DefaultLibraryFile(string Name, string? Description, List<ImportEntryDto> Entries);
+    private record DefaultLibraryFile(
+        string Name,
+        string? Description,
+        List<ImportEntryDto> Entries,
+        Dictionary<string, string>? NameI18n = null,
+        Dictionary<string, string>? DescriptionI18n = null);
 
     private static Entry NewEntry(params (string Lang, string Text)[] translations) => new()
     {

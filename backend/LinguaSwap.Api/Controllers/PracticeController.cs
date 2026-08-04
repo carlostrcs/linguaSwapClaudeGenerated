@@ -24,6 +24,7 @@ public class PracticeController(
     public async Task<IActionResult> Start(StartSessionRequest req)
     {
         var userId = User.GetUserId();
+        var uiLang = Request.GetUiLanguage();
         var src = req.SourceLanguage.Trim().ToLowerInvariant();
         var tgt = req.TargetLanguage.Trim().ToLowerInvariant();
 
@@ -90,7 +91,8 @@ public class PracticeController(
             // GET /api/entries already sends every translation to the same page for the same user, and
             // the practice screen cannot even render its language picker without them. The server still
             // re-checks in Answer — it stays the authority for the Attempt/Leitner record.
-            return new PracticeWordDto(c.Entry.Id, c.Prompt, hint, length, c.Answer, c.State?.BoxLevel ?? 0, c.Entry.Notes);
+            return new PracticeWordDto(c.Entry.Id, c.Prompt, hint, length, c.Answer, c.State?.BoxLevel ?? 0,
+                Localized.Resolve(c.Entry.Notes, c.Entry.NotesI18nJson, uiLang));
         }).ToList();
 
         // Journey mode resumes where the user left off: hand back the saved state (if any).

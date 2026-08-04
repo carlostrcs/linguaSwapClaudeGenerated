@@ -18,13 +18,21 @@ public class LibrariesController(AppDbContext db, PremiumService premium) : Cont
     {
         var userId = User.GetUserId();
         var isPremium = await premium.IsPremiumAsync(userId);
+        var uiLang = Request.GetUiLanguage();
         // Free users only see their oldest FreeLibraryLimit libraries; the rest are hidden.
         var rows = await premium.VisibleLibraries(userId, isPremium)
             .OrderByDescending(l => l.CreatedAt)
-            .Select(l => new { l.Id, l.Name, l.Description, l.CreatedAt, Total = l.Entries.Count })
+            .Select(l => new
+            {
+                l.Id, l.Name, l.Description, l.NameI18nJson, l.DescriptionI18nJson, l.CreatedAt, Total = l.Entries.Count
+            })
             .ToListAsync();
         var items = rows
-            .Select(r => ToSummary(r.Id, r.Name, r.Description, r.CreatedAt, r.Total, isPremium))
+            .Select(r => ToSummary(
+                r.Id,
+                Localized.Resolve(r.Name, r.NameI18nJson, uiLang) ?? r.Name,
+                Localized.Resolve(r.Description, r.DescriptionI18nJson, uiLang),
+                r.CreatedAt, r.Total, isPremium))
             .ToList();
         return Ok(items);
     }
@@ -34,13 +42,21 @@ public class LibrariesController(AppDbContext db, PremiumService premium) : Cont
     {
         var userId = User.GetUserId();
         var isPremium = await premium.IsPremiumAsync(userId);
+        var uiLang = Request.GetUiLanguage();
         var row = await premium.VisibleLibraries(userId, isPremium)
             .Where(l => l.Id == id)
-            .Select(l => new { l.Id, l.Name, l.Description, l.CreatedAt, Total = l.Entries.Count })
+            .Select(l => new
+            {
+                l.Id, l.Name, l.Description, l.NameI18nJson, l.DescriptionI18nJson, l.CreatedAt, Total = l.Entries.Count
+            })
             .FirstOrDefaultAsync();
         return row is null
             ? NotFound()
-            : Ok(ToSummary(row.Id, row.Name, row.Description, row.CreatedAt, row.Total, isPremium));
+            : Ok(ToSummary(
+                row.Id,
+                Localized.Resolve(row.Name, row.NameI18nJson, uiLang) ?? row.Name,
+                Localized.Resolve(row.Description, row.DescriptionI18nJson, uiLang),
+                row.CreatedAt, row.Total, isPremium));
     }
 
     /// <summary>Build a summary, capping the word count at the free limit and reporting how many
@@ -90,6 +106,7 @@ public class LibrariesController(AppDbContext db, PremiumService premium) : Cont
     public async Task<IActionResult> Featured()
     {
         var userId = User.GetUserId();
+        var uiLang = Request.GetUiLanguage();
         // Sets the user has already copied into their account are dropped from the shelf.
         var addedSourceIds = await db.Libraries
             .Where(l => l.UserId == userId && l.SourceDefaultId != null)
@@ -103,7 +120,10 @@ public class LibrariesController(AppDbContext db, PremiumService premium) : Cont
             .ToListAsync();
 
         var items = masters.Select(l => new FeaturedLibrarySummary(
-            l.Id, l.Name, l.Description, l.Entries.Count,
+            l.Id,
+            Localized.Resolve(l.Name, l.NameI18nJson, uiLang) ?? l.Name,
+            Localized.Resolve(l.Description, l.DescriptionI18nJson, uiLang),
+            l.Entries.Count,
             l.Entries.OrderBy(e => e.Id).Take(SampleWordCount).Select(Teaser).ToList())).ToList();
         return Ok(items);
     }
@@ -114,6 +134,7 @@ public class LibrariesController(AppDbContext db, PremiumService premium) : Cont
     public async Task<IActionResult> AddFeatured(int id)
     {
         var userId = User.GetUserId();
+        var uiLang = Request.GetUiLanguage();
         if (!await premium.IsPremiumAsync(userId))
             return StatusCode(StatusCodes.Status403Forbidden, new
             {
@@ -129,22 +150,30 @@ public class LibrariesController(AppDbContext db, PremiumService premium) : Cont
         // Idempotent: if the user already added this set, hand back their existing copy.
         var existing = await db.Libraries
             .Where(l => l.UserId == userId && l.SourceDefaultId == id)
-            .Select(l => new { l.Id, l.Name, l.Description, l.CreatedAt, Total = l.Entries.Count })
+            .Select(l => new { l.Id, l.Name, l.Description, l.NameI18nJson, l.DescriptionI18nJson, l.CreatedAt, Total = l.Entries.Count })
             .FirstOrDefaultAsync();
         if (existing is not null)
-            return Ok(ToSummary(existing.Id, existing.Name, existing.Description, existing.CreatedAt, existing.Total, true));
+            return Ok(ToSummary(
+                existing.Id,
+                Localized.Resolve(existing.Name, existing.NameI18nJson, uiLang) ?? existing.Name,
+                Localized.Resolve(existing.Description, existing.DescriptionI18nJson, uiLang),
+                existing.CreatedAt, existing.Total, true));
 
         // Deep-clone entries + translations into a fresh user-owned library (no learning states, so
-        // the user starts from scratch). From here it behaves like any other library.
+        // the user starts from scratch). The translated name/description/notes ride along so the copy
+        // still shows in the user's language; from here it behaves like any other library.
         var copy = new Library
         {
             UserId = userId,
             Name = master.Name,
             Description = master.Description,
+            NameI18nJson = master.NameI18nJson,
+            DescriptionI18nJson = master.DescriptionI18nJson,
             SourceDefaultId = master.Id,
             Entries = master.Entries.Select(e => new Entry
             {
                 Notes = e.Notes,
+                NotesI18nJson = e.NotesI18nJson,
                 Translations = e.Translations
                     .Select(t => new Translation { LanguageCode = t.LanguageCode, Text = t.Text })
                     .ToList(),
@@ -153,7 +182,11 @@ public class LibrariesController(AppDbContext db, PremiumService premium) : Cont
         db.Libraries.Add(copy);
         await db.SaveChangesAsync();
 
-        var dto = new LibrarySummary(copy.Id, copy.Name, copy.Description, copy.CreatedAt, copy.Entries.Count, 0);
+        var dto = new LibrarySummary(
+            copy.Id,
+            Localized.Resolve(copy.Name, copy.NameI18nJson, uiLang) ?? copy.Name,
+            Localized.Resolve(copy.Description, copy.DescriptionI18nJson, uiLang),
+            copy.CreatedAt, copy.Entries.Count, 0);
         return CreatedAtAction(nameof(Get), new { id = copy.Id }, dto);
     }
 
@@ -212,6 +245,10 @@ public class LibrariesController(AppDbContext db, PremiumService premium) : Cont
         var lib = await db.Libraries.FirstAsync(l => l.Id == id && l.UserId == userId);
         lib.Name = req.Name.Trim();
         lib.Description = req.Description?.Trim();
+        // The user renamed it: their text is authoritative now, so drop any curated translations
+        // (a copied featured library) that would otherwise override the new name per UI language.
+        lib.NameI18nJson = null;
+        lib.DescriptionI18nJson = null;
         await db.SaveChangesAsync();
 
         var total = await db.Entries.CountAsync(e => e.LibraryId == lib.Id);
