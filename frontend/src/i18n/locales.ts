@@ -4,9 +4,10 @@
 // Deliberately pure data (no DOM, no JSX) so the build-time SEO page generator can import it under
 // `tsconfig.node.json` alongside the app. Keep it that way.
 //
-// These six are exactly the languages the curated decks
-// (`backend/LinguaSwap.Api/Data/DefaultLibraries/*.json`) carry translations for, which is why the
-// marketing pages can be generated in all of them.
+// The first six are the languages the curated decks
+// (`backend/LinguaSwap.Api/Data/DefaultLibraries/*.json`) carry translations for. Polish is a full
+// UI locale (app + homepage + guides) whose deck column is being backfilled; until it lands it is
+// NOT in `content/learn.ts` `VOCAB_LOCALES`, so it gets no `/learn` vocabulary pages yet.
 
 import { flagFor, speechLangFor } from '../lib/languages';
 
@@ -34,6 +35,7 @@ export const LOCALES: readonly Locale[] = [
   locale('de', 'Deutsch', 'German'),
   locale('it', 'Italiano', 'Italian'),
   locale('pt', 'Português', 'Portuguese'),
+  locale('pl', 'Polski', 'Polish'),
 ];
 
 export const LOCALE_IDS: readonly string[] = LOCALES.map((l) => l.id);

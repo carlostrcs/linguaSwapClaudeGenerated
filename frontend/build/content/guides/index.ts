@@ -14,10 +14,11 @@ import fr from './fr';
 import de from './de';
 import it from './it';
 import pt from './pt';
+import pl from './pl';
 
 export type { Guide, GuideSection } from './types';
 
-const BY_LOCALE: Record<string, Guide[]> = { en, es, fr, de, it, pt };
+const BY_LOCALE: Record<string, Guide[]> = { en, es, fr, de, it, pt, pl };
 
 /**
  * Guides for a locale, in `GUIDE_KEYS` order.

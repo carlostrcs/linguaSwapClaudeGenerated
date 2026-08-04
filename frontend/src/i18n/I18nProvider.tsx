@@ -51,6 +51,10 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     document.documentElement.lang = lang;
+    // Mirror the current language into localStorage on every change — including the browser-derived
+    // initial one that setLang never sees — so api/client.ts can read it for the X-UI-Language
+    // header on the very first request.
+    localStorage.setItem(LANGUAGE_STORAGE_KEY, lang);
   }, [lang]);
 
   // A locale handed over in the URL becomes the stored preference, so it survives the next

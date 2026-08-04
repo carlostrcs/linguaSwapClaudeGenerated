@@ -347,7 +347,7 @@ const dict: Dictionary = {
   // homepage (/, /es, /fr, …) and the title tag is the highest-value string on it.
   'seo.home.title': 'LinguaSwap — Learn vocabulary with spaced repetition',
   'seo.home.description':
-    'Build your own word libraries and practise them with spaced repetition. Drill any language direction — English, Spanish, French, German, Italian or Portuguese — and track what you have mastered.',
+    'Build your own word libraries and practise them with spaced repetition. Drill any language direction — English, Spanish, French, German, Italian, Portuguese or Polish — and track what you have mastered.',
 
 
   'landing.footerVocabulary': 'Vocabulary lists',

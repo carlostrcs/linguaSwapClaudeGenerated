@@ -8,6 +8,7 @@ const strings: LearnStrings = {
     de: 'tedesco',
     it: 'italiano',
     pt: 'portoghese',
+    pl: 'polacco',
   },
   languageNamesCap: {
     en: 'Inglese',
@@ -16,6 +17,7 @@ const strings: LearnStrings = {
     de: 'Tedesco',
     it: 'Italiano',
     pt: 'Portoghese',
+    pl: 'Polacco',
   },
   topicNouns: {
     travel: 'di viaggio',
@@ -70,7 +72,7 @@ const strings: LearnStrings = {
   tableHeading: 'Da {source} a {target}: le prime {shown} parole',
   colNotes: 'Note',
   moreWords:
-    '<strong>Altre {count} parole</strong> nella raccolta completa &laquo;{deck}&raquo;, ciascuna allineata in sei lingue e programmata per te dalla ripetizione dilazionata. Aggiungila al tuo account e inizia a esercitarti da {source} a {target} con un clic.',
+    '<strong>Altre {count} parole</strong> nella raccolta completa &laquo;{deck}&raquo;, ciascuna allineata in sette lingue e programmata per te dalla ripetizione dilazionata. Aggiungila al tuo account e inizia a esercitarti da {source} a {target} con un clic.',
   watchOut: 'A cosa fare attenzione in {language}',
   factCognates:
     '<strong>{count} di queste {total} parole</strong> sono quasi identiche in {source} e {target} ({percent}%){examples}. Quelle sono regalate; il valore dell’esercizio sta nel resto.',

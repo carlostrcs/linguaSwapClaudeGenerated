@@ -3,6 +3,18 @@
 const BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:5299/api';
 const TOKEN_KEY = 'linguaswap.token';
 const REFRESH_KEY = 'linguaswap.refreshToken';
+// The current UI language, mirrored from I18nProvider (see LANGUAGE_STORAGE_KEY). Sent on every
+// request so the server can return entry notes and curated library name/description in this
+// language; I18nProvider invalidates cached queries when it changes.
+const LANG_KEY = 'linguaswap.lang';
+
+function currentUiLanguage(): string | null {
+  try {
+    return localStorage.getItem(LANG_KEY);
+  } catch {
+    return null;
+  }
+}
 
 export class ApiError extends Error {
   status: number;
@@ -81,6 +93,8 @@ export async function api<T>(path: string, options: RequestInit = {}, retry = tr
   if (options.body) headers.set('Content-Type', 'application/json');
   const token = getToken();
   if (token) headers.set('Authorization', `Bearer ${token}`);
+  const lang = currentUiLanguage();
+  if (lang) headers.set('X-UI-Language', lang);
 
   const res = await fetch(`${BASE}${path}`, { ...options, headers });
 

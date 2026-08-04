@@ -4,7 +4,7 @@
 
 import { readFileSync } from 'node:fs';
 
-export const DECK_LANGS = ['en', 'es', 'fr', 'de', 'it', 'pt'] as const;
+export const DECK_LANGS = ['en', 'es', 'fr', 'de', 'it', 'pt', 'pl'] as const;
 
 export interface DeckEntry {
   /** Translations, keyed by language code. Every DECK_LANGS key is guaranteed present. */

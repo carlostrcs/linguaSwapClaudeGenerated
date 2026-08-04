@@ -8,6 +8,7 @@ const strings: LearnStrings = {
     de: 'allemand',
     it: 'italien',
     pt: 'portugais',
+    pl: 'polonais',
   },
   languageNamesCap: {
     en: 'Anglais',
@@ -16,6 +17,7 @@ const strings: LearnStrings = {
     de: 'Allemand',
     it: 'Italien',
     pt: 'Portugais',
+    pl: 'Polonais',
   },
   topicNouns: {
     travel: 'du voyage',
@@ -70,7 +72,7 @@ const strings: LearnStrings = {
   tableHeading: 'De {source} vers {target} : les {shown} premiers mots',
   colNotes: 'Notes',
   moreWords:
-    '<strong>{count} mots de plus</strong> dans la bibliothèque complète &laquo;&nbsp;{deck}&nbsp;&raquo;, chacun aligné dans six langues et programmé pour vous par la répétition espacée. Ajoutez-la à votre compte et commencez à travailler de {source} vers {target} en un clic.',
+    '<strong>{count} mots de plus</strong> dans la bibliothèque complète &laquo;&nbsp;{deck}&nbsp;&raquo;, chacun aligné dans sept langues et programmé pour vous par la répétition espacée. Ajoutez-la à votre compte et commencez à travailler de {source} vers {target} en un clic.',
   watchOut: 'À quoi faire attention en {language}',
   factCognates:
     '<strong>{count} de ces {total} mots</strong> sont quasi identiques en {source} et en {target} ({percent} %){examples}. Ceux-là sont offerts ; l’intérêt de s’entraîner est dans le reste.',

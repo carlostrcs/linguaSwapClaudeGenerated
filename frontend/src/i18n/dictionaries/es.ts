@@ -345,7 +345,7 @@ const dict: Dictionary = {
 
   'seo.home.title': 'LinguaSwap — Aprende vocabulario con repetición espaciada',
   'seo.home.description':
-    'Crea tus propias bibliotecas de palabras y practícalas con repetición espaciada. Practica en cualquier dirección — español, inglés, francés, alemán, italiano o portugués — y sigue lo que ya dominas.',
+    'Crea tus propias bibliotecas de palabras y practícalas con repetición espaciada. Practica en cualquier dirección — español, inglés, francés, alemán, italiano, portugués o polaco — y sigue lo que ya dominas.',
 
 
   'landing.footerVocabulary': 'Listas de vocabulario',

@@ -372,7 +372,7 @@ const dict: Dictionary = {
 
   'seo.home.title': 'LinguaSwap — Impara vocaboli con la ripetizione dilazionata',
   'seo.home.description':
-    'Crea le tue raccolte di parole ed esercitale con la ripetizione dilazionata. Allenati in qualsiasi direzione — italiano, inglese, spagnolo, francese, tedesco o portoghese — e tieni traccia di ciò che padroneggi.',
+    'Crea le tue raccolte di parole ed esercitale con la ripetizione dilazionata. Allenati in qualsiasi direzione — italiano, inglese, spagnolo, francese, tedesco, portoghese o polacco — e tieni traccia di ciò che padroneggi.',
 
 
   'landing.footerVocabulary': 'Liste di vocaboli',

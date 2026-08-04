@@ -374,7 +374,7 @@ const dict: Dictionary = {
 
   'seo.home.title': 'LinguaSwap — Vokabeln lernen mit verteilter Wiederholung',
   'seo.home.description':
-    'Baue eigene Wortbibliotheken und übe sie mit verteilter Wiederholung. Trainiere jede Sprachrichtung — Deutsch, Englisch, Spanisch, Französisch, Italienisch oder Portugiesisch — und behalte im Blick, was schon sitzt.',
+    'Baue eigene Wortbibliotheken und übe sie mit verteilter Wiederholung. Trainiere jede Sprachrichtung — Deutsch, Englisch, Spanisch, Französisch, Italienisch, Portugiesisch oder Polnisch — und behalte im Blick, was schon sitzt.',
 
 
   'landing.footerVocabulary': 'Vokabellisten',

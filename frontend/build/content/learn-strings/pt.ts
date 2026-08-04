@@ -8,6 +8,7 @@ const strings: LearnStrings = {
     de: 'alemão',
     it: 'italiano',
     pt: 'português',
+    pl: 'polaco',
   },
   languageNamesCap: {
     en: 'Inglês',
@@ -16,6 +17,7 @@ const strings: LearnStrings = {
     de: 'Alemão',
     it: 'Italiano',
     pt: 'Português',
+    pl: 'Polaco',
   },
   topicNouns: {
     travel: 'de viagem',
@@ -70,7 +72,7 @@ const strings: LearnStrings = {
   tableHeading: 'De {source} para {target}: as primeiras {shown} palavras',
   colNotes: 'Notas',
   moreWords:
-    '<strong>Mais {count} palavras</strong> na biblioteca completa &laquo;{deck}&raquo;, cada uma alinhada em seis idiomas e agendada para si por repetição espaçada. Adicione-a à sua conta e comece a praticar de {source} para {target} num clique.',
+    '<strong>Mais {count} palavras</strong> na biblioteca completa &laquo;{deck}&raquo;, cada uma alinhada em sete idiomas e agendada para si por repetição espaçada. Adicione-a à sua conta e comece a praticar de {source} para {target} num clique.',
   watchOut: 'A que prestar atenção em {language}',
   factCognates:
     '<strong>{count} destas {total} palavras</strong> são quase idênticas em {source} e {target} ({percent}%){examples}. Essas saem de graça; o valor de praticar está no resto.',

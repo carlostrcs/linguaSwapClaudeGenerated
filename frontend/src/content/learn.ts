@@ -10,6 +10,21 @@
 //
 // Pure data. Imported by `build/` under `tsconfig.node.json`, so no DOM and no JSX.
 
+/**
+ * Locales that have generated vocabulary pages (`/learn/**`). This is exactly the set of languages
+ * the curated decks carry a column for — a `/learn` page reads `entry.t[locale]`/`entry.t[target]`
+ * and `analysePair` calls `.normalize()` on it, so a locale without deck coverage would crash the
+ * build. **Must stay equal to `build/decks.ts` `DECK_LANGS`** (and `scripts/lib/decks.mjs`): add a
+ * language here only once its deck column exists. A UI locale can ship (homepage + guides + the app)
+ * before it joins this set — Polish did — so this is intentionally separate from `LOCALES`.
+ */
+export const VOCAB_LOCALES: readonly string[] = ['en', 'es', 'fr', 'de', 'it', 'pt', 'pl'];
+
+/** Whether a locale has generated vocabulary pages (so a footer may link to its `/learn` index). */
+export function hasVocabPages(locale: string): boolean {
+  return VOCAB_LOCALES.includes(locale);
+}
+
 /** The path segment standing in for "learn" in each language. */
 const SECTION: Record<string, string> = {
   en: 'learn',
@@ -18,16 +33,18 @@ const SECTION: Record<string, string> = {
   de: 'lernen',
   it: 'imparare',
   pt: 'aprender',
+  pl: 'ucz-sie',
 };
 
 /** How each language is spelled in a URL, per page locale. ASCII only. */
 const LANGUAGE_SLUGS: Record<string, Record<string, string>> = {
-  en: { en: 'english', es: 'spanish', fr: 'french', de: 'german', it: 'italian', pt: 'portuguese' },
-  es: { en: 'ingles', es: 'espanol', fr: 'frances', de: 'aleman', it: 'italiano', pt: 'portugues' },
-  fr: { en: 'anglais', es: 'espagnol', fr: 'francais', de: 'allemand', it: 'italien', pt: 'portugais' },
-  de: { en: 'englisch', es: 'spanisch', fr: 'franzoesisch', de: 'deutsch', it: 'italienisch', pt: 'portugiesisch' },
-  it: { en: 'inglese', es: 'spagnolo', fr: 'francese', de: 'tedesco', it: 'italiano', pt: 'portoghese' },
-  pt: { en: 'ingles', es: 'espanhol', fr: 'frances', de: 'alemao', it: 'italiano', pt: 'portugues' },
+  en: { en: 'english', es: 'spanish', fr: 'french', de: 'german', it: 'italian', pt: 'portuguese', pl: 'polish' },
+  es: { en: 'ingles', es: 'espanol', fr: 'frances', de: 'aleman', it: 'italiano', pt: 'portugues', pl: 'polaco' },
+  fr: { en: 'anglais', es: 'espagnol', fr: 'francais', de: 'allemand', it: 'italien', pt: 'portugais', pl: 'polonais' },
+  de: { en: 'englisch', es: 'spanisch', fr: 'franzoesisch', de: 'deutsch', it: 'italienisch', pt: 'portugiesisch', pl: 'polnisch' },
+  it: { en: 'inglese', es: 'spagnolo', fr: 'francese', de: 'tedesco', it: 'italiano', pt: 'portoghese', pl: 'polacco' },
+  pt: { en: 'ingles', es: 'espanhol', fr: 'frances', de: 'alemao', it: 'italiano', pt: 'portugues', pl: 'polaco' },
+  pl: { en: 'angielski', es: 'hiszpanski', fr: 'francuski', de: 'niemiecki', it: 'wloski', pt: 'portugalski', pl: 'polski' },
 };
 
 /** Deck slug -> URL slug, per page locale. Keys are the filenames in Data/DefaultLibraries. */
@@ -127,6 +144,22 @@ const TOPIC_SLUGS: Record<string, Record<string, string>> = {
     adjectives: 'adjetivos-essenciais',
     'common-300': '300-palavras-mais-comuns',
     'common-1000': '1000-palavras-mais-comuns',
+  },
+  pl: {
+    travel: 'podroze',
+    food: 'restauracja-jedzenie',
+    dating: 'randki',
+    work: 'praca-biznes',
+    smalltalk: 'rozmowy-towarzyskie',
+    shopping: 'zakupy',
+    health: 'zdrowie-nagle-wypadki',
+    slang: 'slang-idiomy',
+    home: 'dom-przedmioty-codzienne',
+    nature: 'przyroda-zwierzeta',
+    verbs: 'podstawowe-czasowniki',
+    adjectives: 'podstawowe-przymiotniki',
+    'common-300': '300-najczestszych-slow',
+    'common-1000': '1000-najczestszych-slow',
   },
 };
 

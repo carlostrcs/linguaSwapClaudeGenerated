@@ -13,7 +13,7 @@ import type { Deck, DeckSnapshot } from './decks';
 import { guidePath } from '../src/content/guides';
 import { guidesFor, verifyGuideCoverage } from './content/guides/index';
 import { MIN_DECK_ENTRIES, SAMPLE_ROWS, publishableDecks } from './content/topics';
-import { learnIndexPath, learnTargetPath, learnTopicPath } from '../src/content/learn';
+import { VOCAB_LOCALES, learnIndexPath, learnTargetPath, learnTopicPath } from '../src/content/learn';
 import { learnStrings, verifyLearnCoverage } from './content/learn-strings/index';
 import { interpolate } from '../src/i18n/interpolate';
 import { renderLanding } from './render/landing';
@@ -133,7 +133,11 @@ function learnPages(snapshot: DeckSnapshot): PageSpec[] {
 
   verifyLearnCoverage(decks.map((d) => d.slug));
 
-  const locales = LOCALES.map((l) => l.id);
+  // Only locales whose deck column exists get vocabulary pages: a /learn page reads entry.t[locale]
+  // and entry.t[target], and analysePair .normalize()s them, so a locale without deck coverage would
+  // crash the build. A new UI locale (Polish) ships its homepage + guides first and joins this matrix
+  // when its deck column lands (add it to VOCAB_LOCALES + DECK_LANGS together).
+  const locales = LOCALES.map((l) => l.id).filter((id) => VOCAB_LOCALES.includes(id));
   const pages: PageSpec[] = [];
 
   for (const locale of locales) {

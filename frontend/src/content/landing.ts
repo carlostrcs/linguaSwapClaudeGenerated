@@ -11,7 +11,7 @@
 // Pure data (no JSX, no ReactNode) because `build/` imports it under `tsconfig.node.json`.
 
 import { guidePath } from './guides';
-import { learnIndexPath } from './learn';
+import { hasVocabPages, learnIndexPath } from './learn';
 
 export interface LandingFeature {
   /** Suffix of the `landing.feature.<key>.{title,body}` i18n keys. */
@@ -71,16 +71,20 @@ export interface LandingFooterLink {
 }
 
 /**
- * Footer links for a locale. Everything here now exists in all six languages, so every link stays
- * inside the reader's own language: `/es` links to `/es/aprender` and `/es/guias/…`, never to an
- * English page.
+ * Footer links for a locale. Every link stays inside the reader's own language: `/es` links to
+ * `/es/aprender` and `/es/guias/…`, never to an English page. The vocabulary link is shown only for
+ * locales that actually have generated `/learn` pages (`hasVocabPages`); a UI locale whose deck
+ * column hasn't landed yet — Polish — links to its guides but not to a vocabulary index that would
+ * 404.
  */
 export function landingFooter(locale: string): LandingFooterLink[] {
-  return [
-    { key: 'landing.footerVocabulary', to: learnIndexPath(locale), staticPage: true },
-    { key: 'landing.footerGuides', to: guidePath(locale, 'spaced-repetition'), staticPage: true },
-    { key: 'landing.tryDemo', to: '/demo' },
-  ];
+  const links: LandingFooterLink[] = [];
+  if (hasVocabPages(locale)) {
+    links.push({ key: 'landing.footerVocabulary', to: learnIndexPath(locale), staticPage: true });
+  }
+  links.push({ key: 'landing.footerGuides', to: guidePath(locale, 'spaced-repetition'), staticPage: true });
+  links.push({ key: 'landing.tryDemo', to: '/demo' });
+  return links;
 }
 
 export function featureTitleKey(key: string): string {

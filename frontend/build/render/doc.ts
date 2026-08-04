@@ -9,7 +9,7 @@
 // French chrome without a second copy of those strings.
 
 import { guidePath } from '../../src/content/guides';
-import { learnIndexPath } from '../../src/content/learn';
+import { hasVocabPages, learnIndexPath } from '../../src/content/learn';
 import { translator } from '../../src/i18n/interpolate';
 import type { LanguageId } from '../../src/i18n/translations';
 import { LOCALES } from '../../src/i18n/locales';
@@ -63,11 +63,12 @@ function renderFooter(locale: string): string {
   const t = translator(locale as LanguageId);
   const link = (href: string, label: string) => `<a href="${href}">${escapeHtml(label)}</a>`;
 
-  // Every link stays inside the reader's own language: the vocabulary pages and the guides now
-  // exist in all six.
+  // Every link stays inside the reader's own language. The vocabulary link appears only where the
+  // decks carry that language (hasVocabPages) — a UI locale awaiting its deck column (Polish) links
+  // to its guides but not to a /learn index that isn't generated.
   const links = [
     link(localeHome(locale), 'LinguaSwap'),
-    link(learnIndexPath(locale), t('landing.footerVocabulary')),
+    ...(hasVocabPages(locale) ? [link(learnIndexPath(locale), t('landing.footerVocabulary'))] : []),
     link(guidePath(locale, 'spaced-repetition'), t('landing.footerGuides')),
     link(`/demo${locale === 'en' ? '' : `?lang=${locale}`}`, t('landing.tryDemo')),
   ];

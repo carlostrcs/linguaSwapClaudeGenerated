@@ -12,8 +12,9 @@ import fr from './dictionaries/fr';
 import de from './dictionaries/de';
 import it from './dictionaries/it';
 import pt from './dictionaries/pt';
+import pl from './dictionaries/pl';
 
-const dictionaries = { en, es, fr, de, it, pt };
+const dictionaries = { en, es, fr, de, it, pt, pl };
 
 export type LanguageId = keyof typeof dictionaries;
 

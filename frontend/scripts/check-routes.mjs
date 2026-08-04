@@ -126,6 +126,15 @@ const checks = [
   ['/de/lernen/englisch/reisen', 200, 'Flughafen', 'German-to-English travel words'],
   ['/it/imparare/tedesco/viaggi', 200, 'Capitalisation counts|Le maiuscole contano', 'Italian pages warn about German case'],
   ['/pt/aprender/frances/viagem', 200, 'aeroporto', 'Portuguese-to-French travel words'],
+
+  // Polish — the 7th locale. Its vocabulary pages come from the backfilled deck column (pl as both a
+  // reading language and a target); its homepage and guides ship as a full UI locale.
+  ['/pl', 200, 'Ucz się słówek', 'Polish homepage is its own URL'],
+  ['/pl/ucz-sie', 200, 'Listy słówek', 'vocabulary index in Polish'],
+  ['/pl/ucz-sie/hiszpanski/podroze', 200, 'aeropuerto', 'Polish-to-Spanish travel words'],
+  ['/learn/polish/travel', 200, 'lotnisko', 'English-to-Polish travel words'],
+  ['/pl/poradniki/system-leitnera', 200, 'System Leitnera', 'guide in Polish, localized slug'],
+
   ['/guides/spaced-repetition', 200, 'forgetting curve', 'hand-written guide'],
   ['/es/guias/repeticion-espaciada', 200, 'curva del olvido', 'guide in Spanish, localized slug'],
   ['/de/ratgeber/verteilte-wiederholung', 200, 'Vergessenskurve', 'guide in German, localized slug'],

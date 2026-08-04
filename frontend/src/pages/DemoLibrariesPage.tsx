@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
@@ -39,7 +39,7 @@ function TrashIcon() {
  * delete) but backed by the client-side demo store and without the premium import features.
  */
 export default function DemoLibrariesPage() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const navigate = useNavigate();
   const [libraries, setLibraries] = useState(() => listDemoLibraries());
   const [featured, setFeatured] = useState(() => listDemoFeatured());
@@ -53,8 +53,15 @@ export default function DemoLibrariesPage() {
     setFeatured(listDemoFeatured());
   };
 
-  const onAddFeatured = (featuredName: string) => {
-    const lib = addDemoFeatured(featuredName);
+  // Re-localize titles/descriptions when the UI language changes — the demo store resolves them
+  // from the current language, so re-reading is what a language switch needs.
+  useEffect(() => {
+    setLibraries(listDemoLibraries());
+    setFeatured(listDemoFeatured());
+  }, [lang]);
+
+  const onAddFeatured = (featuredKey: string) => {
+    const lib = addDemoFeatured(featuredKey);
     reload();
     if (lib) navigate(`/demo/libraries/${lib.id}`);
   };
@@ -143,7 +150,7 @@ export default function DemoLibrariesPage() {
           <p className="muted">{t('featured.subtitle')}</p>
           <div className="library-grid">
             {featured.map((f) => (
-              <div className="card library-card featured-card" key={f.name}>
+              <div className="card library-card featured-card" key={f.key}>
                 <div className="library-card-head">
                   <span className="library-title">{f.name}</span>
                   <span className="badge">{featuredWordCount(t, f.wordCount)}</span>
@@ -157,7 +164,7 @@ export default function DemoLibrariesPage() {
                   </ul>
                 )}
                 <div className="card-actions">
-                  <button type="button" className="btn btn-primary" onClick={() => onAddFeatured(f.name)}>
+                  <button type="button" className="btn btn-primary" onClick={() => onAddFeatured(f.key)}>
                     {t('featured.add')}
                   </button>
                 </div>

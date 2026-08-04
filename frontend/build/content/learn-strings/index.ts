@@ -6,10 +6,11 @@ import fr from './fr';
 import de from './de';
 import it from './it';
 import pt from './pt';
+import pl from './pl';
 
 export type { LearnStrings } from './types';
 
-const BY_LOCALE: Record<string, LearnStrings> = { en, es, fr, de, it, pt };
+const BY_LOCALE: Record<string, LearnStrings> = { en, es, fr, de, it, pt, pl };
 
 /** Throws rather than falling back: an English sentence inside a French page is a visible defect. */
 export function learnStrings(locale: string): LearnStrings {

@@ -18,6 +18,7 @@ const PROFILES: Record<string, LanguageProfile> = {
   fr: { specialChars: ['à', 'â', 'ç', 'é', 'è', 'ê', 'î', 'ï', 'ô'], caseSensitive: false },
   it: { specialChars: ['à', 'è', 'é', 'ì', 'ò', 'ó', 'ù'], caseSensitive: false },
   pt: { specialChars: ['á', 'â', 'ã', 'à', 'ç', 'é', 'ê', 'í', 'ó'], caseSensitive: false },
+  pl: { specialChars: ['ą', 'ć', 'ę', 'ł', 'ń', 'ó', 'ś', 'ź', 'ż'], caseSensitive: false },
 };
 
 // Representative country-flag emoji per language code, for quick visual identification in the UI.

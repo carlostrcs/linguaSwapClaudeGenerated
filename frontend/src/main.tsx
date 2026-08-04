@@ -6,6 +6,7 @@ import { polyfillCountryFlagEmojis } from 'country-flag-emoji-polyfill';
 import './index.css';
 import App from './App.tsx';
 import ErrorBoundary from './components/ErrorBoundary';
+import LocaleQuerySync from './components/LocaleQuerySync';
 import { AuthProvider } from './auth/AuthContext';
 import { ThemeProvider } from './theme/ThemeProvider';
 import { I18nProvider } from './i18n/I18nProvider';
@@ -22,6 +23,7 @@ createRoot(document.getElementById('root')!).render(
       <ThemeProvider>
         <I18nProvider>
           <QueryClientProvider client={queryClient}>
+            <LocaleQuerySync />
             <BrowserRouter>
               <AuthProvider>
                 <App />

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import type { EntryDto } from '../api/types';
 import EntryForm from '../components/EntryForm';
@@ -15,10 +15,16 @@ import { useI18n } from '../i18n/I18nProvider';
 export default function DemoLibraryEditorPage() {
   const { id } = useParams();
   const libraryId = Number(id);
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
 
   const [library, setLibrary] = useState(() => getDemoLibrary(libraryId));
   const [entries, setEntries] = useState<EntryDto[]>(() => listDemoEntries(libraryId));
+
+  // Re-resolve the title/description and the entries' notes when the UI language changes.
+  useEffect(() => {
+    setLibrary(getDemoLibrary(libraryId));
+    setEntries(listDemoEntries(libraryId));
+  }, [libraryId, lang]);
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<EntryDto | null>(null);
   const [renaming, setRenaming] = useState(false);

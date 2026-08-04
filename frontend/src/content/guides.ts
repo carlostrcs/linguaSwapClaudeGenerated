@@ -21,6 +21,7 @@ const SECTION: Record<string, string> = {
   de: 'ratgeber',
   it: 'guide',
   pt: 'guias',
+  pl: 'poradniki',
 };
 
 /** ASCII-only, accent-free: slugs stay readable and unambiguous in a URL bar and a log line. */
@@ -54,6 +55,11 @@ const SLUGS: Record<string, Record<GuideKey, string>> = {
     'spaced-repetition': 'repeticao-espacada',
     'leitner-boxes': 'caixas-de-leitner',
     'how-many-words': 'quantas-palavras',
+  },
+  pl: {
+    'spaced-repetition': 'powtorki-rozlozone-w-czasie',
+    'leitner-boxes': 'system-leitnera',
+    'how-many-words': 'ile-slow',
   },
 };
 

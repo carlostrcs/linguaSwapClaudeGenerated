@@ -29,12 +29,18 @@ import { checkLocally } from '../lib/practiceCheck';
 export default function DemoPracticePage() {
   const { id } = useParams();
   const libraryId = Number(id);
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
-  const library = useMemo(() => getDemoLibrary(libraryId), [libraryId]);
-  const entries = useMemo<EntryDto[]>(() => listDemoEntries(libraryId), [libraryId]);
+  // Held as state and re-read when the library or UI language changes, so the title and the words'
+  // notes re-resolve on a language switch (the demo store resolves them from the current language).
+  const [library, setLibrary] = useState(() => getDemoLibrary(libraryId));
+  const [entries, setEntries] = useState<EntryDto[]>(() => listDemoEntries(libraryId));
+  useEffect(() => {
+    setLibrary(getDemoLibrary(libraryId));
+    setEntries(listDemoEntries(libraryId));
+  }, [libraryId, lang]);
   const languages = useMemo(() => availableLanguages(entries), [entries]);
 
   const [source, setSource] = useState('');

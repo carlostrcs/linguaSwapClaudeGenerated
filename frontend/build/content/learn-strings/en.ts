@@ -8,6 +8,7 @@ const strings: LearnStrings = {
     de: 'German',
     it: 'Italian',
     pt: 'Portuguese',
+    pl: 'Polish',
   },
   languageNamesCap: {
     en: 'English',
@@ -16,6 +17,7 @@ const strings: LearnStrings = {
     de: 'German',
     it: 'Italian',
     pt: 'Portuguese',
+    pl: 'Polish',
   },
   topicNouns: {
     travel: 'travel',
@@ -70,7 +72,7 @@ const strings: LearnStrings = {
   tableHeading: '{source} to {target}: the first {shown} words',
   colNotes: 'Notes',
   moreWords:
-    '<strong>{count} more words</strong> in the full &ldquo;{deck}&rdquo; library, each aligned across six languages and scheduled for you by spaced repetition. Add it to your account and start drilling {source} to {target} in one click.',
+    '<strong>{count} more words</strong> in the full &ldquo;{deck}&rdquo; library, each aligned across seven languages and scheduled for you by spaced repetition. Add it to your account and start drilling {source} to {target} in one click.',
   watchOut: 'What to watch out for in {language}',
   factCognates:
     '<strong>{count} of these {total} words</strong> are near-identical in {source} and {target} ({percent}%){examples}. Those are free; the value of drilling is in the rest.',
