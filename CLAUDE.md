@@ -679,3 +679,28 @@ therefore serves the plain SPA; **`npm run preview` is where you see generated o
   costs a migration. `public/og.png` is committed, regenerated from `assets/og.svg` by
   `npm run og:build` (needs the `sharp` devDependency; the deploy does not).
 
+### Installable app (PWA) & offline
+
+`public/manifest.webmanifest` + the icon/`theme-color` tags in `index.html` make the app
+installable to a phone home screen and launchable standalone; `public/sw.js` caches the app shell
+so it opens without a connection, and `lib/offlineQueue.ts` keeps practice answers from being lost
+while there isn't one.
+
+- **One piece of source art**: `assets/icon.svg` (the `favicon.svg` mark, white on the `og.svg`
+  indigo gradient). It is full-bleed square with the mark at ~53% of the canvas, which puts it
+  inside the 80% maskable safe circle — that is why one file serves `purpose: "any maskable"`,
+  Android's mask, and iOS's `apple-touch-icon` without a second near-identical source to keep in
+  sync. `npm run icons:build` rasterizes it to `public/icon-{192,512}.png` +
+  `public/apple-touch-icon.png` (alpha flattened: iOS composites transparency against black). Same
+  arrangement as `og:build` — PNGs are **committed**, so the deploy never needs `sharp`.
+- **`start_url` is `/libraries`**, not `/` — an installed app should open the app, not the
+  marketing landing page. Logged-out visitors get bounced to `/login` by `ProtectedRoute`.
+- **`theme-color` is dynamic.** `index.html` carries a light-theme default for the pre-JS paint and
+  `ThemeProvider` overwrites it with the active palette's computed `--bg` on every theme change, so
+  a dark-theme user in a standalone window doesn't get a white status bar. It reads the CSS
+  variable rather than duplicating hex codes, so adding a palette stays "one CSS block + one list
+  entry".
+- The tags live in the source `index.html` head, which `build/shell.ts` copies into **every**
+  generated page — the manifest is discoverable from any entry point, including the prerendered
+  `/learn` and `/guides` pages.
+

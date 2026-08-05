@@ -11,6 +11,7 @@
     "content:sync": "node scripts/sync-decks.mjs",
     "content:check": "node scripts/check-decks.mjs",
     "og:build": "node scripts/build-og.mjs",
+    "icons:build": "node scripts/build-icons.mjs",
     "routes:check": "node scripts/check-routes.mjs",
     "preview": "vite preview"
   },

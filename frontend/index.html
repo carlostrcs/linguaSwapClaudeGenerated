@@ -4,6 +4,16 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Installable app (home screen / standalone window). The generator copies this head into
+         every prerendered page, so the manifest is discoverable from any entry point.
+         `theme-color` is only the pre-JS default — ThemeProvider rewrites it to the active
+         palette's --bg once the app mounts. -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="theme-color" content="#f6f7fb" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="LinguaSwap" />
     <meta
       name="description"
       content="LinguaSwap — build word libraries and learn vocabulary with spaced repetition. Practise any language direction and track your progress."
