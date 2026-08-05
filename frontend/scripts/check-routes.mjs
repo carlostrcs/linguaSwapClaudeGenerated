@@ -150,7 +150,9 @@ const checks = [
   // rewrite starting to swallow them — exactly what happened to robots.txt before this check existed.
   ['/manifest.webmanifest', 200, '"start_url": "/libraries"', 'web app manifest is served, not the SPA'],
   ['/sw.js', 200, 'linguaswap-', 'service worker is served from the root (its scope)'],
-  ['/offline.html', 200, "You're offline", 'offline fallback page'],
+  // `/offline`, not `/offline.html`: cleanUrls 308s the latter, and the worker must reference the
+  // path it can actually cache — these checks follow redirects, so only the clean form proves it.
+  ['/offline', 200, "You're offline", 'offline fallback page at its canonical URL'],
 
   // App routes still reach the SPA.
   ['/login', 200, 'id="root"', 'auth route is prerendered and still boots the SPA'],

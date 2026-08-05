@@ -22,8 +22,12 @@
 const BUILD = '__BUILD_ID__';
 const CACHE = `linguaswap-${BUILD}`;
 
+// Both are extensionless because `cleanUrls` makes Vercel 308 `/foo.html` to `/foo`. A redirecting
+// URL is poison here twice over: the precache would store a response with the `redirected` flag
+// set, and the browser refuses to satisfy a navigation with one — so the offline fallback would
+// fail exactly when it is needed. build/sw.ts fails the build if either regains an extension.
 const APP_SHELL = '/app';
-const OFFLINE_PAGE = '/offline.html';
+const OFFLINE_PAGE = '/offline';
 
 // Stamped: the hashed /assets/* URLs of this build, so the app is usable offline from the first
 // load after install rather than only after it happens to have fetched each file.

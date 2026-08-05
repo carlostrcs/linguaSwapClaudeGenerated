@@ -16,7 +16,26 @@ import type { PageSpec } from './routes';
 import { patternToRegExp } from './verify';
 
 interface VercelConfig {
+  cleanUrls?: boolean;
   rewrites?: { source: string; destination: string }[];
+}
+
+/**
+ * With `cleanUrls`, Vercel 308s `/foo.html` to `/foo`, so a `.html` path is not a servable URL.
+ * `verify.ts` already guards rewrite destinations against this; the worker needs the same guard for
+ * a different reason. A precached redirect stores a response whose `redirected` flag is set, and
+ * the browser refuses to satisfy a navigation with one — so the offline fallback would fail at the
+ * only moment it matters, and only in production. It reached production once as a 308 on
+ * `/offline.html`.
+ */
+function verifyNoHtmlPaths(sw: string, file: string): void {
+  const offenders = [...sw.matchAll(/'(\/[^']*\.html)'/g)].map((match) => match[1]);
+  if (offenders.length) {
+    throw new Error(
+      `${file}: references ${offenders.join(', ')} while cleanUrls is on. Vercel redirects those ` +
+        'paths, and a cached redirected response cannot satisfy a navigation. Drop the extension.',
+    );
+  }
 }
 
 /** The hashed `/assets/*` URLs referenced by the built shell. */
@@ -55,6 +74,7 @@ export function stampServiceWorker(outDir: string, pages: PageSpec[], config: Ve
   const spaPaths = pages.filter((page) => page.spa && page.path).map((page) => page.path);
 
   let sw = readFileSync(swPath, 'utf8');
+  if (config.cleanUrls) verifyNoHtmlPaths(sw, swPath);
   sw = replaceOnce(sw, '__BUILD_ID__', JSON.stringify(buildId), swPath);
   sw = replaceOnce(sw, '__PRECACHE_ASSETS__', JSON.stringify(assets), swPath);
   sw = replaceOnce(sw, '__SPA_PATTERNS__', JSON.stringify(spaPatterns), swPath);
