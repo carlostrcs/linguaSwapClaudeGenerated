@@ -386,6 +386,11 @@ const dict: Dictionary = {
 
   'landing.footerVocabulary': 'Liste di vocaboli',
   'landing.footerGuides': 'Come funziona la ripetizione dilazionata',
+  'landing.footerPrivacy': 'Privacy',
+  'landing.footerTerms': 'Termini',
+  'auth.acceptTerms': 'Creando un account accetti i nostri {terms} e la nostra {privacy}.',
+  'legal.termsName': 'Termini di servizio',
+  'legal.privacyName': 'Informativa sulla privacy',
 
 
 

@@ -389,6 +389,11 @@ const dict: Dictionary = {
 
   'landing.footerVocabulary': 'Vokabellisten',
   'landing.footerGuides': 'So funktioniert verteilte Wiederholung',
+  'landing.footerPrivacy': 'Datenschutz',
+  'landing.footerTerms': 'AGB',
+  'auth.acceptTerms': 'Mit der Erstellung eines Kontos akzeptierst du unsere {terms} und unsere {privacy}.',
+  'legal.termsName': 'Nutzungsbedingungen',
+  'legal.privacyName': 'Datenschutzerklärung',
 
 
 

@@ -360,6 +360,11 @@ const dict: Dictionary = {
 
   'landing.footerVocabulary': 'Listas de vocabulario',
   'landing.footerGuides': 'Cómo funciona la repetición espaciada',
+  'landing.footerPrivacy': 'Privacidad',
+  'landing.footerTerms': 'Términos',
+  'auth.acceptTerms': 'Al crear una cuenta aceptas nuestros {terms} y nuestra {privacy}.',
+  'legal.termsName': 'Términos del servicio',
+  'legal.privacyName': 'Política de privacidad',
 
 
 

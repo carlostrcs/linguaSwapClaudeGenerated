@@ -361,6 +361,11 @@ const dict: Dictionary = {
 
   'landing.footerVocabulary': 'Listy słówek',
   'landing.footerGuides': 'Jak działają powtórki rozłożone w czasie',
+  'landing.footerPrivacy': 'Prywatność',
+  'landing.footerTerms': 'Regulamin',
+  'auth.acceptTerms': 'Zakładając konto, akceptujesz nasz {terms} i naszą {privacy}.',
+  'legal.termsName': 'Regulamin',
+  'legal.privacyName': 'Politykę prywatności',
 
 
 

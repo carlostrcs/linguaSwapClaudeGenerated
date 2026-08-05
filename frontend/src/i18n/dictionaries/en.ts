@@ -362,6 +362,11 @@ const dict: Dictionary = {
 
   'landing.footerVocabulary': 'Vocabulary lists',
   'landing.footerGuides': 'How spaced repetition works',
+  'landing.footerPrivacy': 'Privacy',
+  'landing.footerTerms': 'Terms',
+  'auth.acceptTerms': 'By creating an account you agree to our {terms} and {privacy}.',
+  'legal.termsName': 'Terms of Service',
+  'legal.privacyName': 'Privacy Policy',
 
 
 

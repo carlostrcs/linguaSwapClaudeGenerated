@@ -688,6 +688,36 @@ therefore serves the plain SPA; **`npm run preview` is where you see generated o
   costs a migration. `public/og.png` is committed, regenerated from `assets/og.svg` by
   `npm run og:build` (needs the `sharp` devDependency; the deploy does not).
 
+### Legal pages (privacy / terms / refunds)
+
+Real generated documents at `/privacy`, `/terms`, `/refunds` — same machinery as the guides
+(`build/content/legal.ts` for the prose, `build/render/legal.ts` reusing `renderDoc`, declared in
+`routes.ts`), so they ship as crawler- and reviewer-readable HTML with no JavaScript.
+
+- **English-only, and un-prefixed by locale** — the one deliberate exception to the seven-language
+  rule. A confidently-worded machine translation of a liability or refund clause is worse than an
+  honest English original. Every locale's footer links to them with a **translated label**, and each
+  page says the English text is authoritative. Translating later = add locale paths to
+  `src/content/legal.ts` and a per-locale document, exactly as the guides do. Paths are **frozen**:
+  they get linked from Stripe's dashboard and from emails.
+- **`PROVIDER` in `build/content/legal.ts` is a placeholder block** (operator name, address, contact,
+  jurisdiction, supervisory authority, refund window). While any value still starts with
+  `PLACEHOLDER`, `isDraft()` makes the generator emit the pages **`noindex` and out of the sitemap**
+  and print a build warning — an unfinished policy cannot quietly get indexed as the real thing.
+  Filling the block in un-hides them automatically. **Fill it before making the site public.**
+- **The prose was written against the code, not from a template** — what is stored (`Models/`), what
+  leaves the server (`StripeService`, `IEmailSender`, nothing else), what the browser keeps
+  (`api/client.ts`, `ThemeProvider`, `I18nProvider`, `lib/offlineQueue`), what deleting does
+  (`AccountController.Delete`), and the free-plan limits (`PremiumService`). **If any of those
+  change, change the document in the same commit** — a policy describing a previous version of the
+  software is a written misstatement, which is worse than having none. Two things it discloses that
+  are easy to forget: the **hide-when-free** behaviour (content over the limit is hidden, never
+  deleted) and that **deleting an account cancels the subscription immediately**.
+- `RegisterPage` shows the acceptance line with both documents linked at the point of acceptance.
+  Those links are plain `<a href>`; `check-routes.mjs` has `/privacy`, `/terms` and `/refunds` in
+  `CONTENT_PREFIXES` so a React Router `<Link>` to one fails the check.
+- **Not legal advice** — the business/jurisdictional decisions are yours and it should be reviewed.
+
 ### Installable app (PWA) & offline
 
 `public/manifest.webmanifest` + the icon/`theme-color` tags in `index.html` make the app

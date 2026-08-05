@@ -392,6 +392,11 @@ const dict: Dictionary = {
 
   'landing.footerVocabulary': 'Listas de vocabulário',
   'landing.footerGuides': 'Como funciona a repetição espaçada',
+  'landing.footerPrivacy': 'Privacidade',
+  'landing.footerTerms': 'Termos',
+  'auth.acceptTerms': 'Ao criar uma conta aceita os nossos {terms} e a nossa {privacy}.',
+  'legal.termsName': 'Termos de Serviço',
+  'legal.privacyName': 'Política de Privacidade',
 
 
 
