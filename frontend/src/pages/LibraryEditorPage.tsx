@@ -41,6 +41,9 @@ export default function LibraryEditorPage() {
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ['entries', libraryId] });
     qc.invalidateQueries({ queryKey: ['libraries'] });
+    // hiddenEntryCount (the "N words hidden" note) is server-derived and only rides on this query,
+    // so deleting words to get under the free cap must refresh it or the count stays at page-load.
+    qc.invalidateQueries({ queryKey: ['library', libraryId] });
   };
 
   const add = useMutation({

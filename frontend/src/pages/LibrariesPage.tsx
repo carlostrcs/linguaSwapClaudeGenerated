@@ -82,6 +82,10 @@ export default function LibrariesPage() {
       invalidate();
       // Deleting a copy of a featured library frees its master to reappear on the Featured shelf.
       qc.invalidateQueries({ queryKey: ['featured'] });
+      // Deleting frees a slot under the free-tier cap, so one hidden library becomes visible. The
+      // hidden count is server-derived (total - limit) and only rides on ['account'] — without this
+      // the "N hidden" note below keeps showing the count from page load while the user deletes.
+      qc.invalidateQueries({ queryKey: ['account'] });
     },
   });
 
