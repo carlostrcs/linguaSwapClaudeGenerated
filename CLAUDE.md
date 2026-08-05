@@ -638,11 +638,20 @@ therefore serves the plain SPA; **`npm run preview` is where you see generated o
   neither emitted nor matched by a rewrite — narrowing that list is the one change that can
   hard-404 a working route.
 - **`npm --prefix frontend run routes:check`** serves `dist/` with Vercel's semantics and asserts
-  ~37 assertions (content present without JS in each locale, robots/sitemaps resolve, app routes
+  ~41 assertions (content present without JS in each locale, robots/sitemaps resolve, app routes
   still boot, junk URLs return a real 404, footers stay inside the reader's language, and no React
-  Router `<Link>` points at a generated page). `vite preview` has its own SPA fallback that
-  swallows extensionless paths, so it **cannot** tell you whether the generated pages will be
-  served — this can.
+  Router `<Link>` points at a generated page). It stays the **authority**, because it is the only
+  thing that also models rewrites, `cleanUrls` and the 404 — but it is no longer the only place the
+  generated pages work (see below).
+- **`vite dev` and `vite preview` serve the generated pages too** (`configureServer` /
+  `configurePreviewServer` in `build/seo-plugin.ts`). They used to answer `/privacy`, `/learn` and
+  `/guides/**` with the SPA shell — React Router then matched no route and rendered the 404 page, so
+  **every footer link looked broken in dev** while being perfectly fine in production. That was
+  written off as "by design" more than once; it is not, it is just a dev server lying about the
+  site. Dev renders from the same `buildPages()` the real build uses (linking `/src/index.css?direct`,
+  since there is no hashed stylesheet yet); preview applies Vercel's filesystem step — exact file,
+  then `<path>.html`, then `<path>/index.html` — before its own SPA fallback. SPA routes are left
+  alone by both.
 - **`<Seo/>`** (`components/Seo.tsx`) uses React 19's native metadata hoisting — no helmet. React
   does *not* de-duplicate against tags already in the document, so the generator marks everything
   it injects `data-prerendered-seo` and `<Seo/>` removes those on mount. **hreflang and JSON-LD are
