@@ -133,4 +133,14 @@ public class PracticeSelectorTests
         Assert.Equal(mode, selector.Mode);
         Assert.Equal(expected, selector.Reschedules);
     }
+
+    // Which modes a free account may start. Mirrored by frontend/src/lib/practiceModes.ts.
+    [Theory]
+    [InlineData(PracticeMode.SmartReview, false)]
+    [InlineData(PracticeMode.LearnNew, false)]
+    [InlineData(PracticeMode.Weak, true)]
+    [InlineData(PracticeMode.Cram, true)]
+    [InlineData(PracticeMode.Journey, true)]
+    public void RequiresPremium_MatchesMode(PracticeMode mode, bool expected) =>
+        Assert.Equal(expected, PremiumService.RequiresPremium(mode));
 }

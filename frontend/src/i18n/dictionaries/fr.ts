@@ -190,8 +190,7 @@ const dict: Dictionary = {
   'practice.modeWeak': 'Mots difficiles',
   'practice.modeWeakDesc':
     'Travaille en priorité les mots que vous ratez le plus et vos boîtes les plus basses. Idéal pour cibler vos points faibles.',
-  'practice.modesPremiumHint':
-    'Apprendre du nouveau, Parcours, Révision express et Mots difficiles sont premium.',
+  'practice.modesPremiumHint': 'Parcours, Révision express et Mots difficiles sont premium.',
   'practice.journeyLibrary': 'Bibliothèque : {learned} / {total} acquis',
   'practice.journeySet': 'Série actuelle : {size} mots · Tour {round}',
   'practice.journeyGrew': 'Série maîtrisée ! De nouveaux mots ont été ajoutés — {size} en jeu maintenant.',

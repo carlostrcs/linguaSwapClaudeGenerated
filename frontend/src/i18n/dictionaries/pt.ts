@@ -195,8 +195,7 @@ const dict: Dictionary = {
   'practice.modeWeak': 'Palavras difíceis',
   'practice.modeWeakDesc':
     'Pratica primeiro as palavras que erra mais e as suas caixas mais baixas. Ideal para atacar os pontos fracos.',
-  'practice.modesPremiumHint':
-    'Aprender novas, Percurso, Revisão rápida e Palavras difíceis são premium.',
+  'practice.modesPremiumHint': 'Percurso, Revisão rápida e Palavras difíceis são premium.',
   'practice.journeyLibrary': 'Biblioteca: {learned} / {total} aprendidas',
   'practice.journeySet': 'Conjunto atual: {size} palavras · Ronda {round}',
   'practice.journeyGrew': 'Conjunto dominado! Adicionadas palavras novas — {size} em jogo agora.',

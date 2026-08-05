@@ -178,7 +178,7 @@ const dict: Dictionary = {
   'practice.modeCramDesc': 'Recorre toda la biblioteca de una vez, ignorando el calendario. Ideal para repasar a última hora antes de un examen; no altera tu calendario de repaso.',
   'practice.modeWeak': 'Palabras difíciles',
   'practice.modeWeakDesc': 'Practica primero las palabras que más fallas y tus cajas más bajas. Ideal para reforzar los puntos débiles.',
-  'practice.modesPremiumHint': 'Aprender nuevas, Recorrido, Repaso rápido y Palabras difíciles son premium.',
+  'practice.modesPremiumHint': 'Recorrido, Repaso rápido y Palabras difíciles son premium.',
   'practice.journeyLibrary': 'Biblioteca: {learned} / {total} aprendidas',
   'practice.journeySet': 'Conjunto actual: {size} palabras · Ronda {round}',
   'practice.journeyGrew': '¡Conjunto dominado! Se añadieron palabras nuevas — {size} en juego ahora.',

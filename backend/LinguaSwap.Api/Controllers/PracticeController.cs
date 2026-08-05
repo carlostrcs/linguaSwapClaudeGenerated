@@ -31,8 +31,8 @@ public class PracticeController(
         if (src == tgt)
             return BadRequest(new { message = "Choose two different languages." });
         var isPremium = await premium.IsPremiumAsync(userId);
-        // Smart Review is free; the other practice systems are premium (DB is authoritative).
-        if (req.Mode != PracticeMode.SmartReview && !isPremium)
+        // Smart Review and Learn New are free; the other practice systems are premium (DB is authoritative).
+        if (PremiumService.RequiresPremium(req.Mode) && !isPremium)
             return StatusCode(StatusCodes.Status403Forbidden,
                 new { message = "This practice mode is a premium feature." });
         // Hidden libraries can't be practised while free.

@@ -193,7 +193,7 @@ const dict: Dictionary = {
   'practice.modeWeak': 'Schwache Wörter',
   'practice.modeWeakDesc':
     'Übt zuerst die Wörter, die du am häufigsten falsch hast, und deine niedrigsten Fächer. Am besten für gezielte Schwachstellen.',
-  'practice.modesPremiumHint': 'Neues lernen, Reise, Pauken und Schwache Wörter sind Premium.',
+  'practice.modesPremiumHint': 'Reise, Pauken und Schwache Wörter sind Premium.',
   'practice.journeyLibrary': 'Bibliothek: {learned} / {total} gelernt',
   'practice.journeySet': 'Aktueller Satz: {size} Wörter · Runde {round}',
   'practice.journeyGrew': 'Satz gemeistert! Neue Wörter hinzugefügt — jetzt {size} im Spiel.',

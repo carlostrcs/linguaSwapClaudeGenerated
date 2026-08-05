@@ -199,9 +199,11 @@ sample-imports/  example .json files for testing import (not used by the app at 
   hard-coding the query, and the chosen mode is stored on `PracticeSession.Mode`.
   - `SmartReview` — the original Leitner due→new→not-due selection (unchanged). **Free, default.**
   - `LearnNew` — only never-seen words (a fresh batch, capped at ~20); endless and client-driven
-    (see below). `Cram` — the whole library, shuffled, no cap. `Weak` — seen words, lowest box /
-    most-missed first. `Journey` — the whole library in order (see below). **All four are premium**
-    (`Start` returns `403` for free users via `PremiumService`); the picker locks them for free users.
+    (see below). **Also free** — a free account can both review its schedule and take on new words.
+  - `Cram` — the whole library, shuffled, no cap. `Weak` — seen words, lowest box / most-missed
+    first. `Journey` — the whole library in order (see below). **These three are premium** (`Start`
+    returns `403` for free users via `PremiumService.RequiresPremium`, the single source of truth for
+    which modes are gated); the picker locks them for free users.
   - **Rescheduling is per-mode** (`IPracticeSelector.Reschedules`): SmartReview/LearnNew/Weak move
     Leitner boxes; **Cram and Journey are practice-only** — `Answer` still records the `Attempt` (so
     stats count) but skips `LeitnerService.ApplyAnswer`, so they never disturb the schedule. LearnNew
@@ -369,8 +371,9 @@ anything; premium users **Add** one and practise it.
   tell trial from paid) and `trialEndsAt`. See _Free trial & hide-when-free_ below.
 - **Gates** (all enforced server-side via `Services/PremiumService`, surfaced as `403 { message }`):
   - Word import (both endpoints) — premium only.
-  - Practice modes — `LearnNew`/`Journey`/`Cram`/`Weak` are premium (`POST /api/practice/sessions`
-    returns `403` for a non-`SmartReview` mode); `SmartReview` stays free. See _Practice systems_.
+  - Practice modes — `Journey`/`Cram`/`Weak` are premium (`POST /api/practice/sessions` returns
+    `403` when `PremiumService.RequiresPremium(mode)`); `SmartReview` and `LearnNew` stay free.
+    See _Practice systems_.
   - Library count — free users max `FreeLibraryLimit` (**5**) libraries. Over-limit libraries are
     **hidden, not blocked** for users who exceeded the cap while premium (see hide-when-free below).
   - Words per library — free users max `FreeWordsPerLibrary` (**500**); checked on manual add.

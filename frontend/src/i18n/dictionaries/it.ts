@@ -191,8 +191,7 @@ const dict: Dictionary = {
   'practice.modeWeak': 'Parole deboli',
   'practice.modeWeakDesc':
     'Esercita per prime le parole che sbagli di più e le tue scatole più basse. Ideale per colpire i punti deboli.',
-  'practice.modesPremiumHint':
-    'Impara nuove, Percorso, Ripasso lampo e Parole deboli sono funzioni premium.',
+  'practice.modesPremiumHint': 'Percorso, Ripasso lampo e Parole deboli sono funzioni premium.',
   'practice.journeyLibrary': 'Raccolta: {learned} / {total} imparate',
   'practice.journeySet': 'Gruppo attuale: {size} parole · Giro {round}',
   'practice.journeyGrew': 'Gruppo completato! Aggiunte parole nuove — ora {size} in gioco.',

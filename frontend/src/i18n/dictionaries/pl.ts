@@ -177,7 +177,7 @@ const dict: Dictionary = {
   'practice.modeCramDesc': 'Przeleć przez całą bibliotekę naraz, ignorując harmonogram. Najlepszy na powtórkę w ostatniej chwili przed testem — nie zmieni Twojego harmonogramu powtórek.',
   'practice.modeWeak': 'Słabe słowa',
   'practice.modeWeakDesc': 'Ćwiczy najpierw słowa, które najczęściej mylisz, i te z najniższych pudełek. Najlepszy do pracy nad problematycznymi miejscami.',
-  'practice.modesPremiumHint': 'Ucz się nowych, Podróż, Kucie i Słabe słowa są dostępne w wersji premium.',
+  'practice.modesPremiumHint': 'Podróż, Kucie i Słabe słowa są dostępne w wersji premium.',
   'practice.journeyLibrary': 'Biblioteka: opanowano {learned} / {total}',
   'practice.journeySet': 'Bieżący zestaw: {size} słów · Runda {round}',
   'practice.journeyGrew': 'Zestaw opanowany! Dodano nowe słowa — teraz w grze {size}.',

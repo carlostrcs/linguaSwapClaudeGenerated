@@ -20,6 +20,12 @@ public class PremiumService(AppDbContext db)
     /// <summary>Length of the one-time free trial, in days.</summary>
     public const int TrialDays = 14;
 
+    /// <summary>Whether a practice system is premium-only. Smart Review and Learn New are free (a
+    /// free account can review its schedule and take on new words); Journey/Cram/Weak are premium.
+    /// Mirrored client-side by <c>frontend/src/lib/practiceModes.ts</c> <c>isPremiumMode</c>.</summary>
+    public static bool RequiresPremium(PracticeMode mode) =>
+        mode is not (PracticeMode.SmartReview or PracticeMode.LearnNew);
+
     /// <summary>Whether the given user currently has premium access — a paid subscription or an
     /// unexpired free trial (see <see cref="ApplicationUser.HasPremiumAccess"/>).</summary>
     public async Task<bool> IsPremiumAsync(string userId)

@@ -178,7 +178,7 @@ const dict: Dictionary = {
   'practice.modeCramDesc': 'Blast through the whole library at once, ignoring the schedule. Best for last-minute review before a test — it will not change your review schedule.',
   'practice.modeWeak': 'Weak Words',
   'practice.modeWeakDesc': 'Drills the words you get wrong most and your lowest boxes first. Best for targeting trouble spots.',
-  'practice.modesPremiumHint': 'Learn New, Journey, Cram and Weak Words are premium.',
+  'practice.modesPremiumHint': 'Journey, Cram and Weak Words are premium.',
   'practice.journeyLibrary': 'Library: {learned} / {total} learned',
   'practice.journeySet': 'Current set: {size} words · Round {round}',
   'practice.journeyGrew': 'Set mastered! New words added — {size} in play now.',

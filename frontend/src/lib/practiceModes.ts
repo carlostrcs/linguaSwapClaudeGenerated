@@ -5,8 +5,9 @@ import type { PracticeMode } from '../api/types';
 
 export const PRACTICE_MODES: PracticeMode[] = ['SmartReview', 'LearnNew', 'Journey', 'Cram', 'Weak'];
 
-/** Smart Review is free; the other systems are premium (mirrors the server-side 403 gate). */
-export const isPremiumMode = (mode: PracticeMode): boolean => mode !== 'SmartReview';
+/** Smart Review and Learn New are free; the rest are premium (mirrors PremiumService.RequiresPremium). */
+export const isPremiumMode = (mode: PracticeMode): boolean =>
+  mode !== 'SmartReview' && mode !== 'LearnNew';
 
 /** Modes that repeat a missed word later in the same finite session (Cram). */
 export const isReinforcingMode = (mode: PracticeMode): boolean => mode === 'Cram';
