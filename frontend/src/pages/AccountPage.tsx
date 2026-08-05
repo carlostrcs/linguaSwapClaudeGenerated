@@ -288,6 +288,8 @@ export default function AccountPage() {
       <div className="card danger-zone">
         <h2>{t('account.dangerZone')}</h2>
         <p className="muted">{t('account.deleteDesc')}</p>
+        {/* Deleting cancels the Stripe subscription server-side; say so before they click. */}
+        {subscriptionActive && <p className="muted">{t('account.deleteCancelsSubscription')}</p>}
         <button
           type="button"
           className="btn btn-danger"
@@ -300,7 +302,11 @@ export default function AccountPage() {
       {confirmingDelete && (
         <ConfirmModal
           title={t('account.deleteTitle')}
-          message={t('account.deleteConfirm')}
+          message={
+            subscriptionActive
+              ? `${t('account.deleteConfirm')} ${t('account.deleteCancelsSubscription')}`
+              : t('account.deleteConfirm')
+          }
           confirmLabel={t('account.deleteAccount')}
           busy={del.isPending}
           error={deleteErr}

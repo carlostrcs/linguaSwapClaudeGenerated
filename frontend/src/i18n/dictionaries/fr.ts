@@ -269,6 +269,8 @@ const dict: Dictionary = {
   'account.dangerZone': 'Zone sensible',
   'account.deleteDesc':
     'Supprimer votre compte efface toutes vos bibliothèques, vos mots et vos statistiques.',
+  'account.deleteCancelsSubscription':
+    'Votre abonnement premium sera annulé : vous ne serez plus débité.',
   'account.deleteAccount': 'Supprimer mon compte',
   'account.deleteTitle': 'Supprimer le compte',
   'account.deleteConfirm':

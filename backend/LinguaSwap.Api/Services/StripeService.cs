@@ -108,6 +108,42 @@ public class StripeService(AppDbContext db, IConfiguration config, ILogger<Strip
         await db.SaveChangesAsync();
     }
 
+    /// <summary>
+    /// Cancel the user's subscription immediately and drop premium. Used when an account is
+    /// deleted: the user row is the only mapping from a Stripe customer back to an account, so a
+    /// subscription that outlives it keeps charging the card with nothing left to revoke it.
+    /// Returns <c>false</c> only when Stripe refused for a reason that may clear on retry — the
+    /// caller should then keep the account rather than orphan a live subscription.
+    /// </summary>
+    public async Task<bool> CancelSubscriptionAsync(ApplicationUser user)
+    {
+        if (string.IsNullOrEmpty(user.StripeSubscriptionId)) return true;
+
+        try
+        {
+            // Immediate, not at period end — the account is going away, so there is nothing left
+            // to keep paying for. Stripe does not prorate a cancellation by default.
+            await new SubscriptionService().CancelAsync(user.StripeSubscriptionId);
+        }
+        catch (StripeException ex) when (ex.StripeError?.Code == "resource_missing")
+        {
+            // Already cancelled or removed on the Stripe side: nothing bills, nothing to do.
+            logger.LogInformation(
+                "Subscription {SubscriptionId} was already gone in Stripe", user.StripeSubscriptionId);
+        }
+        catch (StripeException ex)
+        {
+            logger.LogError(ex,
+                "Could not cancel subscription {SubscriptionId}", user.StripeSubscriptionId);
+            return false;
+        }
+
+        user.IsPremium = false;
+        user.StripeSubscriptionId = null;
+        await db.SaveChangesAsync();
+        return true;
+    }
+
     /// <summary>Create a Stripe Customer Portal session so the user can manage/cancel.</summary>
     public async Task<string?> CreatePortalSessionAsync(ApplicationUser user)
     {

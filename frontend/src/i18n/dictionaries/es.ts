@@ -253,6 +253,8 @@ const dict: Dictionary = {
   'account.passwordFailed': 'No se pudo cambiar la contraseña.',
   'account.dangerZone': 'Zona de peligro',
   'account.deleteDesc': 'Eliminar tu cuenta borra todas tus bibliotecas, palabras y estadísticas.',
+  'account.deleteCancelsSubscription':
+    'Tu suscripción premium se cancelará, así que no se te volverá a cobrar.',
   'account.deleteAccount': 'Eliminar mi cuenta',
   'account.deleteTitle': 'Eliminar cuenta',
   'account.deleteConfirm': '¿Eliminar tu cuenta y TODOS tus datos? No se puede deshacer.',

@@ -13,7 +13,9 @@ namespace LinguaSwap.Api.Controllers;
 public class AccountController(
     UserManager<ApplicationUser> users,
     PremiumService premium,
-    EmailConfirmationService confirmations) : ControllerBase
+    EmailConfirmationService confirmations,
+    StripeService stripe,
+    ILogger<AccountController> logger) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> Get()
@@ -82,6 +84,20 @@ public class AccountController(
     {
         var user = await users.FindByIdAsync(User.GetUserId());
         if (user is null) return NotFound();
+
+        // Stop the billing FIRST. Deleting the user removes the only mapping from a Stripe
+        // customer back to an account, so a subscription that survived the delete would keep
+        // charging the card and no webhook could ever revoke it. If Stripe is unreachable we
+        // keep the account instead — a retryable error beats an uncancellable charge.
+        if (!await stripe.CancelSubscriptionAsync(user))
+        {
+            logger.LogError("Refusing to delete user {UserId}: subscription cancellation failed", user.Id);
+            return StatusCode(StatusCodes.Status502BadGateway, new
+            {
+                message = "Could not cancel your subscription, so the account was not deleted. "
+                          + "Please try again in a moment, or cancel from the billing portal first.",
+            });
+        }
 
         // Deleting the user cascades to all their libraries, words and practice data
         // via the foreign keys configured in AppDbContext.

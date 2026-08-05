@@ -399,6 +399,14 @@ anything; premium users **Add** one and practise it.
   `POST /api/billing/webhook` (`checkout.session.completed` → grant;
   `customer.subscription.deleted`/lapsed `updated` → revoke). `POST /api/billing/portal` opens the
   Stripe Customer Portal to manage/cancel.
+- **Deleting an account cancels the subscription first.** `AccountController.Delete` calls
+  `StripeService.CancelSubscriptionAsync` (immediate, not at period end) *before*
+  `UserManager.DeleteAsync`, and **refuses the delete with `502`** if Stripe is unreachable. The
+  user row is the only mapping from a Stripe customer back to an account, so a subscription that
+  outlived it would keep charging the card with no webhook able to revoke it — a retryable error
+  beats an uncancellable charge. A subscription already gone on Stripe's side (`resource_missing`)
+  counts as success. The Account page warns about the cancellation when `subscriptionActive`
+  (`account.deleteCancelsSubscription`).
 - **Config:** `Stripe:SecretKey`, `Stripe:WebhookSecret`, `Stripe:PriceId`, and `FrontendBaseUrl`
   in `appsettings.json` (empty placeholders — supply real **test** values via `dotnet user-secrets`
   or a gitignored `appsettings.Development.json`; **never commit real keys**). `StripeConfiguration.ApiKey`
@@ -670,3 +678,4 @@ therefore serves the plain SPA; **`npm run preview` is where you see generated o
   domain in Vercel **before** submitting the sitemap; indexing under one host and moving later
   costs a migration. `public/og.png` is committed, regenerated from `assets/og.svg` by
   `npm run og:build` (needs the `sharp` devDependency; the deploy does not).
+

@@ -273,6 +273,8 @@ const dict: Dictionary = {
   'account.dangerZone': 'Gefahrenzone',
   'account.deleteDesc':
     'Wenn du dein Konto löschst, werden alle deine Bibliotheken, Wörter und Statistiken entfernt.',
+  'account.deleteCancelsSubscription':
+    'Dein Premium-Abo wird gekündigt, es werden dir also keine weiteren Kosten berechnet.',
   'account.deleteAccount': 'Mein Konto löschen',
   'account.deleteTitle': 'Konto löschen',
   'account.deleteConfirm':

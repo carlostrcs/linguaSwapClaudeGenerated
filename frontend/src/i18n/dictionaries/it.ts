@@ -271,6 +271,8 @@ const dict: Dictionary = {
   'account.dangerZone': 'Zona pericolosa',
   'account.deleteDesc':
     'Eliminando il tuo account rimuovi tutte le tue raccolte, parole e statistiche.',
+  'account.deleteCancelsSubscription':
+    'Il tuo abbonamento premium verrà annullato, quindi non ti verrà addebitato altro.',
   'account.deleteAccount': 'Elimina il mio account',
   'account.deleteTitle': 'Elimina account',
   'account.deleteConfirm': 'Eliminare il tuo account e TUTTI i tuoi dati? Non si può annullare.',

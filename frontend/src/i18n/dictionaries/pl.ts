@@ -252,6 +252,8 @@ const dict: Dictionary = {
   'account.passwordFailed': 'Nie udało się zmienić hasła.',
   'account.dangerZone': 'Strefa niebezpieczna',
   'account.deleteDesc': 'Usunięcie konta powoduje skasowanie wszystkich Twoich bibliotek, słów i statystyk.',
+  'account.deleteCancelsSubscription':
+    'Twoja subskrypcja premium zostanie anulowana, więc nie zostaniesz ponownie obciążony.',
   'account.deleteAccount': 'Usuń moje konto',
   'account.deleteTitle': 'Usuń konto',
   'account.deleteConfirm': 'Usunąć konto i WSZYSTKIE Twoje dane? Tej operacji nie można cofnąć.',
