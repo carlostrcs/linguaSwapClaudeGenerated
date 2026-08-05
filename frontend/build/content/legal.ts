@@ -1,9 +1,9 @@
 // The legal documents, as data. Build-time only — this never reaches the client bundle.
 //
 // NOT LEGAL ADVICE. These are drafted to describe accurately what this application actually does
-// (which is the part a lawyer cannot know and the part that is expensive to get wrong), but the
-// business and jurisdictional decisions are marked PLACEHOLDER below and must be completed, and
-// the result should be reviewed by someone qualified before you rely on it.
+// (which is the part a lawyer cannot know and the part that is expensive to get wrong). The
+// business and jurisdictional choices in `PROVIDER` below are the operator's, and the result
+// should be reviewed by someone qualified before you rely on it.
 //
 // Everything asserted here was checked against the code:
 //   - what is stored            -> Models/, AppDbContext
@@ -32,23 +32,25 @@ export interface LegalDoc {
 }
 
 /**
- * PLACEHOLDER — replace every value here with the real operator details, then rebuild.
+ * Who operates the service, and under which law.
  *
- * While any value still starts with `PLACEHOLDER`, the generator marks these pages `noindex` and
- * prints a build warning, so an unfinished policy cannot quietly get indexed as the real thing.
- * See `isDraft()` below and its use in build/routes.ts.
+ * LinguaSwap is run by an individual developer, not a company, so there is deliberately **no legal
+ * name and no registered address here** — the operator's choice. Be aware that Spain's LSSI-CE and
+ * GDPR Art. 13 do expect a provider to identify itself by name; adding a `name` field here and
+ * referencing it from the "Who is responsible" section is the one-line change if that becomes
+ * necessary (for example if this stops being a hobby project, or Stripe asks).
+ *
+ * Any value left starting with `PLACEHOLDER` makes `isDraft()` true, which marks these pages
+ * `noindex`, keeps them out of the sitemap and prints a build warning — so a half-finished policy
+ * cannot quietly get indexed as though it were the real thing.
  */
 export const PROVIDER = {
-  /** The legal entity or individual operating LinguaSwap ("Sole trader, Jane Doe" / "Acme S.L."). */
-  name: 'PLACEHOLDER — operator legal name',
-  /** Registered address, or at least the country of establishment. */
-  address: 'PLACEHOLDER — registered address',
   /** A monitored address. Data-protection requests and refund requests both arrive here. */
-  email: 'PLACEHOLDER — contact@yourdomain',
+  email: 'carlostorrillascasas1@gmail.com',
   /** Country whose law governs the terms, and whose courts hear disputes. */
-  jurisdiction: 'PLACEHOLDER — country',
-  /** Supervisory authority for data-protection complaints (e.g. the AEPD in Spain). */
-  supervisoryAuthority: 'PLACEHOLDER — your national data protection authority',
+  jurisdiction: 'Spain',
+  /** Supervisory authority for data-protection complaints. */
+  supervisoryAuthority: 'the Spanish Data Protection Agency (AEPD)',
   /** Business decision: how long after a charge you will refund. The EU withdrawal right is 14 days. */
   refundWindowDays: 14,
   /** Shown as "last updated" on every document. Bump when you change the text. */
@@ -76,7 +78,8 @@ const privacy: LegalDoc = {
     {
       heading: 'Who is responsible',
       paragraphs: [
-        `LinguaSwap is operated by ${PROVIDER.name}, ${PROVIDER.address}. For anything in this policy, including a request to see or delete your data, write to ${PROVIDER.email}.`,
+        `LinguaSwap is an independent project run by an individual developer based in ${PROVIDER.jurisdiction} — not a company. That person is the data controller for everything described here.`,
+        `For anything in this policy, including a request to see or delete your data, write to ${PROVIDER.email}. That address is monitored and is the fastest way to reach a human.`,
         ENGLISH_ONLY,
       ],
     },
@@ -177,12 +180,13 @@ const terms: LegalDoc = {
   description:
     'The agreement for using LinguaSwap: accounts, your content, the free and premium plans, billing, and the limits of our liability.',
   heading: 'Terms of Service',
-  lede: `Last updated ${PROVIDER.lastUpdated}. These terms are the agreement between you and ${PROVIDER.name} for the use of LinguaSwap. Creating an account means accepting them.`,
+  lede: `Last updated ${PROVIDER.lastUpdated}. These terms are the agreement between you and the developer who operates LinguaSwap ("we") for the use of the service. Creating an account means accepting them.`,
   sections: [
     {
       heading: 'The service',
       paragraphs: [
         'LinguaSwap lets you build libraries of words with translations in several languages, practise them in a chosen direction, and track your progress with a spaced-repetition schedule. Some features are limited to a paid plan, described below.',
+        `It is an independent project run by one developer based in ${PROVIDER.jurisdiction}, not a company. Everything below is written on that basis, and ${PROVIDER.email} reaches that person directly.`,
         ENGLISH_ONLY,
       ],
     },
