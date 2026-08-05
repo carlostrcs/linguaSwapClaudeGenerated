@@ -380,6 +380,17 @@ select { text-transform: uppercase; }
 }
 .speak-btn:hover { color: var(--primary); }
 .speak-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
+/* Labelled variant: a standalone pill (the "hear the word to guess" aid on the practice card),
+   as opposed to the bare icon that sits beside a word. */
+.speak-btn-labelled {
+  gap: 0.4rem;
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.85rem;
+}
+.speak-btn-labelled:hover { border-color: var(--primary); }
+.listen-row { display: flex; justify-content: center; margin-bottom: 1.25rem; }
 
 .hint-guide { display: flex; justify-content: center; flex-wrap: wrap; gap: 0.3rem; margin-bottom: 1.25rem; }
 .hint-box {
@@ -676,6 +687,7 @@ select { text-transform: uppercase; }
   .btn { padding: 0.6rem 1rem; }
   .special-char-btn { min-height: 44px; }
   .speak-btn { padding: 0.5rem; }
+  .speak-btn-labelled { padding: 0.5rem 0.9rem; }
 }
 
 /* ============================================================

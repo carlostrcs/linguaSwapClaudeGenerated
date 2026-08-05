@@ -213,6 +213,7 @@ const dict: Dictionary = {
   'practice.specialChars': 'Caracteres especiais',
   'practice.insertChar': 'Inserir "{char}" (tecla {key})',
   'practice.playAudio': 'Ouvir a pronúncia',
+  'practice.hearTargetWord': 'Ouvir a palavra a adivinhar',
   'practice.check': 'Verificar',
   'practice.checking': 'A verificar…',
   'practice.next': 'Seguinte',

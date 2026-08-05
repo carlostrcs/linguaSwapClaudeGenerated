@@ -194,6 +194,7 @@ const dict: Dictionary = {
   'practice.specialChars': 'Znaki specjalne',
   'practice.insertChar': 'Wstaw „{char}” (klawisz {key})',
   'practice.playAudio': 'Odtwórz wymowę',
+  'practice.hearTargetWord': 'Posłuchaj szukanego słowa',
   'practice.check': 'Sprawdź',
   'practice.checking': 'Sprawdzanie…',
   'practice.next': 'Dalej',

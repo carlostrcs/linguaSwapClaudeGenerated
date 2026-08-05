@@ -70,6 +70,11 @@ export default function PracticeCard({
 
   const specialChars = specialCharsFor(targetLanguage);
   const caseSensitive = isCaseSensitiveLang(targetLanguage);
+  // The word being asked for, pronounceable before it is revealed: hearing it is a legitimate way to
+  // recall a word you know by sound. Only the primary alternative — speaking a comma-separated list
+  // would read the punctuation out. `acceptedAnswer` is sent up-front for every mode and difficulty
+  // (the client grades locally), so this needs no extra request.
+  const targetWord = primaryAnswer(word.acceptedAnswer);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -151,6 +156,19 @@ export default function PracticeCard({
       {word.notes && <div className="prompt-note">{word.notes}</div>}
 
       {difficulty !== 'Hard' && word.hint && <HintGuide hint={word.hint} />}
+
+      {/* Listening aid, offered at every difficulty. Hidden once the answer is revealed — the
+          feedback line below carries its own speaker for the same word. */}
+      {!result && targetWord && (
+        <div className="listen-row">
+          <SpeakButton
+            text={targetWord}
+            lang={targetLanguage}
+            label={t('practice.hearTargetWord')}
+            focusable
+          />
+        </div>
+      )}
 
       <form onSubmit={onSubmitForm}>
         <input

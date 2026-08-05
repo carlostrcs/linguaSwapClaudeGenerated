@@ -277,7 +277,17 @@ sample-imports/  example .json files for testing import (not used by the app at 
   demo for free. `lib/languages.ts` `speechLangFor` maps the bare code to a BCP-47 locale
   (`es`→`es-ES`), joining the `FLAGS`/`PROFILES` maps. This is a **cosmetic client-only** feature —
   unlike case-sensitivity/keypad it has **no backend mirror** to keep in sync. The button hides itself
-  when the browser lacks speech support. New i18n key: `practice.playAudio` (en/es).
+  when the browser lacks speech support. i18n keys: `practice.playAudio`, `practice.hearTargetWord`.
+  - **The word being asked for can also be heard *before* it is revealed**, at **every difficulty**
+    (recalling a word from its sound is a legitimate way to learn it) — a labelled pill under the
+    hint, `SpeakButton` with `label`, speaking `primaryAnswer(word.acceptedAnswer)` in the target
+    language. This needs no new API surface: `acceptedAnswer` is already sent up-front for every mode
+    and difficulty because the client grades locally. It hides once the answer is revealed (the
+    feedback line has its own speaker for the same word), and because every runner funnels through
+    `PracticeCard`, SmartReview/LearnNew/Cram/Weak/Journey **and the demo** all get it at once.
+  - The bare icon speakers stay **out of the tab order** (`tabIndex -1`, like the diacritic keypad) so
+    Tab still walks input → submit; the labelled one passes `focusable` because a standalone control
+    that only a mouse can reach is a real gap in an *audio* feature.
 - The full build plan / change history lives at
   `C:\Users\carlo\.claude\plans\i-am-a-first-sorted-origami.md`.
 

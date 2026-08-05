@@ -6,6 +6,17 @@ interface Props {
   text: string;
   /** App language code of the text (e.g. 'es', 'en'). */
   lang: string;
+  /**
+   * Visible caption next to the speaker. Omit for the bare icon that sits beside a word; pass a
+   * label when the control stands on its own and needs to say what it will pronounce.
+   */
+  label?: string;
+  /**
+   * Put the button in the tab order. Off by default: the helper controls beside a practice word
+   * stay out of it so Tab still walks input → submit. Turn it on for a standalone control that
+   * would otherwise be unreachable without a mouse.
+   */
+  focusable?: boolean;
 }
 
 // Feather "volume-2" speaker, inlined (no icon lib in this project; keeps it CSP-safe).
@@ -29,26 +40,28 @@ const SpeakerIcon = (
 
 /**
  * A small speaker button that pronounces `text` via the Web Speech API. Renders nothing when the
- * browser has no speech support, so callers never show a dead control. Designed to sit next to a
- * word without stealing focus from the practice answer input (tabIndex -1 + mouseDown preventDefault),
- * mirroring the diacritic keypad's focus discipline.
+ * browser has no speech support, so callers never show a dead control. Two shapes: the bare icon that
+ * sits next to a word, and a labelled pill for a standalone control (`label`). Clicking never steals
+ * focus from the practice answer input (mouseDown preventDefault), and the bare icon also stays out
+ * of the tab order, mirroring the diacritic keypad's focus discipline.
  */
-export default function SpeakButton({ text, lang }: Props) {
+export default function SpeakButton({ text, lang, label, focusable = false }: Props) {
   const { t } = useI18n();
   if (!isSpeechSupported()) return null;
 
-  const label = t('practice.playAudio');
+  const accessibleLabel = label ?? t('practice.playAudio');
   return (
     <button
       type="button"
-      className="speak-btn"
-      tabIndex={-1}
-      aria-label={label}
-      title={label}
+      className={`speak-btn${label ? ' speak-btn-labelled' : ''}`}
+      tabIndex={focusable ? undefined : -1}
+      aria-label={accessibleLabel}
+      title={accessibleLabel}
       onMouseDown={(e) => e.preventDefault()}
       onClick={() => speak(text, lang)}
     >
       {SpeakerIcon}
+      {label && <span className="speak-btn-label">{label}</span>}
     </button>
   );
 }

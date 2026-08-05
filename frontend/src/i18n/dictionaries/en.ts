@@ -195,6 +195,7 @@ const dict: Dictionary = {
   'practice.specialChars': 'Special characters',
   'practice.insertChar': 'Insert "{char}" (key {key})',
   'practice.playAudio': 'Play pronunciation',
+  'practice.hearTargetWord': 'Hear the word to guess',
   'practice.check': 'Check',
   'practice.checking': 'Checking…',
   'practice.next': 'Next',
