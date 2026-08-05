@@ -276,6 +276,11 @@ const dict: Dictionary = {
   'premium.freeDesc':
     'Estás en el plan gratuito. Mejora para tener bibliotecas y palabras ilimitadas, importación de palabras, temas extra y estadísticas detalladas.',
   'premium.upgrade': 'Mejorar a Premium',
+  'premium.perMonth': 'al mes',
+  'premium.perYear': 'al año',
+  'premium.perWeek': 'a la semana',
+  'premium.perPeriod': 'por periodo de facturación',
+  'premium.cancelAnytime': 'Cancela cuando quieras.',
   'premium.upgradeLink': 'Mejorar a Premium',
   'premium.redirecting': 'Redirigiendo…',
   'premium.manage': 'Gestionar suscripción',

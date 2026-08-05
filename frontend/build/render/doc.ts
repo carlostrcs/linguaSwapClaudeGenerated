@@ -9,6 +9,7 @@
 // French chrome without a second copy of those strings.
 
 import { guidePath } from '../../src/content/guides';
+import { legalPath } from '../../src/content/legal';
 import { hasVocabPages, learnIndexPath } from '../../src/content/learn';
 import { translator } from '../../src/i18n/interpolate';
 import type { LanguageId } from '../../src/i18n/translations';
@@ -71,6 +72,10 @@ function renderFooter(locale: string): string {
     ...(hasVocabPages(locale) ? [link(learnIndexPath(locale), t('landing.footerVocabulary'))] : []),
     link(guidePath(locale, 'spaced-repetition'), t('landing.footerGuides')),
     link(`/demo${locale === 'en' ? '' : `?lang=${locale}`}`, t('landing.tryDemo')),
+    // English-only documents, so these two targets are identical in every locale — only the label
+    // is translated. See src/content/legal.ts.
+    link(legalPath('privacy'), t('landing.footerPrivacy')),
+    link(legalPath('terms'), t('landing.footerTerms')),
   ];
 
   const languages = LOCALES.map((l) =>

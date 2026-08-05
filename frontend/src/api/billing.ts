@@ -18,3 +18,18 @@ export const startTrial = () => api<Account>('/billing/trial', { method: 'POST' 
 
 /** Open the Stripe Customer Portal to manage/cancel the subscription. */
 export const openPortal = () => api<CheckoutUrl>('/billing/portal', { method: 'POST' });
+
+/** Amount is in the currency's minor unit (cents), as Stripe reports it. */
+export interface PriceInfo {
+  amountMinorUnits: number;
+  currency: string;
+  interval: string;
+  intervalCount: number;
+}
+
+/**
+ * What premium costs, straight from Stripe. `undefined` when the API answers 204 (no price
+ * configured) — the caller hides the price rather than guessing one, because a quoted price that
+ * disagrees with the charged price is worse than no quoted price.
+ */
+export const getPrice = () => api<PriceInfo | undefined>('/billing/price');

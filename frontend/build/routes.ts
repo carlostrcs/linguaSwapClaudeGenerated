@@ -11,7 +11,10 @@ import type { LanguageId } from '../src/i18n/translations';
 import { siteStructuredData } from './head';
 import type { Deck, DeckSnapshot } from './decks';
 import { guidePath } from '../src/content/guides';
+import { legalPath } from '../src/content/legal';
 import { guidesFor, verifyGuideCoverage } from './content/guides/index';
+import { LEGAL_DOCS, isDraft } from './content/legal';
+import { renderLegal } from './render/legal';
 import { MIN_DECK_ENTRIES, SAMPLE_ROWS, publishableDecks } from './content/topics';
 import { VOCAB_LOCALES, learnIndexPath, learnTargetPath, learnTopicPath } from '../src/content/learn';
 import { learnStrings, verifyLearnCoverage } from './content/learn-strings/index';
@@ -291,11 +294,38 @@ function guidePages(): PageSpec[] {
   );
 }
 
+/**
+ * Privacy, terms and refunds. English-only and un-prefixed (see `src/content/legal.ts`), so there
+ * is no hreflang cluster: one document, one URL, linked from every locale's footer.
+ *
+ * While the operator details are still placeholders the pages are emitted `noindex` and kept out of
+ * the sitemap, so a half-finished policy cannot be indexed as though it were the real thing.
+ */
+function legalPages(): PageSpec[] {
+  const draft = isDraft();
+
+  return LEGAL_DOCS.map((doc) => {
+    const path = legalPath(doc.key);
+    return {
+      path,
+      file: outputFileFor(path),
+      lang: 'en',
+      title: doc.title,
+      description: doc.description,
+      robots: draft ? 'noindex, nofollow' : undefined,
+      body: renderLegal(doc),
+      spa: false,
+      sitemapShard: draft ? undefined : 'en',
+    };
+  });
+}
+
 export function buildPages(snapshot: DeckSnapshot): PageSpec[] {
   return [
     ...homePages(),
     ...learnPages(snapshot),
     ...guidePages(),
+    ...legalPages(),
     ...appPages(),
     ...shellPages(),
   ];

@@ -3,7 +3,8 @@ import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { changePassword, deleteAccount, getAccount, updateAccount } from '../api/account';
-import { createCheckoutSession, openPortal, startTrial } from '../api/billing';
+import { createCheckoutSession, getPrice, openPortal, startTrial } from '../api/billing';
+import { formatAmount, intervalKey } from '../lib/formatPrice';
 import { TRIAL_DAYS, trialDaysLeft } from '../lib/premium';
 import { ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
@@ -21,6 +22,9 @@ export default function AccountPage() {
   const { theme, setTheme } = useTheme();
   const { lang, setLang, t } = useI18n();
   const account = useQuery({ queryKey: ['account'], queryFn: getAccount });
+  // What premium costs, from Stripe. Cached hard: it is the same answer for every user and the
+  // server caches it too. A failure leaves `data` undefined and the price line simply hides.
+  const price = useQuery({ queryKey: ['billingPrice'], queryFn: getPrice, staleTime: 60 * 60 * 1000, retry: false });
 
   const [email, setEmail] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -132,6 +136,16 @@ export default function AccountPage() {
     onError: (e) => setDeleteErr(e instanceof ApiError ? e.message : t('account.deleteFailed')),
   });
 
+  // Shown wherever checkout can start, so nobody is sent to Stripe without knowing the amount, the
+  // billing period, or that it can be cancelled.
+  const priceLine = price.data ? (
+    <p className="price-line">
+      <strong>{formatAmount(price.data, lang)}</strong> {t(intervalKey(price.data))}
+      {' · '}
+      <span className="muted">{t('premium.cancelAnytime')}</span>
+    </p>
+  ) : null;
+
   return (
     <div className="page narrow">
       <h1>{t('account.title')}</h1>
@@ -164,6 +178,7 @@ export default function AccountPage() {
               <span className="premium-badge">{t('premium.badge')}</span>{' '}
               {t('premium.trialActive', { days: trialDaysLeft(trialEndsAt) })}
             </p>
+            {priceLine}
             <button
               type="button"
               className="btn btn-primary"
@@ -180,6 +195,7 @@ export default function AccountPage() {
           // Free: never trialed (offer the trial) or trial ended (offer upgrade only).
           <>
             <p className="muted">{trialUsed ? t('premium.trialEnded') : t('premium.freeDesc')}</p>
+            {priceLine}
             {hiddenLibraries > 0 && (
               <p className="alert alert-info">{t('premium.hiddenSubscribeNote', { count: hiddenLibraries })}</p>
             )}

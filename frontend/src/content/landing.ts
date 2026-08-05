@@ -11,6 +11,7 @@
 // Pure data (no JSX, no ReactNode) because `build/` imports it under `tsconfig.node.json`.
 
 import { guidePath } from './guides';
+import { legalPath } from './legal';
 import { hasVocabPages, learnIndexPath } from './learn';
 
 export interface LandingFeature {
@@ -84,6 +85,10 @@ export function landingFooter(locale: string): LandingFooterLink[] {
   }
   links.push({ key: 'landing.footerGuides', to: guidePath(locale, 'spaced-repetition'), staticPage: true });
   links.push({ key: 'landing.tryDemo', to: '/demo' });
+  // The legal documents are English-only, so unlike everything above these targets are the same for
+  // every locale — only the link label is translated. See src/content/legal.ts.
+  links.push({ key: 'landing.footerPrivacy', to: legalPath('privacy'), staticPage: true });
+  links.push({ key: 'landing.footerTerms', to: legalPath('terms'), staticPage: true });
   return links;
 }
 

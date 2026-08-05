@@ -275,6 +275,11 @@ const dict: Dictionary = {
   'premium.freeDesc':
     'Korzystasz z planu darmowego. Ulepsz konto, aby uzyskać nielimitowane biblioteki i słowa, import słów, dodatkowe motywy i szczegółowe statystyki.',
   'premium.upgrade': 'Przejdź na Premium',
+  'premium.perMonth': 'miesięcznie',
+  'premium.perYear': 'rocznie',
+  'premium.perWeek': 'tygodniowo',
+  'premium.perPeriod': 'za okres rozliczeniowy',
+  'premium.cancelAnytime': 'Anuluj w dowolnym momencie.',
   'premium.upgradeLink': 'Przejdź na Premium',
   'premium.redirecting': 'Przekierowywanie…',
   'premium.manage': 'Zarządzaj subskrypcją',

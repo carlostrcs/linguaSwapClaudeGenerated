@@ -1,4 +1,5 @@
 using LinguaSwap.Api.Data;
+using LinguaSwap.Api.Dtos;
 using LinguaSwap.Api.Models;
 using Microsoft.EntityFrameworkCore;
 using Stripe;
@@ -106,6 +107,50 @@ public class StripeService(AppDbContext db, IConfiguration config, ILogger<Strip
         user.IsPremium = false;
         user.StripeSubscriptionId = null;
         await db.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// The configured subscription price, as Stripe reports it.
+    ///
+    /// Read from Stripe rather than duplicated in config or in the frontend, because a price the
+    /// user is quoted that differs from the one their card is charged is the worst kind of drift.
+    /// It also means switching the test price for the live one needs no code change.
+    ///
+    /// Cached process-wide for an hour: a price changes about never, this is called from an
+    /// anonymous endpoint any visitor can hit, and Stripe rate-limits. A race just fetches twice.
+    /// </summary>
+    private static PriceResponse? _cachedPrice;
+    private static DateTime _priceFetchedAt = DateTime.MinValue;
+    private static readonly TimeSpan PriceCacheFor = TimeSpan.FromHours(1);
+
+    public async Task<PriceResponse?> GetPriceAsync()
+    {
+        var priceId = Cfg["PriceId"];
+        if (string.IsNullOrEmpty(priceId)) return null;
+
+        if (_cachedPrice is not null && DateTime.UtcNow - _priceFetchedAt < PriceCacheFor)
+            return _cachedPrice;
+
+        try
+        {
+            var price = await new PriceService().GetAsync(priceId);
+            if (price.UnitAmount is null || price.Recurring is null) return null;
+
+            _cachedPrice = new PriceResponse(
+                price.UnitAmount.Value,
+                price.Currency,
+                price.Recurring.Interval,
+                (int)price.Recurring.IntervalCount);
+            _priceFetchedAt = DateTime.UtcNow;
+            return _cachedPrice;
+        }
+        catch (StripeException ex)
+        {
+            // Never fail a page over this — the caller hides the price and the Upgrade button
+            // still works, since Checkout reads the price from Stripe itself.
+            logger.LogError(ex, "Could not read price {PriceId} from Stripe", priceId);
+            return null;
+        }
     }
 
     /// <summary>

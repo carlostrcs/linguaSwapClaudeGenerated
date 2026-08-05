@@ -399,6 +399,15 @@ anything; premium users **Add** one and practise it.
   `POST /api/billing/webhook` (`checkout.session.completed` → grant;
   `customer.subscription.deleted`/lapsed `updated` → revoke). `POST /api/billing/portal` opens the
   Stripe Customer Portal to manage/cancel.
+- **The price comes from Stripe, not from config.** `GET /api/billing/price` (anonymous,
+  `StripeService.GetPriceAsync`, cached process-wide for an hour) returns amount/currency/interval
+  straight from the Price object, and the Account page shows it wherever checkout can start. A
+  quoted price that disagrees with the charged price is the worst kind of drift, and this also means
+  swapping the test price for the live one needs no code change. `204` when no price is configured →
+  the client hides the line rather than guessing. `lib/formatPrice.ts` formats via
+  `Intl.NumberFormat` so €5.00 / 5,00 € comes out right per locale. Deliberately **not** on the
+  landing page: `LandingPage.tsx` and `build/render/landing.ts` must render the same thing, and a
+  runtime-fetched price would diverge from the prerendered HTML.
 - **Deleting an account cancels the subscription first.** `AccountController.Delete` calls
   `StripeService.CancelSubscriptionAsync` (immediate, not at period end) *before*
   `UserManager.DeleteAsync`, and **refuses the delete with `502`** if Stripe is unreachable. The

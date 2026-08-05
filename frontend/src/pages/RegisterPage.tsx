@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { register } from '../api/auth';
 import { ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
+import { legalPath } from '../content/legal';
 import { useI18n } from '../i18n/I18nProvider';
 import { isValidEmail, passwordIssueKey, PASSWORD_MIN_LENGTH } from '../lib/validation';
 import PasswordInput from '../components/PasswordInput';
@@ -96,6 +97,30 @@ export default function RegisterPage() {
         <button type="submit" className="btn btn-primary" disabled={busy}>
           {busy ? t('auth.creating') : t('auth.createAccountBtn')}
         </button>
+        {/* Acceptance has to be visible at the point of acceptance, with the documents one click
+            away. Plain <a> rather than <Link>: these are generated pages, and a React Router link
+            would navigate on the client, match no route and land on the 404 page. */}
+        <p className="muted small">
+          {t('auth.acceptTerms')
+            .split(/(\{terms\}|\{privacy\})/)
+            .map((part, i) => {
+              if (part === '{terms}') {
+                return (
+                  <a key={i} href={legalPath('terms')}>
+                    {t('legal.termsName')}
+                  </a>
+                );
+              }
+              if (part === '{privacy}') {
+                return (
+                  <a key={i} href={legalPath('privacy')}>
+                    {t('legal.privacyName')}
+                  </a>
+                );
+              }
+              return part;
+            })}
+        </p>
         <p className="muted">
           {t('auth.haveAccount')} <Link to="/login">{t('auth.signIn')}</Link>
         </p>

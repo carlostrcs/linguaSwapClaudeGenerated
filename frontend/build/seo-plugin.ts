@@ -21,6 +21,7 @@ import type { Plugin, ResolvedConfig } from 'vite';
 
 import { buildHead } from './head';
 import { buildPages } from './routes';
+import { isDraft } from './content/legal';
 import type { PageSpec } from './routes';
 import { parseShell, renderPage } from './shell';
 import { loadDecks, totalEntries } from './decks';
@@ -98,6 +99,14 @@ export function seoPlugin(): Plugin {
 
       // After the pages exist: the worker precaches the shell it will serve offline.
       stampServiceWorker(outDir, pages, vercel);
+
+      // Loud, because the failure mode is silent: an unfinished policy that looks published.
+      if (isDraft()) {
+        config.logger.warn(
+          '\nlinguaswap-seo  legal pages are DRAFT — operator details in build/content/legal.ts are ' +
+            'still placeholders, so /privacy, /terms and /refunds are noindex and out of the sitemap.',
+        );
+      }
 
       const indexable = pages.filter((p) => p.sitemapShard).length;
       config.logger.info(

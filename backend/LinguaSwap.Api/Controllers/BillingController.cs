@@ -16,6 +16,19 @@ public class BillingController(
     PremiumService premium,
     ILogger<BillingController> logger) : ControllerBase
 {
+    /// <summary>
+    /// What premium costs. Anonymous so the price can be shown before anyone signs up, and `204`
+    /// rather than an error when Stripe has no price configured — a missing price hides a line of
+    /// copy, it does not break the page.
+    /// </summary>
+    [AllowAnonymous]
+    [HttpGet("price")]
+    public async Task<IActionResult> Price()
+    {
+        var price = await stripe.GetPriceAsync();
+        return price is null ? NoContent() : Ok(price);
+    }
+
     /// <summary>Start a subscription checkout; returns the Stripe-hosted URL to redirect to.</summary>
     [Authorize]
     [HttpPost("checkout")]

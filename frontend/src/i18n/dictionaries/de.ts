@@ -297,6 +297,11 @@ const dict: Dictionary = {
   'premium.freeDesc':
     'Du bist im kostenlosen Tarif. Mit einem Upgrade bekommst du unbegrenzte Bibliotheken und Wörter, Wort-Import, zusätzliche Designs und detaillierte Statistiken.',
   'premium.upgrade': 'Auf Premium upgraden',
+  'premium.perMonth': 'pro Monat',
+  'premium.perYear': 'pro Jahr',
+  'premium.perWeek': 'pro Woche',
+  'premium.perPeriod': 'pro Abrechnungszeitraum',
+  'premium.cancelAnytime': 'Jederzeit kündbar.',
   'premium.upgradeLink': 'Auf Premium upgraden',
   'premium.redirecting': 'Weiterleitung…',
   'premium.manage': 'Abo verwalten',

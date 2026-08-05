@@ -146,6 +146,12 @@ const checks = [
   ['/sitemaps/en.xml', 200, '<urlset', 'per-locale sitemap shard'],
   ['/llms.txt', 200, '# LinguaSwap', 'llms.txt'],
 
+  // Legal documents. English-only and un-prefixed, linked from every locale's footer, and — like
+  // the guides — real HTML that a reviewer (or Stripe) can read without running JavaScript.
+  ['/privacy', 200, 'Privacy Policy', 'privacy policy is a real document'],
+  ['/terms', 200, 'Terms of Service', 'terms of service is a real document'],
+  ['/refunds', 200, 'Cancellation &amp; Refunds', 'refund policy is a real document'],
+
   // Installable app + offline shell. These are plain files, so the thing that can break them is a
   // rewrite starting to swallow them — exactly what happened to robots.txt before this check existed.
   ['/manifest.webmanifest', 200, '"start_url": "/libraries"', 'web app manifest is served, not the SPA'],
@@ -212,7 +218,7 @@ for (const [pattern, label, negate] of spanishFooterChecks) {
 // reaches the server, matches no route and renders the 404 page. The generated pages are real
 // documents, so links to them from inside the SPA must be plain <a href>. This is invisible in
 // review and only shows up by clicking, so it is worth a check.
-const CONTENT_PREFIXES = ['/learn', '/guides'];
+const CONTENT_PREFIXES = ['/learn', '/guides', '/privacy', '/terms', '/refunds'];
 
 function sourceFiles(dir) {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
