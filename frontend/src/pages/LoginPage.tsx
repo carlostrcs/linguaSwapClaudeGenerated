@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { login } from '../api/auth';
 import { ApiError } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
+import PasswordInput from '../components/PasswordInput';
 import { useI18n } from '../i18n/I18nProvider';
 
 export default function LoginPage() {
@@ -51,12 +52,10 @@ export default function LoginPage() {
         </label>
         <label>
           {t('common.password')}
-          <input
-            type="password"
+          <PasswordInput
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={setPassword}
             placeholder={t('auth.passwordPlaceholder')}
-            required
           />
         </label>
         <button type="submit" className="btn btn-primary" disabled={busy}>

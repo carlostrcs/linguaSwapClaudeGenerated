@@ -41,11 +41,12 @@ type PasswordInputProps = {
   onChange: (value: string) => void;
   className?: string;
   minLength?: number;
+  placeholder?: string;
   'aria-invalid'?: boolean;
 };
 
 /** A password input with a show/hide eye toggle. Manages its own visibility state.
- *  Shared by the register and reset-password forms. */
+ *  Shared by the login, register and reset-password forms. */
 export default function PasswordInput({
   value,
   onChange,
