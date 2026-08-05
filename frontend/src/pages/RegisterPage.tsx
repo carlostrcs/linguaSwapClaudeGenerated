@@ -45,7 +45,10 @@ export default function RegisterPage() {
     setBusy(true);
     try {
       signIn(await register(email, password, displayName || undefined));
-      navigate('/libraries');
+      // A brand-new account owns no libraries, so the Libraries page would greet it with an
+      // empty state. Send it to the featured shelf instead — there is something to add there,
+      // and the free trial started at registration means it can be added right away.
+      navigate('/featured');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t('auth.registerFailed'));
     } finally {
