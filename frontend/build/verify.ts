@@ -67,7 +67,7 @@ interface VercelConfig {
 }
 
 /** Vercel path pattern -> RegExp. `:name*` spans segments, `:name` is one segment. */
-function patternToRegExp(source: string): RegExp {
+export function patternToRegExp(source: string): RegExp {
   const body = source
     .replace(/[.+^${}()|[\]\\]/g, '\\$&')
     .replace(/\/:\w+\*/g, '(?:/.*)?')

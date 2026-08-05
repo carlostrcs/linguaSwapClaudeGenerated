@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <title>Offline — LinguaSwap</title>
+    <!--
+      Shown by sw.js when a page is requested with no network and nothing cached for it.
+
+      Self-contained on purpose: no hashed asset, no bundle, no API. It has to render when nothing
+      else can, and a reference to a build-specific file would rot on the next deploy. That is also
+      why the copy is inlined here rather than pulled from src/i18n — this page runs outside the
+      app, so it reads the same two localStorage keys the app writes (language and theme) and picks
+      a string. Seven short strings, no dictionary key to keep in parity.
+    -->
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f6f7fb;
+        --surface: #ffffff;
+        --text: #1f2733;
+        --muted: #6b7280;
+        --border: #e3e6ee;
+        --primary: #4f46e5;
+        --on-primary: #ffffff;
+      }
+      [data-theme='dark'] {
+        color-scheme: dark;
+        --bg: #0f1419;
+        --surface: #1a212b;
+        --text: #e5e9f0;
+        --muted: #9aa5b1;
+        --border: #2e3947;
+        --primary: #818cf8;
+        --on-primary: #0f1419;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        background: var(--bg);
+        color: var(--text);
+        font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      }
+      .card {
+        width: 100%;
+        max-width: 26rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 32px 28px;
+        text-align: center;
+        box-shadow: 0 1px 3px rgba(16, 24, 40, 0.08), 0 1px 2px rgba(16, 24, 40, 0.04);
+      }
+      .mark { width: 44px; height: 44px; margin-bottom: 18px; }
+      h1 { margin: 0 0 10px; font-size: 1.3rem; }
+      p { margin: 0 0 22px; color: var(--muted); line-height: 1.5; }
+      button {
+        font: inherit;
+        cursor: pointer;
+        padding: 10px 20px;
+        border: 0;
+        border-radius: 10px;
+        background: var(--primary);
+        color: var(--on-primary);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <svg class="mark" viewBox="0 0 48 46" aria-hidden="true">
+        <path
+          fill="#4f46e5"
+          d="M25.946 44.938c-.664.845-2.021.375-2.021-.698V33.937a2.26 2.26 0 0 0-2.262-2.262H10.287c-.92 0-1.456-1.04-.92-1.788l7.48-10.471c1.07-1.497 0-3.578-1.842-3.578H1.237c-.92 0-1.456-1.04-.92-1.788L10.013.474c.214-.297.556-.474.92-.474h28.894c.92 0 1.456 1.04.92 1.788l-7.48 10.471c-1.07 1.498 0 3.579 1.842 3.579h11.377c.943 0 1.473 1.088.89 1.83L25.947 44.94z"
+        />
+      </svg>
+      <h1 id="title">You're offline</h1>
+      <p id="body">This page isn't available without a connection. Practice you've already started keeps working, and your answers sync once you're back.</p>
+      <button type="button" id="retry" onclick="location.reload()">Try again</button>
+    </div>
+
+    <script>
+      (function () {
+        var COPY = {
+          en: ["You're offline", "This page isn't available without a connection. Practice you've already started keeps working, and your answers sync once you're back.", 'Try again'],
+          es: ['Estás sin conexión', 'Esta página no está disponible sin conexión. La práctica que ya has empezado sigue funcionando y tus respuestas se sincronizarán cuando vuelvas.', 'Reintentar'],
+          fr: ['Vous êtes hors ligne', "Cette page n'est pas disponible sans connexion. L'entraînement déjà commencé continue de fonctionner et vos réponses se synchroniseront à votre retour.", 'Réessayer'],
+          de: ['Du bist offline', 'Diese Seite ist ohne Verbindung nicht verfügbar. Bereits begonnenes Üben funktioniert weiter, und deine Antworten werden synchronisiert, sobald du wieder online bist.', 'Erneut versuchen'],
+          it: ['Sei offline', 'Questa pagina non è disponibile senza connessione. La pratica già iniziata continua a funzionare e le tue risposte si sincronizzeranno al tuo ritorno.', 'Riprova'],
+          pt: ['Está offline', 'Esta página não está disponível sem ligação. A prática que já começou continua a funcionar e as suas respostas serão sincronizadas quando voltar.', 'Tentar novamente'],
+          pl: ['Jesteś offline', 'Ta strona nie jest dostępna bez połączenia. Rozpoczęta już nauka działa dalej, a Twoje odpowiedzi zsynchronizują się po powrocie.', 'Spróbuj ponownie'],
+        };
+        try {
+          var theme = localStorage.getItem('linguaswap.theme');
+          if (theme) document.documentElement.dataset.theme = theme;
+          var lang = (localStorage.getItem('linguaswap.lang') || 'en').slice(0, 2);
+          var copy = COPY[lang];
+          if (copy) {
+            document.documentElement.lang = lang;
+            document.getElementById('title').textContent = copy[0];
+            document.getElementById('body').textContent = copy[1];
+            document.getElementById('retry').textContent = copy[2];
+            document.title = copy[0] + ' — LinguaSwap';
+          }
+        } catch (e) {
+          /* localStorage can throw in locked-down browsers; the English default already rendered. */
+        }
+      })();
+    </script>
+  </body>
+</html>

@@ -9,6 +9,8 @@ const dict: Dictionary = {
   'nav.account': 'Konto',
   'nav.signOut': 'Abmelden',
   'nav.menu': 'Menü',
+  'offline.title': 'Du bist offline – das Üben funktioniert weiter und deine Antworten werden synchronisiert.',
+  'offline.syncing': 'Wieder online – {count} Antworten werden synchronisiert.',
 
   'auth.signIn': 'Anmelden',
   'auth.signingIn': 'Anmeldung läuft…',

@@ -10,10 +10,17 @@ import LocaleQuerySync from './components/LocaleQuerySync';
 import { AuthProvider } from './auth/AuthContext';
 import { ThemeProvider } from './theme/ThemeProvider';
 import { I18nProvider } from './i18n/I18nProvider';
+import { registerServiceWorker } from './lib/registerServiceWorker';
+import { startSync } from './lib/offlineQueue';
 
 // Windows browsers don't render country-flag emoji natively. This injects an @font-face for the
 // flag-only 'Twemoji Country Flags' web font (first in the --sans stack) so flags show everywhere.
 polyfillCountryFlagEmojis();
+
+// Both are app-lifetime side effects rather than component concerns: the worker outlives any route,
+// and practice answers parked offline must drain on reconnect whatever screen the user is on.
+registerServiceWorker();
+startSync();
 
 const queryClient = new QueryClient();
 

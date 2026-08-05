@@ -704,3 +704,62 @@ while there isn't one.
   generated page — the manifest is discoverable from any entry point, including the prerendered
   `/learn` and `/guides` pages.
 
+#### The service worker (`public/sw.js`)
+
+**It caches the app, never the data.** Every `/api/*` request goes straight to the network, always
+(in production the API is a different origin anyway, and the worker ignores cross-origin requests).
+API responses are per-user and mutable — a stale copy from a shared device cache would be both a
+privacy and a correctness problem, and the server stays the record of truth.
+
+- **Navigations are network-first**, so an online user always gets fresh HTML and therefore the
+  newest hashed asset URLs; the cache is only ever the offline fallback. `/assets/*` is cache-first
+  because content-hashed names are immutable. Together with a **per-build cache name** (old caches
+  dropped in `activate`) there is no way to get wedged on an old build — the classic PWA foot-gun.
+  It deliberately does **not** call `skipWaiting()`: a new worker takes over on the next launch
+  rather than swapping the cache under a live session.
+- **`build/sw.ts` stamps four placeholders** at the end of the Vite build: the cache name (derived
+  from the asset hashes), the hashed assets to precache, and the two lists that classify a path.
+  Those come from `vercel.json`'s rewrites plus the pages the generator emits with `spa: true`, so
+  the worker is **never a hand-maintained mirror** of the routing table. Each replacement throws if
+  its placeholder is missing, and `routes:check` re-asserts on the built artifact.
+- **The offline fallback is split on purpose**: an uncached app route is served the `/app` shell
+  (React Router renders the right screen), an uncached content page gets `public/offline.html`.
+  Serving the shell for `/learn/**` would boot the SPA on a URL it has no route for and redirect
+  the reader away — the same failure the `spa` flag exists to prevent. `offline.html` is
+  self-contained (no hashed asset, no bundle) and localizes itself from the `linguaswap.lang` /
+  `linguaswap.theme` localStorage keys, since it runs outside the app.
+- **Registration is production-only** (`lib/registerServiceWorker.ts`) — a worker on the dev server
+  would serve yesterday's bundle while you edit. `unregisterServiceWorker()` in the same file is
+  the escape hatch: deploying a build that calls it instead un-sticks every installed client.
+- `vercel.json` sends `Cache-Control: max-age=0, must-revalidate` for `/sw.js`. Browsers already
+  bypass the HTTP cache for the worker script (`updateViaCache` defaults to `imports`); this is
+  belt and braces, because a cached worker keeps serving an old build's cache after a deploy.
+
+#### Offline practice (`lib/offlineQueue.ts`)
+
+Practice keeps working with no connection because grading is already client-side
+(`lib/practiceCheck`) — the server is only needed for the durable `Attempt`/`LearningState` row.
+Those POSTs used to be fire-and-forget with the failure swallowed, which is right for a blip and
+wrong for a tunnel: a whole session's stats vanished. They now park in localStorage and replay in
+order when the network returns (`startSync` in `main.tsx` flushes on the `online` event).
+
+- **It owns the write ordering app-wide**, which is why `PracticePage` no longer keeps its own
+  promise chain. Ordering is load-bearing twice: repeats of one word (Learn New drills a batch)
+  must not race into the `LearningStates` unique index, and **`end` must never overtake the
+  answers** — the API rejects an answer once the session is closed, so an out-of-order replay would
+  destroy exactly what the queue exists to save. Hence the rule that a write goes to the queue
+  whenever anything is already queued, even if the network has come back.
+- **Network failure vs server rejection is the retry rule.** `api()` throws `ApiError` only once a
+  response arrived, so anything else is offline → keep and retry. A write the server *saw* and
+  refused (closed session, 401 after sign-out) is final and gets dropped; retrying it forever would
+  wedge the queue behind an item that can never succeed.
+- Capped at 1000 writes (oldest dropped), cleared on **sign-out** — queued writes belong to that
+  account's sessions and must never be replayed under the next user's token.
+- `components/OfflineBanner.tsx` (in `Layout`, beside the other app-wide banners) tells the user
+  their practice still counts; without it the queue is invisible.
+- **Not covered:** *starting* a session offline (that needs the server), and journey state, which
+  self-heals because `JourneyRunner` re-saves the whole cumulative snapshot after every answer.
+- There is still no frontend test runner, so this module was verified by running it verbatim under
+  Node with a stubbed API + localStorage (ordering, stop-on-network-failure, drop-on-rejection, the
+  cap, sign-out). Worth redoing if you change the retry rules — it is the one piece of new logic
+  whose failure mode is silent data loss.

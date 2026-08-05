@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import type { ReactNode } from 'react';
 import { getRefreshToken, getToken, setRefreshToken, setToken, setUnauthorizedHandler } from '../api/client';
 import { logout } from '../api/auth';
+import { clearQueue } from '../lib/offlineQueue';
 import type { AuthResponse } from '../api/types';
 
 interface AuthUser {
@@ -69,6 +70,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(null);
     setRefreshToken(null);
     localStorage.removeItem(USER_KEY);
+    // Practice writes parked offline belong to this account's sessions. Replaying them after the
+    // next sign-in would post one person's practice under another's token — the server would refuse
+    // it, but not sending it at all is the right call. Dropped, like any other unsent stats row.
+    clearQueue();
     setUserState(null);
   }, []);
 

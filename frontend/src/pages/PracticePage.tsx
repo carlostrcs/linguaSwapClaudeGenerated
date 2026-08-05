@@ -4,7 +4,8 @@ import { Link, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { listEntries } from '../api/entries';
 import { getLibrary } from '../api/libraries';
-import { endSession, saveJourneyState, startSession, submitAnswer } from '../api/practice';
+import { saveJourneyState, startSession } from '../api/practice';
+import { recordWrite } from '../lib/offlineQueue';
 import { ApiError } from '../api/client';
 import type { Difficulty, PracticeMode, PracticeWord, StartSessionResponse } from '../api/types';
 import PracticeSetup from '../components/PracticeSetup';
@@ -42,10 +43,6 @@ export default function PracticePage() {
 
   // Each word's current Leitner box, so the mastered badge can be worked out locally.
   const boxes = useRef<Record<number, number>>({});
-  // Background writes, chained so they apply in order. Answers are recorded off the critical path;
-  // this keeps repeats of one word (Learn New drills the same batch) from racing each other into
-  // the LearningStates unique index, and stops a fast typist opening a connection per keystroke.
-  const queue = useRef<Promise<unknown>>(Promise.resolve());
 
   useEffect(() => {
     if (languages.length >= 1 && !source) setSource(languages[0]);
@@ -62,10 +59,8 @@ export default function PracticePage() {
     setStarting(true);
     try {
       const started = await startSession(libraryId, source, target, difficulty, mode);
-      // Seed here rather than in an effect: both must be ready before the first card renders, and
-      // a fresh session must not inherit the previous one's pending writes.
+      // Seed here rather than in an effect: it must be ready before the first card renders.
       boxes.current = Object.fromEntries(started.words.map((w) => [w.entryId, w.boxLevel]));
-      queue.current = Promise.resolve();
       setSession(started);
     } catch (err) {
       setSetupError(err instanceof ApiError ? err.message : t('practice.startFailed'));
@@ -83,6 +78,11 @@ export default function PracticePage() {
     // Grade locally so the card colours instantly, and record the attempt in the background. The
     // server re-checks and owns the durable Attempt/Leitner row; a dropped write costs one row of
     // stats, which beats making the user wait a round trip for every word.
+    //
+    // `recordWrite` owns the ordering (and the offline queue), so there is no local promise chain
+    // here any more: it serializes every write app-wide, which is what keeps repeats of one word
+    // out of a race for the LearningStates unique index — and it parks the write instead of losing
+    // it when the network is gone. See lib/offlineQueue.
     const checkAnswer = async (word: PracticeWord, answer: string) => {
       const res = checkLocally(
         word.acceptedAnswer,
@@ -92,16 +92,15 @@ export default function PracticePage() {
         reschedules,
       );
       if (reschedules) boxes.current[word.entryId] = res.nextBox;
-      queue.current = queue.current
-        .then(() => submitAnswer(session.sessionId, word.entryId, answer))
-        .catch(() => {});
+      void recordWrite({ kind: 'answer', sessionId: session.sessionId, entryId: word.entryId, answer });
       return res;
     };
 
-    // Answers are in flight, and the API rejects an answer once the session has ended — so let the
-    // queue drain before closing it, or the last word of every session would be lost.
+    // The API rejects an answer once the session has ended, so this has to land behind the answers
+    // — including any parked offline, which is why it goes through the same queue rather than
+    // straight to the network. Otherwise ending a session would invalidate its own backlog.
     const finish = () => {
-      queue.current = queue.current.then(() => endSession(session.sessionId)).catch(() => {});
+      void recordWrite({ kind: 'end', sessionId: session.sessionId });
     };
 
     const backSlot = (

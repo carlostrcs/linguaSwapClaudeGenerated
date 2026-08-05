@@ -212,6 +212,9 @@ input:focus, select:focus { outline: 2px solid var(--primary); outline-offset: 0
    without this they inherit .btn-link's primary colour and vanish into the banner background. */
 .trial-banner .btn-link { color: #fff; font-weight: 700; text-decoration: underline; margin-left: 0.85rem; }
 .trial-banner .btn-link:disabled { opacity: 0.7; cursor: default; text-decoration: none; }
+/* Offline / syncing notice. Muted rather than alarming on purpose: practice keeps working without
+   a connection, so this is a status line, not an error. */
+.offline-banner { background: var(--surface-2); color: var(--muted); border-bottom: 1px solid var(--border); padding: 0.5rem 1rem; text-align: center; font-size: 0.85rem; }
 .muted { color: var(--muted); }
 .small { font-size: 0.82rem; }
 

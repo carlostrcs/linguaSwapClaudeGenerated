@@ -146,6 +146,12 @@ const checks = [
   ['/sitemaps/en.xml', 200, '<urlset', 'per-locale sitemap shard'],
   ['/llms.txt', 200, '# LinguaSwap', 'llms.txt'],
 
+  // Installable app + offline shell. These are plain files, so the thing that can break them is a
+  // rewrite starting to swallow them — exactly what happened to robots.txt before this check existed.
+  ['/manifest.webmanifest', 200, '"start_url": "/libraries"', 'web app manifest is served, not the SPA'],
+  ['/sw.js', 200, 'linguaswap-', 'service worker is served from the root (its scope)'],
+  ['/offline.html', 200, "You're offline", 'offline fallback page'],
+
   // App routes still reach the SPA.
   ['/login', 200, 'id="root"', 'auth route is prerendered and still boots the SPA'],
   ['/demo', 200, 'Demo libraries', 'demo has a real static intro'],
@@ -258,11 +264,22 @@ if (shell.includes('Learn vocabulary that sticks')) {
   console.log(`ok    app.html                           bare noindex shell, not the landing page`);
 }
 
+// A worker that shipped with its placeholders intact would cache under a fixed name forever and
+// pin every visitor to the first build it ever saw. build/sw.ts throws if one is missing; this is
+// the same check on the artifact that actually gets deployed.
+const sw = readFileSync(join(DIST, 'sw.js'), 'utf8');
+if (/'__[A-Z_]+__'/.test(sw)) {
+  failed++;
+  console.error('FAIL  sw.js still contains build placeholders — build/sw.ts did not stamp it');
+} else {
+  console.log(`ok    sw.js                              stamped with this build's cache name and assets`);
+}
+
 server.close();
 
 if (failed) {
   console.error(`\n${failed} route check(s) failed.`);
   process.exit(1);
 }
-console.log(`\nAll ${checks.length + 7} route checks passed.`);
+console.log(`\nAll ${checks.length + 8} route checks passed.`);
 console.log(`(${checks.length} URL checks + footer, link-style and metadata assertions)`);

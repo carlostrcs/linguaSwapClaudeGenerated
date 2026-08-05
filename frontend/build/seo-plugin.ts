@@ -32,6 +32,7 @@ import {
   sitemapShards,
 } from './sitemap';
 import { SITE_URL } from './site';
+import { stampServiceWorker } from './sw';
 import { verifyPages, verifyVercelCoverage } from './verify';
 
 function write(outDir: string, file: string, contents: string): void {
@@ -74,12 +75,10 @@ export function seoPlugin(): Plugin {
 
       const snapshot = loadDecks(join(root, 'content', 'decks.json'));
       const pages = buildPages(snapshot);
+      const vercel = JSON.parse(readFileSync(join(root, 'vercel.json'), 'utf8')) as Record<string, never>;
 
       verifyPages(pages);
-      verifyVercelCoverage(
-        pages,
-        JSON.parse(readFileSync(join(root, 'vercel.json'), 'utf8')) as Record<string, never>,
-      );
+      verifyVercelCoverage(pages, vercel);
 
       const shell = parseShell(readFileSync(join(outDir, 'index.html'), 'utf8'));
 
@@ -96,6 +95,9 @@ export function seoPlugin(): Plugin {
       write(outDir, 'sitemap.xml', renderSitemapIndex([...shards.keys()], lastmod));
       write(outDir, 'robots.txt', renderRobots());
       write(outDir, 'llms.txt', renderLlmsTxt(snapshot, pages));
+
+      // After the pages exist: the worker precaches the shell it will serve offline.
+      stampServiceWorker(outDir, pages, vercel);
 
       const indexable = pages.filter((p) => p.sitemapShard).length;
       config.logger.info(
